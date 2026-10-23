@@ -542,8 +542,9 @@ class AgentTeamsService:
         project = await ProjectService(db).get_project(user_uuid, UUID(project_id))
         resolved_name = project_name or str(project["name"])
         factory = get_path_factory()
+        # F01：已绑定项目按稳定 slug 落盘，显示名（可随改名变化）只作展示。
         run_dir = factory.create_project_run_dir(
-            requester_ref, resolved_name, analysis_name="agentteams-case"
+            requester_ref, str(project["slug"]), analysis_name="agentteams-case"
         )
         relative_run = run_dir.relative_to(factory.user_root(requester_ref)).as_posix()
         await ensure_directory_chain(db, user_uuid, relative_run)
@@ -551,7 +552,11 @@ class AgentTeamsService:
             "kind": "project",
             "id": project_id,
             "location": relative_run,
-            "meta": {"project_name": resolved_name, "run_path": relative_run},
+            "meta": {
+                "project_name": resolved_name,
+                "project_slug": str(project["slug"]),
+                "run_path": relative_run,
+            },
         }
 
     async def _record_flow_capability_failure(self, *, case_id: str, flow_id: str) -> None:

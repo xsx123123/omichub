@@ -25,6 +25,19 @@ class _FakeResult:
         return self._model
 
 
+class _FakeDirectoryRepo:
+    """统一身份预留会登记目录投影；mock 会话下用空仓储隔离子目录仓储行为。"""
+
+    def __init__(self, _session) -> None:  # noqa: ANN001
+        pass
+
+    async def get_by_path(self, *_args):  # noqa: ANN002, ANN202
+        return None
+
+    async def save(self, *_args):  # noqa: ANN002, ANN202
+        return None
+
+
 def _existing_project(user_id):  # noqa: ANN001, ANN202
     now = datetime.now(UTC)
     return SimpleNamespace(
@@ -58,14 +71,21 @@ async def test_get_or_create_reuses_existing_same_slug_project() -> None:
 
 
 @pytest.mark.asyncio
-async def test_get_or_create_falls_back_to_create_when_absent() -> None:
+async def test_get_or_create_falls_back_to_create_when_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "cygnusx.application.services.project_service.DirectoryRepositoryImpl", _FakeDirectoryRepo
+    )
     user_id = uuid4()
     session = AsyncMock()
     session.execute = AsyncMock(return_value=_FakeResult(None))
     service = ProjectService(session)
-    service.create_project = AsyncMock(return_value={"id": "new-project"})  # type: ignore[method-assign]
 
     project = await service.get_or_create_project_by_name(user_id, "全新需求")
 
-    assert project == {"id": "new-project"}
-    service.create_project.assert_awaited_once()
+    # 缺失时走统一身份预留直接创建（owner 锁 + tombstone 检查 + 目录投影）
+    assert project["name"] == "全新需求"
+    assert project["slug"] == "全新需求"
+    session.add.assert_called()
+    session.commit.assert_awaited()

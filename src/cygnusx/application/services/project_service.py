@@ -17,6 +17,7 @@ from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cygnusx.application.schemas.project import ProjectCapability, ProjectCapabilityStatus
@@ -27,10 +28,41 @@ from cygnusx.core.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from cygnusx.infrastructure.database.models.dataset import DatasetIngestionModel, DatasetModel
+from cygnusx.infrastructure.database.models.download_execution import (
+    DownloadExecutionAdmissionModel,
+    DownloadExecutionBudgetModel,
+)
 from cygnusx.infrastructure.database.models.project import ProjectModel, ProjectTombstoneModel
+from cygnusx.infrastructure.database.models.project_export import (
+    ProjectExportJobModel,
+    ProjectExportRequestModel,
+)
+from cygnusx.infrastructure.database.models.project_report import (
+    ProjectReportJobModel,
+    ProjectReportRequestModel,
+)
+from cygnusx.infrastructure.database.models.research_plan import ResearchPlanModel
+from cygnusx.infrastructure.database.models.result_observation import ResultObservationModel
 from cygnusx.infrastructure.database.models.user import UserModel
 from cygnusx.infrastructure.database.repositories import DirectoryRepositoryImpl
 from cygnusx.infrastructure.storage.path_factory import get_path_factory, project_slug
+
+# 项目删除前的科研保留引用清单：预检查用于给出可解释的 409，数据库 RESTRICT
+# 约束最终兜底并发写入。新增指向 projects.id 的外键时必须同步登记，否则只能
+# 依赖 IntegrityError 兜底转换。
+_RETAINED_REFERENCES: tuple[tuple[str, str, type[Any]], ...] = (
+    ("dataset", "数据集", DatasetModel),
+    ("dataset_ingestion", "数据导入记录", DatasetIngestionModel),
+    ("research_plan", "科研计划", ResearchPlanModel),
+    ("result_observation", "结果观察记录", ResultObservationModel),
+    ("download_budget", "下载执行预算", DownloadExecutionBudgetModel),
+    ("download_admission", "下载执行许可", DownloadExecutionAdmissionModel),
+    ("export_job", "项目导出记录", ProjectExportJobModel),
+    ("export_request", "导出请求记录", ProjectExportRequestModel),
+    ("report_job", "项目报告记录", ProjectReportJobModel),
+    ("report_request", "报告请求记录", ProjectReportRequestModel),
+)
 
 
 class ProjectService:
@@ -101,56 +133,12 @@ class ProjectService:
         - ``slug`` 由 ``project_slug(name)`` 自动生成，保证路径安全
         - 同步在 ``user_directories`` 登记 ``projects/{slug}`` 目录记录
         """
-        name = (name or "").strip()
-        if not name:
-            raise ValidationError("项目名不能为空")
-        if len(name) > 200:
-            raise ValidationError("项目名最长 200 字符")
-        customer = (customer or "").strip()
-        if len(customer) > 200:
-            raise ValidationError("客户名最长 200 字符")
-        if len(description) > 2000:
-            raise ValidationError("项目描述最长 2000 字符")
-
-        slug = project_slug(name)
-        if not slug:
-            raise ValidationError("项目名无法生成合法目录 slug")
-
-        await self._lock_owner(user_id)
-        await self._require_unreserved_slug(user_id, slug)
-
-        exists = await self._session.execute(
-            select(ProjectModel.id).where(
-                ProjectModel.user_id == user_id, ProjectModel.slug == slug
-            )
+        model, _created = await self.reserve_project_identity(
+            user_id, name, description=description, customer=customer
         )
-        if exists.scalar_one_or_none() is not None:
-            raise ConflictError(f"同名项目已存在：{slug}")
-
-        model = ProjectModel(
-            user_id=user_id, name=name, slug=slug, description=description, customer=customer
-        )
-        self._session.add(model)
-
-        # 同步创建目录记录
-        dirs = DirectoryRepositoryImpl(self._session)
-        dir_path = f"projects/{slug}"
-        if await dirs.get_by_path(user_id, dir_path) is None:
-            from cygnusx.domain.file.entities import Directory
-
-            await dirs.save(
-                Directory(
-                    id=uuid.uuid4(),
-                    user_id=user_id,
-                    path=dir_path,
-                    name=slug,
-                    parent_path="projects",
-                )
-            )
-
         # 预创建物理目录
-        self._factory.project_dir(str(user_id), slug).mkdir(parents=True, exist_ok=True)
-        (self._factory.project_dir(str(user_id), slug) / "runs").mkdir(exist_ok=True)
+        self._factory.project_dir(str(user_id), model.slug).mkdir(parents=True, exist_ok=True)
+        (self._factory.project_dir(str(user_id), model.slug) / "runs").mkdir(exist_ok=True)
 
         await self._session.commit()
         await self._session.refresh(model)
@@ -162,19 +150,70 @@ class ProjectService:
         聊天式 Case 的项目名由需求文本自动生成；删除 Case 不会删除项目，
         用户用同一需求重新建单时 slug 必然撞上存量项目。此时应复用既有项目
         （每个 Case 仍会在其下创建独立的带时间戳 run 目录），而不是把
-        "同名项目已存在"抛给用户。
+        "同名项目已存在"抛给用户。slug 被已删除身份（tombstone）保留时
+        分配新的可用 slug（-2 起），不复活旧项目身份。
         """
-        slug = project_slug((name or "").strip())
-        if slug:
-            result = await self._session.execute(
-                select(ProjectModel).where(
-                    ProjectModel.user_id == user_id, ProjectModel.slug == slug
+        model, created = await self.reserve_project_identity(user_id, name, reuse_existing=True)
+        if not created:
+            return self._to_dict(model)
+        await self._session.commit()
+        await self._session.refresh(model)
+        return self._to_dict(model)
+
+    async def reserve_project_identity(
+        self,
+        user_id: UUID,
+        name: str,
+        *,
+        description: str = "",
+        customer: str = "",
+        reuse_existing: bool = False,
+    ) -> tuple[ProjectModel, bool]:
+        """统一的项目身份预留入口（显式创建 / 按名复用 / 会话默认项目共用）。
+
+        - owner 行锁串行化同用户并发创建，保留数据库唯一约束兜底；
+        - ``reuse_existing=True``：同 slug 存量项目直接复用；slug 被 tombstone
+          保留时分配新的可用 slug，不复活已删除身份；
+        - ``reuse_existing=False``：保持显式创建的冲突语义
+          （同名项目已存在 / PROJECT_SLUG_RETAINED）；
+        - 仅登记目录投影并 flush，不 commit —— 事务边界由调用方控制。
+
+        返回 ``(model, created)``。
+        """
+        name = (name or "").strip()
+        if not name:
+            raise ValidationError("项目名不能为空")
+        if len(name) > 200:
+            raise ValidationError("项目名最长 200 字符")
+        customer = (customer or "").strip()
+        if len(customer) > 200:
+            raise ValidationError("客户名最长 200 字符")
+        if len(description) > 2000:
+            raise ValidationError("项目描述最长 2000 字符")
+        slug = project_slug(name)
+        if not slug:
+            raise ValidationError("项目名无法生成合法目录 slug")
+
+        await self._lock_owner(user_id)
+        existing = await self._find_project_by_slug(user_id, slug)
+        if existing is not None:
+            if reuse_existing:
+                return existing, False
+            raise ConflictError(f"同名项目已存在：{slug}")
+        if await self._slug_retained(user_id, slug):
+            if not reuse_existing:
+                raise ConflictError(
+                    "该项目目录保留了已删除项目的身份，请使用新项目名",
+                    code="PROJECT_SLUG_RETAINED",
                 )
-            )
-            model = result.scalar_one_or_none()
-            if model is not None:
-                return self._to_dict(model)
-        return await self.create_project(user_id, name)
+            slug = await self._allocate_available_slug(user_id, slug)
+        model = ProjectModel(
+            user_id=user_id, name=name, slug=slug, description=description, customer=customer
+        )
+        self._session.add(model)
+        await self._register_project_directory(user_id, slug)
+        await self._session.flush()
+        return model, True
 
     async def update_project_settings(
         self, user_id: UUID, project_id: UUID, settings: dict[str, Any]
@@ -300,7 +339,13 @@ class ProjectService:
         asyncio.create_task(_run())
 
     async def delete_project(self, user_id: UUID, project_id: UUID) -> bool:
-        """保留删除身份与物理文件，原子删除项目行及目录索引。"""
+        """保留删除身份与物理文件，原子删除项目行及目录索引。
+
+        科研保留引用（数据集、导入、计划、观察、下载执行、导出与项目报告）
+        在任何功能开关状态下都会阻止物理删除：预检查负责给出可解释的 409，
+        数据库 RESTRICT 约束兜底预检查与删除之间的并发写入；兜底触发后先
+        完整回滚，再重新解释为同一业务冲突，无法识别的约束异常原样抛出。
+        """
         await self._lock_owner(user_id)
         stmt = (
             select(ProjectModel)
@@ -311,26 +356,22 @@ class ProjectService:
         model = result.scalar_one_or_none()
         if model is None:
             raise NotFoundError(f"项目不存在：{project_id}")
-        from cygnusx.core.config import get_settings
-
-        if get_settings().project_export_enabled:
-            from cygnusx.infrastructure.database.models.project_export import ProjectExportJobModel
-
-            retained = await self._session.scalar(
-                select(ProjectExportJobModel.id)
-                .where(ProjectExportJobModel.project_id == project_id)
-                .limit(1)
-            )
-            if retained is not None:
-                raise ConflictError(
-                    "项目包含保留的科研导出记录，请先完成保留策略审核",
-                    code="PROJECT_EVIDENCE_RETAINED",
-                )
+        blockers = await self._retained_reference_counts(project_id)
+        if blockers:
+            raise self._retained_conflict(blockers)
         self._session.add(
             ProjectTombstoneModel(project_id=model.id, user_id=user_id, slug=model.slug)
         )
         await self._session.flush()
-        await self._session.delete(model)
+        try:
+            await self._session.delete(model)
+            await self._session.flush()
+        except IntegrityError:
+            await self._session.rollback()
+            blockers = await self._retained_reference_counts(project_id)
+            if not blockers:
+                raise
+            raise self._retained_conflict(blockers) from None
         # 清理目录记录
         dirs = DirectoryRepositoryImpl(self._session)
         dir_path = f"projects/{model.slug}"
@@ -407,16 +448,65 @@ class ProjectService:
             select(UserModel.id).where(UserModel.id == user_id).with_for_update()
         )
 
-    async def _require_unreserved_slug(self, user_id: UUID, slug: str) -> None:
+    async def _find_project_by_slug(self, user_id: UUID, slug: str) -> ProjectModel | None:
+        result = await self._session.execute(
+            select(ProjectModel).where(ProjectModel.user_id == user_id, ProjectModel.slug == slug)
+        )
+        return result.scalar_one_or_none()
+
+    async def _slug_retained(self, user_id: UUID, slug: str) -> bool:
         result = await self._session.execute(
             select(ProjectTombstoneModel.project_id).where(
                 ProjectTombstoneModel.user_id == user_id, ProjectTombstoneModel.slug == slug
             )
         )
-        if result.scalar_one_or_none() is not None:
-            raise ConflictError(
-                "该项目目录保留了已删除项目的身份，请使用新项目名", code="PROJECT_SLUG_RETAINED"
+        return result.scalar_one_or_none() is not None
+
+    async def _allocate_available_slug(self, user_id: UUID, base: str) -> str:
+        """在 tombstone 保留的 base slug 之外分配新的可用目录名（-2 起）。"""
+        for sequence in range(2, 1000):
+            candidate = f"{base}-{sequence}"
+            if (
+                await self._find_project_by_slug(user_id, candidate) is None
+                and not await self._slug_retained(user_id, candidate)
+            ):
+                return candidate
+        raise ConflictError("无法为该项目分配可用目录名", code="PROJECT_SLUG_EXHAUSTED")
+
+    async def _register_project_directory(self, user_id: UUID, slug: str) -> None:
+        dirs = DirectoryRepositoryImpl(self._session)
+        dir_path = f"projects/{slug}"
+        if await dirs.get_by_path(user_id, dir_path) is None:
+            from cygnusx.domain.file.entities import Directory
+
+            await dirs.save(
+                Directory(
+                    id=uuid.uuid4(),
+                    user_id=user_id,
+                    path=dir_path,
+                    name=slug,
+                    parent_path="projects",
+                )
             )
+
+    async def _retained_reference_counts(self, project_id: UUID) -> list[tuple[str, int]]:
+        counts: list[tuple[str, int]] = []
+        for label, _label_zh, model in _RETAINED_REFERENCES:
+            count = await self._session.scalar(
+                select(func.count()).select_from(model).where(model.project_id == project_id)
+            )
+            if count:
+                counts.append((label, int(count)))
+        return counts
+
+    @staticmethod
+    def _retained_conflict(counts: list[tuple[str, int]]) -> ConflictError:
+        zh = {label: label_zh for label, label_zh, _model in _RETAINED_REFERENCES}
+        parts = "、".join(f"{zh.get(label, label)} {count}" for label, count in counts)
+        return ConflictError(
+            f"项目包含需保留的科研记录（{parts}），请先完成保留策略审核后再删除",
+            code="PROJECT_HAS_RETAINED_REFERENCES",
+        )
 
     async def capability_status(self, user_id: UUID, project_id: UUID) -> ProjectCapabilityStatus:
         project = await self._session.get(ProjectModel, project_id)

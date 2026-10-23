@@ -22,12 +22,14 @@ from cygnusx.core.exceptions import BusinessError, NotFoundError
 from cygnusx.domain.file.value_objects import FileSource
 from cygnusx.infrastructure.config.storage_config import StorageConfig
 from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+from cygnusx.infrastructure.database.models.file import DirectoryModel
+from cygnusx.infrastructure.database.models.project import ProjectModel
 from cygnusx.infrastructure.database.models.report import ReportFileModel, ReportModel
 from cygnusx.infrastructure.database.models.task import TaskModel
-from cygnusx.infrastructure.storage.path_factory import StoragePathFactory
-from cygnusx.infrastructure.storage import reset_storage_backend
 from cygnusx.infrastructure.storage import backend as _storage_backend_module
 from cygnusx.infrastructure.storage import path_factory as _path_factory_module
+from cygnusx.infrastructure.storage import reset_storage_backend
+from cygnusx.infrastructure.storage.path_factory import StoragePathFactory
 
 
 def _lexists(path: Path) -> bool:
@@ -51,10 +53,18 @@ class _FakeResult:
 class _FakeDb:
     """按 select 实体路由：报告查询返回固定报告，会话查询返回最近 add 的会话。"""
 
-    def __init__(self, *, report: Any = None, task: Any = None, parent: Any = None) -> None:
+    def __init__(
+        self,
+        *,
+        report: Any = None,
+        task: Any = None,
+        parent: Any = None,
+        project: Any = None,
+    ) -> None:
         self.report = report
         self.task = task
         self.parent = parent
+        self.project = project
         self.added: list[Any] = []
         self.commits = 0
 
@@ -62,7 +72,7 @@ class _FakeDb:
         self.added.append(obj)
 
     async def flush(self) -> None:
-        # 真实 flush 会应用列默认值 / server_default，此处手动补齐新会话的默认字段
+        # 真实 flush 会应用列默认值 / server_default，此处手动补齐默认字段
         from datetime import UTC, datetime
 
         now = datetime.now(UTC)
@@ -78,9 +88,17 @@ class _FakeDb:
                     obj.created_at = now
                 if obj.updated_at is None:
                     obj.updated_at = now
+            elif isinstance(obj, DirectoryModel):
+                if obj.created_at is None:
+                    obj.created_at = now
+                if obj.updated_at is None:
+                    obj.updated_at = now
 
     async def commit(self) -> None:
         self.commits += 1
+
+    async def refresh(self, obj: Any, **_kwargs: Any) -> Any:
+        return obj
 
     async def execute(self, stmt: Any) -> _FakeResult:
         entity = None
@@ -98,6 +116,8 @@ class _FakeDb:
             return self.task
         if model is ReportModel:
             return self.parent
+        if model is ProjectModel:
+            return self.project
         return None
 
 
@@ -423,3 +443,31 @@ async def test_register_artifact_report_registers_in_file_records(
     _args, kwargs = calls[0]
     assert kwargs.get("source") == FileSource.STUDIO
     assert kwargs.get("directory", "").endswith("/output")
+
+
+@pytest.mark.unit
+async def test_register_artifact_uses_bound_project_slug_not_title(platform_env):
+    """F01 回归：会话已绑定项目时 run 目录按项目稳定 slug 落盘，标题仅作展示。"""
+    from uuid import UUID
+
+    storage, uid, workspace = platform_env
+    artifact = workspace / "output" / "a.png"
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    artifact.write_bytes(b"img")
+    project = SimpleNamespace(user_id=UUID(uid), slug="studio-stable-slug")
+    session = ChatSessionModel(
+        id=uuid.uuid4(),
+        session_id="sess-bound",
+        user_id=uid,
+        model_id=uuid.uuid4(),
+        title="新对话",
+        status="active",
+        mode="studio",
+        sandbox_meta={},
+        project_id=str(uuid.uuid4()),
+    )
+    db = _FakeDb(parent=None, project=project)
+
+    report, file_model = await register_artifact_report(uid, session, "output/a.png", "图 v1", db)
+
+    assert f"projects/{project.slug}/runs/studio-" in file_model.path

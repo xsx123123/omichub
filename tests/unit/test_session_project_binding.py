@@ -59,7 +59,13 @@ def _make_session_service(project) -> _SessionSvc:  # noqa: ANN001, ANN202
 
 
 @pytest.mark.asyncio
-async def test_create_session_without_project_falls_back_to_default() -> None:
+async def test_create_session_without_project_falls_back_to_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # 默认项目走统一身份预留，会登记目录投影；mock 会话下用空仓储隔离
+    monkeypatch.setattr(
+        "cygnusx.application.services.project_service.DirectoryRepositoryImpl", _FakeDirectoryRepo
+    )
     svc = _make_session_service(project=None)
 
     await svc.create_session(str(uuid4()), uuid4())
@@ -123,7 +129,12 @@ async def test_create_session_with_owned_project_passes() -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_session_internal_bypass_skips_explicit_validation() -> None:
+async def test_create_session_internal_bypass_skips_explicit_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "cygnusx.application.services.project_service.DirectoryRepositoryImpl", _FakeDirectoryRepo
+    )
     svc = _make_session_service(project=None)
 
     await svc.create_session(str(uuid4()), uuid4(), require_project=False)
@@ -158,6 +169,7 @@ async def test_create_project_persists_customer(tmp_path, monkeypatch) -> None: 
     )
     session = MagicMock()
     session.execute = AsyncMock(return_value=_FakeResult(None))
+    session.flush = AsyncMock()
     session.commit = AsyncMock()
     session.refresh = AsyncMock()
     service = ProjectService(session)

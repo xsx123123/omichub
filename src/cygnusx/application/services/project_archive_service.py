@@ -595,7 +595,9 @@ async def archive_overdrive_delivery(
             flow_version=flow_version,
         )
 
-    run_dir = factory.create_project_run_dir(user_id, project.name, analysis_name)
+    # F01：已绑定项目按稳定 slug 落盘；DB 记录缺失的兜底 ProjectInfo 由
+    # 显示名推导 slug（与旧按名建目录行为一致）。
+    run_dir = factory.create_project_run_dir(user_id, project.slug, analysis_name)
     dest_rel_root = factory.relative_to_root(run_dir / "output")
     await backend.ensure_dir(dest_rel_root)
 

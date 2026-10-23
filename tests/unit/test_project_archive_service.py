@@ -467,3 +467,40 @@ async def test_archive_overdrive_delivery_survives_missing_artifact(storage_env)
     assert (run_dir / "README.md").is_file()
     snapshot = json.loads((run_dir / "environment.json").read_text(encoding="utf-8"))
     assert snapshot["artifacts"] == []
+
+
+@pytest.mark.unit
+async def test_archive_overdrive_delivery_uses_slug_not_display_name(storage_env):
+    """F01 回归：项目绑定后 run 目录按稳定 slug 落盘，改名后的显示名不再决定目录。"""
+    storage, factory, backend = storage_env
+    uid = str(uuid.uuid4())
+    project_id = str(uuid.uuid4())
+    project = SimpleNamespace(
+        user_id=uuid.UUID(uid),
+        name="TP53 单细胞 分析 改名后",
+        slug="tp53-stable",
+        description="",
+        created_at=None,
+        customer="",
+    )
+    session = SimpleNamespace(
+        session_id="sess-1",
+        title="TP53 单细胞 分析 改名后",
+        project_id=project_id,
+        sandbox_meta={"image": ""},
+    )
+    run = _make_overdrive_run(uid, "sess-1")
+    await backend.write("output/overdrive/sess-1/overdrive:test/delivery/final-report.md", b"# report")
+
+    run_dir = await archive_overdrive_delivery(
+        _FakeDb(session=session, project=project),
+        run,
+        delivery_paths=[
+            "output/overdrive/sess-1/overdrive:test/delivery/final-report.md",
+        ],
+        factory=factory,
+        backend=backend,
+    )
+
+    assert run_dir is not None
+    assert run_dir.parent.parent.name == "tp53-stable"

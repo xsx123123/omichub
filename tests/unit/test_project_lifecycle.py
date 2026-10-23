@@ -17,8 +17,23 @@ from cygnusx.application.services.project_service import ProjectService
 from cygnusx.core.config import Settings
 from cygnusx.core.exceptions import AuthorizationError, ConflictError, ValidationError
 from cygnusx.infrastructure.config.storage_config import StorageConfig
+from cygnusx.infrastructure.database.models.dataset import DatasetIngestionModel
+from cygnusx.infrastructure.database.models.download_execution import (
+    DownloadExecutionAdmissionModel,
+    DownloadExecutionBudgetModel,
+)
 from cygnusx.infrastructure.database.models.file import DirectoryModel
 from cygnusx.infrastructure.database.models.project import ProjectModel, ProjectTombstoneModel
+from cygnusx.infrastructure.database.models.project_export import (
+    ProjectExportJobModel,
+    ProjectExportRequestModel,
+)
+from cygnusx.infrastructure.database.models.project_report import (
+    ProjectReportJobModel,
+    ProjectReportRequestModel,
+)
+from cygnusx.infrastructure.database.models.research_plan import ResearchPlanModel
+from cygnusx.infrastructure.database.models.result_observation import ResultObservationModel
 from cygnusx.infrastructure.database.models.user import UserModel
 from cygnusx.infrastructure.storage.path_factory import StoragePathFactory
 from tests.unit.test_dataset_phase3 import registry as registry
@@ -29,7 +44,20 @@ pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 @pytest.fixture
 def lifecycle(registry: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     db, _, owner, other, project, *_ = registry
-    for model in (ProjectTombstoneModel, DirectoryModel):
+    # delete_project 预检查覆盖全部科研保留引用表，测试库需一并建齐
+    for model in (
+        ProjectTombstoneModel,
+        DirectoryModel,
+        DatasetIngestionModel,
+        ResearchPlanModel,
+        ResultObservationModel,
+        DownloadExecutionBudgetModel,
+        DownloadExecutionAdmissionModel,
+        ProjectExportJobModel,
+        ProjectExportRequestModel,
+        ProjectReportJobModel,
+        ProjectReportRequestModel,
+    ):
         model.__table__.create(db.sync.bind)
 
     async def refresh(row: Any) -> None:
@@ -38,8 +66,12 @@ def lifecycle(registry: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     async def delete(row: Any) -> None:
         db.sync.delete(row)
 
+    async def scalar(statement: Any) -> Any:
+        return db.sync.scalar(statement)
+
     db.refresh = refresh
     db.delete = delete
+    db.scalar = scalar
     db.add_all = db.sync.add_all
     factory = StoragePathFactory(StorageConfig(data_root=str(tmp_path), users_subdir="users"))
     monkeypatch.setattr(module, "get_path_factory", lambda: factory)

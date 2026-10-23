@@ -1137,7 +1137,12 @@ async def test_confirmed_room_case_satisfies_materialization_precondition(
     _RecordingProjectService.calls = []
 
     async def fake_get_project(self, user_id, project_id):
-        return {"name": "运行分析 matrix.csv 并生成图表", "id": str(project_id)}
+        # 真实 get_project 始终返回稳定 slug；run 目录按 slug 落盘（F01 契约）
+        return {
+            "name": "运行分析 matrix.csv 并生成图表",
+            "slug": "recording-project",
+            "id": str(project_id),
+        }
 
     class _FakeFactory:
         def __init__(self, root) -> None:

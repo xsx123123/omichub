@@ -250,42 +250,23 @@ class ChatSessionManagement:
             raise AuthorizationError("无权绑定其他用户的项目")
 
     async def _resolve_default_project_id(self, user_id: str) -> str | None:
-        """未指定项目时自动归入「默认项目」：按名称复用，缺失则创建。
+        """未指定项目时自动归入「默认项目」：按 slug 复用，缺失则创建。
 
         让"开始分析不必先选项目"成立：未选择的项目会话统一进默认项目收纳，
-        用户后续可在项目列表中整理迁移。仅 flush 不 commit，交给外层事务。
+        用户后续可在项目列表中整理迁移。身份预留与显式创建共用统一入口
+        （owner 行锁 + tombstone 保护 + 目录投影）：被删默认 slug 分配新身份
+        而不是复活旧项目。仅 flush 不 commit，交给外层事务。
         """
-        from cygnusx.infrastructure.database.models.project import ProjectModel
-        from cygnusx.infrastructure.storage.path_factory import project_slug
+        from cygnusx.application.services.project_service import ProjectService
 
-        name = self.DEFAULT_PROJECT_NAME
         try:
             owner_id = uuid.UUID(str(user_id))
         except (ValueError, AttributeError, TypeError):
             return None
-        result = await self._db.execute(
-            select(ProjectModel).where(
-                ProjectModel.user_id == owner_id, ProjectModel.name == name
-            )
-            .limit(1)
+        model, _created = await ProjectService(self._db).reserve_project_identity(
+            owner_id, self.DEFAULT_PROJECT_NAME, reuse_existing=True
         )
-        project = result.scalar_one_or_none()
-        if project is None:
-            slug = project_slug(name) or "default"
-            result = await self._db.execute(
-                select(ProjectModel).where(
-                    ProjectModel.user_id == owner_id, ProjectModel.slug == slug
-                )
-                .limit(1)
-            )
-            project = result.scalar_one_or_none()
-        else:
-            slug = project.slug
-        if project is None:
-            project = ProjectModel(user_id=owner_id, name=name, slug=slug, description="")
-            self._db.add(project)
-        await self._db.flush()
-        return str(project.id)
+        return str(model.id)
 
     async def _project_research_mode_defaults(
         self, user_id: str, project_id: str | None

@@ -27,12 +27,11 @@ from cygnusx.application.services.project_archive_service import (
     sha256_stream,
 )
 from cygnusx.core.config import get_settings
+from cygnusx.domain.file.value_objects import FileSource
 from cygnusx.infrastructure.database.models.chat import ChatMessageModel, ChatSessionModel
 from cygnusx.infrastructure.database.models.project import ProjectModel
 from cygnusx.infrastructure.storage import get_path_factory
 from cygnusx.infrastructure.storage.file_registry import FileRegistry
-from cygnusx.domain.file.value_objects import FileSource
-
 
 CHAT_ARCHIVE_KEY = "analysis_archive"
 CHAT_ARCHIVE_SCHEMA_VERSION = 1
@@ -94,8 +93,10 @@ async def ensure_chat_archive(
             if factory.is_within_root(candidate) and candidate.is_dir():
                 run_dir = candidate
     if run_dir is None:
+        # F01：已绑定项目按稳定 slug 落盘；未绑定时 ProjectInfo 由会话标题
+        # 推导 slug（与旧按名建目录行为一致）。
         run_dir = factory.create_project_run_dir(
-            str(user_id), project.name, f"chat-{str(session_id)[:8]}"
+            str(user_id), project.slug, f"chat-{str(session_id)[:8]}"
         )
     run_relative = factory.relative_to_root(run_dir)
     metadata = dict(marker) if isinstance(marker, dict) else {}

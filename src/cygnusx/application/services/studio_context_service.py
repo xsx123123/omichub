@@ -36,6 +36,7 @@ from cygnusx.infrastructure.config.runtime_image_loader import resolve_studio_im
 from cygnusx.infrastructure.config.storage_config import get_user_chat_upload_dir
 from cygnusx.infrastructure.database.models.chat import ChatSessionModel
 from cygnusx.infrastructure.database.models.file import FileRecordModel
+from cygnusx.infrastructure.database.models.project import ProjectModel
 from cygnusx.infrastructure.database.models.report import ReportFileModel, ReportModel
 from cygnusx.infrastructure.database.models.task import TaskModel
 from cygnusx.infrastructure.database.session import get_session_factory
@@ -523,10 +524,22 @@ async def register_artifact_report(
     elif await backend.stat(target_rel) is None:
         raise NotFoundError(f"产物不存在: {path}")
 
-    project_name = session.title.strip()
-    if not project_name or project_name == "新对话":
-        raise BusinessError("请先将 Studio 会话标题设置为项目名称，再登记分析产物")
-    run_dir = path_factory.create_project_run_dir(user_id, project_name, "studio")
+    # F01：会话已绑定项目时按项目稳定 slug 落盘（改名不影响目录），
+    # 标题仅供展示；未绑定的旧入口保持"标题即项目名"的兼容行为。
+    project_dir_name: str | None = None
+    bound_project_id = str(getattr(session, "project_id", "") or "").strip()
+    if bound_project_id:
+        try:
+            bound_project = await db.get(ProjectModel, UUID(bound_project_id))
+        except (ValueError, TypeError):
+            bound_project = None
+        if bound_project is not None and str(bound_project.user_id) == str(user_id):
+            project_dir_name = str(bound_project.slug)
+    if project_dir_name is None:
+        project_dir_name = session.title.strip()
+        if not project_dir_name or project_dir_name == "新对话":
+            raise BusinessError("请先将 Studio 会话标题设置为项目名称，再登记分析产物")
+    run_dir = path_factory.create_project_run_dir(user_id, project_dir_name, "studio")
     dest_dir = run_dir / "output"
     relative_run_dir = run_dir.relative_to(path_factory.user_root(user_id)).as_posix()
     dest_dir_rel = path_factory.relative_to_root(dest_dir)

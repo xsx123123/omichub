@@ -29,12 +29,22 @@ from cygnusx.core.exceptions import (
 )
 from cygnusx.domain.project_delivery_archive import verify_archive
 from cygnusx.infrastructure.config.storage_config import StorageConfig
+from cygnusx.infrastructure.database.models.dataset import DatasetIngestionModel
+from cygnusx.infrastructure.database.models.download_execution import (
+    DownloadExecutionAdmissionModel,
+    DownloadExecutionBudgetModel,
+)
 from cygnusx.infrastructure.database.models.file import DirectoryModel, FileRecordModel
 from cygnusx.infrastructure.database.models.project_export import (
     ProjectExportJobModel,
     ProjectExportRequestModel,
 )
+from cygnusx.infrastructure.database.models.project_report import (
+    ProjectReportJobModel,
+    ProjectReportRequestModel,
+)
 from cygnusx.infrastructure.database.models.report import ReportFileModel, ReportModel
+from cygnusx.infrastructure.database.models.research_plan import ResearchPlanModel
 from cygnusx.infrastructure.database.models.task import TaskModel
 from cygnusx.infrastructure.database.models.user import UserModel
 from cygnusx.infrastructure.storage.backend import LocalStorageBackend
@@ -51,8 +61,20 @@ pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 @pytest.fixture
 async def project_export(delivery, monkeypatch, inline_file_capture):
     db, _, owner, other, project, old_factory, settings = delivery
-    for model in (ProjectExportJobModel, ProjectExportRequestModel, DirectoryModel):
-        model.__table__.create(db.sync.bind)
+    # delete_project 预检查覆盖全部科研保留引用表，测试库需一并建齐；
+    # checkfirst：下游 fixture（claim_env 等）可能在同一引擎上重复建表
+    for model in (
+        ProjectExportJobModel,
+        ProjectExportRequestModel,
+        DirectoryModel,
+        DatasetIngestionModel,
+        ResearchPlanModel,
+        DownloadExecutionBudgetModel,
+        DownloadExecutionAdmissionModel,
+        ProjectReportJobModel,
+        ProjectReportRequestModel,
+    ):
+        model.__table__.create(db.sync.bind, checkfirst=True)
 
     async def scalars(statement, **kwargs):
         return db.sync.scalars(statement, **kwargs)

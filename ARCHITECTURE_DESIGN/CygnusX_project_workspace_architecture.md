@@ -5,7 +5,7 @@
 > **适用范围**：`/api/v1/projects/*`、`/api/v1/files/*`、`/api/v1/teams`、`/api/v1/admin/workspace-archive/*`、`/api/v1/admin/storage/usage`、`projects`/`file_records`/`upload_sessions`/`user_directories`/`samples`/`workspace_archives` 表、`ProjectsView`/`ProjectDetailView`/`FilesView`/`AdminWorkspaceArchiveView`。
 > **不适用范围**：存储根解析、目录协议、`StoragePathFactory`、sync 反向对账与目录树元数据——以 [CygnusX_storage_architecture.md](CygnusX_storage_architecture.md) 为唯一权威；科研交付/导出 ZIP 的完整流程见 [CygnusX_research_delivery_architecture.md](CygnusX_research_delivery_architecture.md)；会话休眠/解包生命周期见 [CygnusX_research_loop_architecture.md](CygnusX_research_loop_architecture.md)。
 
-> **2026-10-24 核对补注**：跨页面/API/数据/权限的全面梳理见 [项目管理审计快照](CygnusX_project_management_review.md)。普通 ProjectService 的删除身份保护未覆盖会话默认项目直接创建路径；项目改名保留 slug，但部分 run 生产入口仍使用可变名称；科研 RESTRICT 引用也未全部转换为业务删除冲突。三项均已离线复现，本轮未修改实现，详见该快照 F01–F03。
+> **2026-10-24 核对补注**：跨页面/API/数据/权限的全面梳理见 [项目管理审计快照](CygnusX_project_management_review.md)。审计快照的 F01（改名后 run 目录分叉）/F02（默认项目绕过 tombstone）/F03（科研 RESTRICT 引用未转换为删除冲突）已于同日修复：已绑定项目的运行入口（AgentTeams Case、Studio 产物登记、普通会话归档、Overdrive 归档）统一按稳定 slug 落盘；默认项目与显式创建共用 `ProjectService.reserve_project_identity`（owner 锁 + tombstone + 目录投影）；`delete_project` 对 10 类科研保留引用做开关无关的预检查并返回稳定 409（`PROJECT_HAS_RETAINED_REFERENCES`），数据库 RESTRICT 兜底并发写入。未绑定项目的旧名称入口（TaskService/生信工具的名称参数）与快照 F04–F10 仍待后续工作包。
 
 ## 这个模块如何发挥作用
 
@@ -91,7 +91,7 @@ sequenceDiagram
 
 - `projects`：`user_id` + `slug` 唯一、`status`（迁移后 NOT NULL DEFAULT active；NULL 读取兼容保留至 lifecycle02）、`settings` JSONB、名称/描述等。
 - 没有 `project_members` 表；项目只属于创建者。项目读写在服务层校验所有者；`project_scope.resolve_agent_project_scope()` 另限制绑定项目的 Agent 不能改绑其他项目。
-- 磁盘目录：`projects/{slug}`，由存储路径工厂创建；删除项目时保留物理目录，写入 project_tombstones 后删除项目行与根目录索引；ProjectService 创建/同步拒绝复用已删 slug，但会话默认项目直接创建路径尚未覆盖此保护（审计快照 F02）。
+- 磁盘目录：`projects/{slug}`，由存储路径工厂创建；删除项目时保留物理目录，写入 project_tombstones 后删除项目行与根目录索引。显式创建、按名复用（`get_or_create_project_by_name`）与会话默认项目（`session_management._resolve_default_project_id`）共用 `ProjectService.reserve_project_identity` 统一身份预留：owner 行锁、tombstone 拒绝复用、目录投影登记；被删 slug 在复用语义下分配新 slug（`-2` 起），不复活旧身份。
 
 ### 2.2 状态与生命周期
 
@@ -99,7 +99,7 @@ sequenceDiagram
 - `create_project`：生成 slug、唯一性校验、建目录。
 - `update_project_settings`：按 JSON Merge Patch 局部合并 settings；PATCH 也支持修改 name/description，slug 和历史路径保持不变。
 - `mark_project_status`：改状态；进入 completed/handed_over 时触发 `_pack_project_sessions`，按字符串 `project_id` 匹配 Studio 会话并异步打包；忙碌会话跳过。
-- `delete_project`：原子保留删除身份并删除项目行及**项目根**目录索引，物理文件保留；仅在 `project_export_enabled=true` 时显式检查导出 Job 并返回 `PROJECT_EVIDENCE_RETAINED`。其他科研 RESTRICT 引用及关闭开关后已保留的证据，仍可能触发未转换的数据库约束异常；子目录与字符串关联未统一解绑，见审计快照 F03/F08。
+- `delete_project`：原子保留删除身份并删除项目行及**项目根**目录索引，物理文件保留。删除前对 10 类科研保留引用做**开关无关**的预检查（datasets、dataset_ingestions、research_plans、result_manifest_observations、download_execution_budgets/admissions、project_export_jobs/requests、project_report_jobs/requests），命中即返回稳定 409（`code=PROJECT_HAS_RETAINED_REFERENCES`，detail 列出各类中文计数）；预检查与删除之间并发写入由数据库 RESTRICT 兜底：IntegrityError 先完整回滚，再重新解释为同一业务冲突，仍无法识别的约束异常原样抛出。子目录与字符串关联（chat_sessions.project_id 等）未统一解绑，见审计快照 F08。
 
 ### 2.3 API（`/api/v1/projects`）
 
@@ -134,7 +134,7 @@ run 扫描所有非隐藏一级子目录，不依赖数据库或归档标记；�
 - `append_analysis_entry()`：以 `runs/{run_name}` 为幂等键追加分析记录。
 - `archive_run()`：写 `README.md` + `environment.json` + `manifest.json`，并追加 `AGENTS.md`。
 - `archive_studio_run()`：Studio 会话归档。
-- `archive_overdrive_delivery()`：把协作室交付路径复制到 `create_project_run_dir()`；无 `project_id` 时静默返回 `None`。
+- `archive_overdrive_delivery()`：把协作室交付路径复制到 `create_project_run_dir()`；已绑定项目按稳定 slug 落盘（DB 记录缺失时按显示名推导 slug 兜底），无 `project_id` 时静默返回 `None`。
 
 没有 HTTP 端点；由分析、交付、Studio 流程在服务层调用。修改归档结构时需同时核对寻宝鼠/交付文档中的 manifest 契约。
 
@@ -239,11 +239,11 @@ run 扫描所有非隐藏一级子目录，不依赖数据库或归档标记；�
 
 ## 9. 测试与已知缺口
 
-- 测试：`test_project_get_or_create.py`、`test_session_project_binding.py`、`test_project_overview.py`、`test_project_archive_service.py`、`test_file_service.py`、`test_file_service_presigned.py`、`test_upload_dedup_guard.py`、`test_team_file_acl.py`、`test_workspace_archive.py`、`test_workspace_env_restore.py`、`tests/integration/test_chat_upload.py`。
+- 测试：`test_project_get_or_create.py`、`test_session_project_binding.py`、`test_project_overview.py`、`test_project_archive_service.py`、`test_project_identity_wp1_wp2.py`（F01/F02/F03 回归：稳定 slug 落盘、默认项目身份预留、删除保留引用与 FK 兜底）、`test_file_service.py`、`test_file_service_presigned.py`、`test_upload_dedup_guard.py`、`test_team_file_acl.py`、`test_workspace_archive.py`、`test_workspace_env_restore.py`、`tests/integration/test_chat_upload.py`。
 - 缺口：
   - 设计边界（非缺口）：项目刻意采用单所有者模型；团队 ACL 与项目完全独立。
   - 迁移后 status 显式化；NULL 读取兼容保留一个版本（至 lifecycle02）。
-  - 删除保留物理目录及 tombstone；list/count 不再隐式回填，用户可通过 POST /projects/sync-from-disk 显式同步真正缺失的历史目录。证据保留冲突沿用原保护。
+  - 删除保留物理目录及 tombstone；list/count 不再隐式回填，用户可通过 POST /projects/sync-from-disk 显式同步真正缺失的历史目录。证据保留冲突已覆盖全部科研引用类型（开关无关 409 + FK 兜底）；真实 PostgreSQL 并发引用写入与锁行为仍需集成验收（SQLite 回归不证明 PG 语义）。
   - 项目 run 通过目录扫描发现；重命名可能改变时间回退/排序，但不会因不匹配正则而消失。
   - `DirectoryService`、`StorageService` 无独立单测。
   - 文件记录 `directory` 与 `user_directories` 双投影，目录移动/删除需同时维护。

@@ -116,7 +116,7 @@ async def test_project_job_constraints_and_frozen_identity(claim_env):
     env = claim_env
     job, request, service = await prepare_env(env)
     source = await service.prepare(env.owner, env.project, request)
-    ProjectReportJobModel.__table__.create(env.db.sync.bind)
+    ProjectReportJobModel.__table__.create(env.db.sync.bind, checkfirst=True)
     record = ProjectReportJobModel(
         user_id=env.owner,
         project_id=env.project,
@@ -203,8 +203,8 @@ async def test_durable_create_gate_identity_and_drift(claim_env, monkeypatch):
 
     env = claim_env
     _, request, selection = await prepare_env(env)
-    ProjectReportJobModel.__table__.create(env.db.sync.bind)
-    ProjectReportRequestModel.__table__.create(env.db.sync.bind)
+    ProjectReportJobModel.__table__.create(env.db.sync.bind, checkfirst=True)
+    ProjectReportRequestModel.__table__.create(env.db.sync.bind, checkfirst=True)
     source = await selection.prepare(env.owner, env.project, request)
     create_request = CreateProjectReport(
         **request.model_dump(), prepare_digest=source.content_digest(), request_key=uuid4()
@@ -268,7 +268,7 @@ async def test_actual_html_publication_uses_shared_registry(claim_env, monkeypat
 
         monkeypatch.setattr(report_audit_pdf_renderer, 'render_audit_pdf', unavailable)
     for model in (ProjectReportJobModel, ProjectReportRequestModel):
-        model.__table__.create(env.db.sync.bind)
+        model.__table__.create(env.db.sync.bind, checkfirst=True)
     source = await selection.prepare(env.owner, env.project, request)
     env.settings.project_report_write_enabled = True
     backend = LocalStorageBackend(env.factory)
@@ -382,7 +382,7 @@ async def test_report_rest_prepare_requires_jwt_for_create(claim_env, monkeypatc
     env = claim_env
     _, request, _ = await prepare_env(env)
     for model in (ProjectReportJobModel, ProjectReportRequestModel):
-        model.__table__.create(env.db.sync.bind)
+        model.__table__.create(env.db.sync.bind, checkfirst=True)
     env.settings.project_report_write_enabled = True
     monkeypatch.setattr(project_report_service, 'get_settings', lambda: env.settings)
     app = FastAPI()

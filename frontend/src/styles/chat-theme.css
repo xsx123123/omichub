@@ -2,22 +2,24 @@
    CygnusX AI Chat - Kimi 风格主题变量
    ============================================================ */
 
-/* 暗黑模式变量（Kimi 风格） */
+/* 暗黑模式变量（Kimi 风格）
+   取值统一映射到 tokens.css 的五级表面体系，禁止再引入第二套色板。
+   chat-* 只承担「对话场景语义」，底层颜色全部来自 --surface-* / --text-* / --border-*。 */
 :root[data-theme="dark"] {
   /* 基础背景 */
-  --chat-bg: #000000;
-  --chat-surface: #1a1a1a;
-  --chat-surface-hover: #2a2a2a;
-  --chat-sidebar-bg: #000000;
+  --chat-bg: var(--surface-base);
+  --chat-surface: var(--surface-card);
+  --chat-surface-hover: var(--surface-highlight);
+  --chat-sidebar-bg: var(--surface-base);
 
   /* 边框 */
-  --chat-border: #333333;
-  --chat-border-light: #444444;
+  --chat-border: var(--border-subtle);
+  --chat-border-light: var(--border-default);
 
   /* 文字 */
-  --chat-text-primary: #ffffff;
-  --chat-text-secondary: #888888;
-  --chat-text-muted: #555555;
+  --chat-text-primary: var(--text-primary);
+  --chat-text-secondary: var(--text-secondary);
+  --chat-text-muted: var(--text-tertiary);
 
   /* 强调色（对齐平台主色，深色模式自动跟随 --arco-primary）*/
   --chat-accent: var(--arco-primary);
@@ -25,13 +27,13 @@
   --chat-accent-light: var(--arco-primary-light);
 
   /* 消息 */
-  --chat-user-bubble: #2a2a2a;
+  --chat-user-bubble: var(--surface-highlight);
   --chat-user-text: var(--chat-text-primary);
-  --chat-ai-card: #111111;
+  --chat-ai-card: var(--surface-card);
 
   /* 输入框 */
-  --chat-input-bg: #1a1a1a;
-  --chat-input-border: #333333;
+  --chat-input-bg: var(--surface-elevated);
+  --chat-input-border: var(--border-subtle);
 
   /* 状态色 */
   --chat-success: #52c41a;
@@ -40,7 +42,7 @@
   --chat-info: #4f8ef7;
 
   /* 模型导航栏 */
-  --chat-nav-bg: #16161e;
+  --chat-nav-bg: var(--surface-card);
 
   /* 系统状态徽章色 */
   --chat-status-ready: #10b981;
@@ -63,8 +65,8 @@
   --chat-action-hover: #334155;
 
   /* 文件/标签芯片 */
-  --chat-chip-bg: #252536;
-  --chat-chip-border: #31313f;
+  --chat-chip-bg: var(--surface-highlight);
+  --chat-chip-border: var(--border-subtle);
 
   /* 尺寸 */
   --chat-sidebar-width: 260px;
@@ -90,9 +92,9 @@
   /* 代码执行卡片：头部与输出区背景（随主题切换，勿用 --code-block-bg 硬编码浅色文字场景） */
   --chat-bg-subtle: #161b22;
   --chat-bg-code: #1f2329;
-  --bubble-border: #333333;
+  --bubble-border: var(--border-subtle);
   --card-radius: 12px;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.24), 0 4px 12px rgba(0, 0, 0, 0.16);
+  --card-shadow: var(--shadow-card);
 
   /* 过渡 */
   --chat-transition-fast: 0.15s ease;
@@ -102,28 +104,28 @@
 
 /* 浅色模式变量 */
 :root[data-theme="light"] {
-  --chat-bg: #f5f5f5;
-  --chat-surface: #ffffff;
-  --chat-surface-hover: #f0f0f0;
-  --chat-sidebar-bg: #ffffff;
+  --chat-bg: var(--surface-base);
+  --chat-surface: var(--surface-card);
+  --chat-surface-hover: var(--surface-highlight);
+  --chat-sidebar-bg: var(--surface-card);
 
-  --chat-border: #e0e0e0;
-  --chat-border-light: #d0d0d0;
+  --chat-border: var(--border-subtle);
+  --chat-border-light: var(--border-default);
 
-  --chat-text-primary: #1a1a1a;
-  --chat-text-secondary: #666666;
-  --chat-text-muted: #999999;
+  --chat-text-primary: var(--text-primary);
+  --chat-text-secondary: var(--text-secondary);
+  --chat-text-muted: var(--text-tertiary);
 
   --chat-accent: var(--arco-primary);
   --chat-accent-hover: var(--arco-primary-hover);
   --chat-accent-light: var(--arco-primary-light);
 
-  --chat-user-bubble: #2563eb;
-  --chat-user-text: var(--text-on-primary);
-  --chat-ai-card: #ffffff;
+  --chat-user-bubble: var(--brand-primary);
+  --chat-user-text: var(--text-on-primary, #ffffff);
+  --chat-ai-card: var(--surface-card);
 
-  --chat-input-bg: #ffffff;
-  --chat-input-border: #e0e0e0;
+  --chat-input-bg: var(--surface-elevated);
+  --chat-input-border: var(--border-subtle);
 
   --chat-success: #52c41a;
   --chat-warning: #faad14;
@@ -131,7 +133,7 @@
   --chat-info: #2563eb;
 
   /* 模型导航栏 */
-  --chat-nav-bg: #f8fafc;
+  --chat-nav-bg: var(--surface-elevated);
 
   /* 系统状态徽章色 */
   --chat-status-ready: #16a34a;
@@ -154,8 +156,8 @@
   --chat-action-hover: #e2e8f0;
 
   /* 文件/标签芯片 */
-  --chat-chip-bg: #f1f5f9;
-  --chat-chip-border: #e2e8f0;
+  --chat-chip-bg: var(--surface-highlight);
+  --chat-chip-border: var(--border-subtle);
 
   --chat-sidebar-width: 260px;
   --chat-logo-size: 120px;
@@ -178,9 +180,9 @@
   /* 代码执行卡片：头部与输出区背景（随主题切换） */
   --chat-bg-subtle: #f8f9fb;
   --chat-bg-code: #f5f6f8;
-  --bubble-border: #e5e7eb;
+  --bubble-border: var(--border-subtle);
   --card-radius: 12px;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --card-shadow: var(--shadow-card);
 
   --chat-transition-fast: 0.15s ease;
   --chat-transition-normal: 0.25s ease;

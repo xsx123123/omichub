@@ -154,9 +154,10 @@ onMounted(async () => {
 <style scoped>
 .shared-studio {
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 36px clamp(20px, 5vw, 72px) 64px;
-  color: var(--neutral-text-1, #172033);
-  background: var(--neutral-bg-1, #f7f8fa);
+  color: var(--neutral-text-1);
+  background: var(--neutral-bg);
 }
 .center-state {
   min-height: 70vh;

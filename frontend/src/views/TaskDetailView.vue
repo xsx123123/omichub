@@ -6,6 +6,7 @@ import DOMPurify from 'dompurify'
 import apiClient from '@/api/client'
 import { reportApi, downloadReportFile } from '@/api/report'
 import { useDownloadProgress } from '@/composables/useDownloadProgress'
+import { normalizeProgress } from '@/utils/progress'
 import {
   NAlert,
   NBreadcrumb,
@@ -368,7 +369,7 @@ watch(taskId, async () => {
           <NDescriptionsItem label="创建时间">{{ task.created_at }}</NDescriptionsItem>
         </NDescriptions>
         <NProgress
-          :percentage="Math.round(task.progress * 100)"
+          :percentage="normalizeProgress(task.progress)"
           :status="task.status === 'failed' ? 'error' : 'success'"
           :indicator-text-color="task.status === 'failed' ? 'var(--arco-danger)' : 'var(--arco-success)'"
         />

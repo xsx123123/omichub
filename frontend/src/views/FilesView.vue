@@ -961,7 +961,7 @@ onUnmounted(() => {
 
 <style scoped>
 .finder-page {
-  background: var(--page-bg, var(--neutral-bg));
+  background: var(--neutral-bg);
   flex: 1;
   min-height: 0;
   padding: 16px;

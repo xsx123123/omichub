@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Task } from '@/types'
 import { displayName } from '@/utils/displayName'
+import { normalizeProgress } from '@/utils/progress'
 import { getToolboxResultRoute } from '@/utils/toolboxResultRoute'
 import { redactUserHomePaths } from '@/utils/userPathDisplay'
 
@@ -112,10 +113,7 @@ function cfg(status: string) {
 }
 
 function pct(task: Task): number {
-  const progress = Number(task.progress)
-  if (!Number.isFinite(progress)) return 0
-  const percentage = progress > 1 ? progress : progress * 100
-  return Math.round(Math.min(100, Math.max(0, percentage)))
+  return normalizeProgress(task.progress)
 }
 
 function formatTime(iso: string | null): string {

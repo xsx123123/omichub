@@ -63,9 +63,6 @@
   --radius-md: var(--radius-card);
   --radius-sm: var(--radius-button);
 
-  /* 页面底色（premium Finder 风格） */
-  --page-bg: #F7F9FC;
-
   /* ===== 间距体系（P2 留白统一）===== */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -78,6 +75,9 @@
   --space-5xl: 48px;
   --card-padding: 24px;
   --card-gap: 20px;
+  /* Page padding is owned by DefaultLayout only. Page roots must not add
+     another horizontal inset, otherwise insets double (48–56px) and drift
+     between pages. Mobile value is set in the media query below. */
   --page-padding: 32px;
   --section-gap: 32px;
 
@@ -139,7 +139,12 @@
   --shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.4);
   --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.24);
 
-  --page-bg: var(--surface-base);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --page-padding: 16px;
+  }
 }
 
 .admin-config-center,
@@ -157,34 +162,9 @@
   margin-bottom: var(--space-xl);
 }
 
-/* 让 AI 助手区域在深色模式下也使用统一的平台深色背景 */
-:root[data-theme="dark"] .kimi-layout {
-  --chat-bg: var(--neutral-bg);
-  --chat-surface: var(--neutral-card);
-  --chat-surface-hover: var(--neutral-hover);
-  --chat-sidebar-bg: var(--neutral-card);
-  --chat-border: var(--neutral-border);
-  --chat-border-light: var(--neutral-border);
-  --chat-text-primary: var(--neutral-text-1);
-  --chat-text-secondary: var(--neutral-text-2);
-  --chat-text-muted: var(--neutral-text-3);
-  --chat-accent: var(--arco-primary);
-  --chat-accent-hover: var(--arco-primary-hover);
-  --chat-accent-light: var(--arco-primary-light);
-  --chat-user-bubble: var(--neutral-hover);
-  --chat-ai-card: var(--neutral-card);
-  --chat-input-bg: var(--neutral-card);
-  --chat-input-border: var(--neutral-border);
-  --chat-nav-bg: var(--neutral-card);
-  --chat-action-bg: rgba(21, 26, 37, 0.92);
-  --chat-action-border: var(--neutral-border);
-  --chat-action-hover: var(--neutral-hover);
-  --chat-chip-bg: var(--neutral-hover);
-  --chat-chip-border: var(--neutral-border);
-  --chat-shadow-sm: var(--shadow-soft);
-  --chat-shadow-md: var(--shadow-card);
-  --chat-shadow-lg: var(--shadow-card-hover);
-}
+/* AI 对话令牌的唯一来源是 chat-theme.css：其基础表面、边框、文字与输入区
+   已映射到平台 --surface-* / --neutral-* 令牌，因此不再在 .kimi-layout 内
+   复制一套作用域覆盖，避免两处令牌漂移。 */
 
 /* ===== 全局重置 ===== */
 * {
@@ -195,7 +175,9 @@
 
 html, body, #app {
   height: 100vh !important;
+  height: 100dvh !important;
   max-height: 100vh !important;
+  max-height: 100dvh !important;
   overflow: hidden !important;
 }
 
@@ -236,7 +218,7 @@ body {
 .arco-card {
   background: var(--neutral-card);
   border-radius: var(--radius-card);
-  padding: 20px;
+  padding: var(--card-padding);
   box-shadow: var(--shadow-card);
 }
 
@@ -261,11 +243,18 @@ body {
 :is(.n-card, .arco-card, .cygnusx-card, .table-card, .work-card, .result-card, .bottom-table, .table-wrap, .resource-tab) .n-data-table th {
   background-color: var(--neutral-bg);
   border-bottom-color: var(--neutral-border);
+  color: var(--neutral-text-3);
+  font-size: var(--font-caption-size);
+  font-weight: 500;
+  line-height: var(--font-caption-height);
 }
 
 :is(.n-card, .arco-card, .cygnusx-card, .table-card, .work-card, .result-card, .bottom-table, .table-wrap, .resource-tab) .n-data-table td {
   background-color: var(--neutral-card);
   border-bottom-color: var(--neutral-border);
+  color: var(--neutral-text-1);
+  font-size: var(--font-small-size);
+  line-height: var(--font-small-height);
 }
 
 :is(.n-card, .arco-card, .cygnusx-card, .table-card, .work-card, .result-card, .bottom-table, .table-wrap, .resource-tab) .n-data-table tr:hover > td {
@@ -480,23 +469,26 @@ body {
 .gap-20 { gap: 20px; }
 
 /* ===== 页面容器 ===== */
+/* Page padding belongs to DefaultLayout's content area. Page roots only
+   provide layout/width; adding padding here caused 48–56px double insets. */
 .page-container {
-  padding: 24px;
+  padding: 0;
   min-height: 100%;
-  background: var(--neutral-bg);
+  background: transparent;
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 32px;
+  font-size: var(--font-page-title-size);
+  font-weight: var(--font-page-title-weight);
+  line-height: var(--font-page-title-height);
+  letter-spacing: var(--font-page-title-spacing);
   color: var(--neutral-text-1);
-  margin-bottom: 24px;
+  margin-bottom: var(--space-2xl);
 }
 
 .page-subtitle {
-  font-size: 14px;
-  line-height: 22px;
+  font-size: var(--font-body-size);
+  line-height: var(--font-body-height);
   color: var(--neutral-text-2);
 }
 
@@ -607,24 +599,6 @@ body {
 .stagger-item:nth-child(10) { animation-delay: 0.50s; }
 .stagger-item:nth-child(n+11) { animation-delay: 0.55s; }
 
-/* ===== 卡片悬停反馈（上浮 8px + shadow 升级） ===== */
-.card-hover-lift {
-  transition:
-    transform var(--card-state-duration) var(--card-state-easing),
-    box-shadow var(--card-state-duration) var(--card-state-easing);
-}
-
-.card-hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1),
-              0 8px 16px rgba(0, 0, 0, 0.06);
-}
-
-:root[data-theme="dark"] .card-hover-lift:hover {
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35),
-              0 8px 16px rgba(0, 0, 0, 0.2);
-}
-
 /* ===== 按钮点击缩放反馈 ===== */
 .btn-press:active {
   transform: scale(0.97);
@@ -650,8 +624,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ===== 统一交互反馈（P1，新代码优先使用；旧 .card-hover-lift 保留不破坏）===== */
-/* 卡片悬停：克制 4px 上浮 + 阴影升级 */
+/* ===== 统一交互反馈（P1）===== */
+/* 卡片悬停：克制 2px 上浮 + 阴影升级 */
 .card-hover {
   transition:
     transform var(--card-state-duration) var(--card-state-easing),
@@ -826,11 +800,12 @@ body {
   z-index: 2000 !important;
 }
 
-/* ===== 深色模式兜底修复 =====
-   项目中存在大量硬编码浅色样式（#fff、#f0f2f5、#E5E6EB 等）未随主题切换，
+/* ===== 深色模式兜底修复（技术债，禁止新增依赖）=====
+   项目中仍有大量硬编码浅色样式（#fff、#f0f2f5、#E5E6EB 等）未随主题切换，
    导致深色模式下出现白底或文字不清晰。此处通过全局覆盖兜底，让旧代码在
-   深色模式下自动使用设计令牌变量；新代码请优先直接使用 var(--*) 或 Tailwind
-   语义色（bg-neutral-card / text-text-primary 等）。
+   深色模式下自动使用设计令牌变量；新代码必须直接使用 var(--*) 或 Tailwind
+   语义色（bg-neutral-card / text-text-primary 等），不得再新增此处的规则。
+   退出条件：当 Vue 源码 <style> 中的硬编码浅色值清零后，整段删除。
    ===== */
 :root[data-theme="dark"] {
   /* Tailwind bg-white 在深色模式下应使用卡片背景（保留彩色按钮上的 white） */

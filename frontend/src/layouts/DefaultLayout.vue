@@ -126,7 +126,9 @@ const contentStyle = computed(() => {
   if (isToolsArea) {
     return 'padding: 0; background: var(--neutral-bg);'
   }
-  return 'padding: 24px; background: var(--neutral-bg);'
+  // 页面内边距的唯一归属：外壳统一提供 --page-padding（桌面 32px / 移动 16px），
+  // 页面根容器不得再叠加 padding，否则会出现 48–56px 的双层留白。
+  return 'padding: var(--page-padding); background: var(--neutral-bg);'
 })
 
 // 全屏页面（如 AI 助手）使用原生滚动容器，使 .n-layout-scroll-container 的 flex:1
@@ -399,14 +401,12 @@ function handleAdminGroupClick(item: NavItem) {
 async function handleLogout() {
   authStore.logout()
   await router.replace('/login')
-  window.location.reload()
 }
 
 function handleStorageChange(e: StorageEvent) {
   if (e.key === 'access_token' && !e.newValue) {
     authStore.logout()
-    router.replace('/login')
-    window.location.reload()
+    void router.replace('/login')
   }
 }
 
@@ -992,6 +992,7 @@ const UserAvatar = () => {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--neutral-bg);
 }
@@ -1003,11 +1004,11 @@ const UserAvatar = () => {
   justify-content: space-between;
   height: 56px;
   padding: 0 16px;
-  background: rgba(255, 255, 255, 0.58);
+  background: var(--surface-glass);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border-bottom: 1px solid var(--neutral-border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 8px 24px rgba(29, 33, 41, 0.04);
+  box-shadow: inset 0 1px 0 var(--border-subtle), 0 8px 24px rgba(29, 33, 41, 0.04);
   flex-shrink: 0;
   z-index: 100;
 }
@@ -1169,7 +1170,7 @@ const UserAvatar = () => {
 }
 
 .app-sider {
-  background: rgba(255, 255, 255, 0.56);
+  background: var(--surface-glass);
   backdrop-filter: blur(24px) saturate(165%);
   -webkit-backdrop-filter: blur(24px) saturate(165%);
   border-right: none;
@@ -1832,7 +1833,7 @@ const UserAvatar = () => {
   overflow: hidden;
   border: 1px solid var(--sidebar-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-glass);
   backdrop-filter: blur(24px) saturate(170%);
   -webkit-backdrop-filter: blur(24px) saturate(170%);
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(22, 93, 255, 0.08);

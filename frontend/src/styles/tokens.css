@@ -25,6 +25,19 @@
   --text-secondary: #4E5969;
   --text-tertiary: #86909C;
 
+  /* Light-mode Surface System: same five levels as dark mode.
+     Keeping both modes on one token contract prevents components from
+     falling back to hardcoded whites when they consume --surface-*. */
+  --surface-base: var(--bg-page);
+  --surface-card: var(--bg-card);
+  --surface-elevated: #FFFFFF;
+  --surface-highlight: #F2F3F8;
+  --surface-glass: rgba(255, 255, 255, 0.58);
+  --border-subtle: #E5E6EB;
+  --border-default: #E5E6EB;
+  --border-focus: rgba(76, 111, 255, 0.45);
+  --brand-glow: 0 0 40px rgba(76, 111, 255, 0.14);
+
   --radius-card: 12px;
   --radius-button: 8px;
   --shadow-card: 0 1px 2px rgba(29, 33, 41, 0.04), 0 4px 16px rgba(29, 33, 41, 0.06);

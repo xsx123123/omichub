@@ -368,7 +368,6 @@ onMounted(async () => {
   --home-font-eyebrow: 11px;
   font-size: var(--home-font-body);
   min-height: 100%;
-  padding: 24px;
   overflow-x: hidden;
   background: var(--neutral-bg);
 }
@@ -422,7 +421,7 @@ onMounted(async () => {
 }
 .hero-title {
   margin: 0 0 8px;
-  font-size: clamp(28px, 3vw, 44px);
+  font-size: clamp(26px, 2.6vw, 38px);
   font-weight: 750;
   line-height: 1.25;
   letter-spacing: -0.4px;
@@ -439,7 +438,7 @@ onMounted(async () => {
 .hero-desc {
   max-width: 58ch;
   margin: 0 0 12px;
-  font-size: 15px;
+  font-size: var(--home-font-body);
   line-height: 1.6;
   opacity: 0.9;
 }
@@ -671,7 +670,7 @@ onMounted(async () => {
 @media (max-width: 640px) {
   .home-page { padding: 16px; }
   .hero { padding: 25px 20px; }
-  .hero-title { font-size: clamp(22px, 6vw, 28px); }
+  .hero-title { font-size: clamp(21px, 5.4vw, 26px); }
   .hero-positioning { font-size: var(--home-font-meta); letter-spacing: 1px; }
   .hero :deep(.omic-canvas) { opacity: 0.24; }
   .hero-lifecycle { min-height: 0; padding: 20px; }

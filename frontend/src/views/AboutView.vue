@@ -608,7 +608,7 @@ function observeReveals() {
 .about-page {
   position: relative;
   min-height: calc(100vh - 56px);
-  margin: -24px;
+  margin: calc(-1 * var(--page-padding));
   display: flex;
   align-items: center;
   justify-content: center;

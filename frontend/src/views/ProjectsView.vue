@@ -202,7 +202,7 @@ onMounted(loadProjects)
 .projects-view {
   width: min(100%, 1440px);
   margin-inline: auto;
-  padding: var(--page-padding);
+  padding: 0;
 }
 
 .projects-overview {
@@ -251,7 +251,7 @@ onMounted(loadProjects)
 
 @media (max-width: 768px) {
   .projects-view {
-    padding: var(--space-lg);
+    padding: 0;
   }
   .projects-overview { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
   .overview-metrics { gap: 12px; }

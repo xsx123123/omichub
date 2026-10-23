@@ -24,6 +24,7 @@ import AdminStatsPanel from '@/components/dashboard/AdminStatsPanel.vue'
 import AnnouncementBanner from '@/components/AnnouncementBanner.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { displayName } from '@/utils/displayName'
+import { normalizeProgress } from '@/utils/progress'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -68,15 +69,6 @@ async function handleDelete(row: Task) {
 // 终态判定：success / failed / cancelled 视为已结束（与 TaskTable 一致）
 function isTerminal(status: Task['status']): boolean {
   return ['success', 'failed', 'cancelled'].includes(status)
-}
-
-// 进度归一化为 0–100 整数。
-// 后端进度尺度并不统一：分析任务在富集 / arq 路径写 0–100、下载路径写 0–1，
-// BLAST 进度为 0–100 整数。这里用 >1 启发式兼容两种尺度，
-// 避免「已完成=100」被再次 ×100 渲染成 1000%。
-function pct(value: number | null | undefined): number {
-  const n = Number(value) || 0
-  return Math.round(n > 1 ? n : n * 100)
 }
 
 const healthTone = computed(() => {
@@ -197,7 +189,7 @@ function blastTaskRowKey(row: BlastTaskListItem): string {
 }
 
 function renderTaskProgress(value: number | null | undefined) {
-  const progress = pct(value)
+  const progress = normalizeProgress(value)
 
   return h('div', { class: 'recent-task-progress' }, [
     h(NProgress, {
@@ -499,7 +491,6 @@ const blastColumns: DataTableColumns<BlastTaskListItem> = [
 
 <style scoped>
 .dashboard-page {
-  padding: 24px;
   min-height: 100%;
   background: var(--neutral-bg);
 }

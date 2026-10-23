@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { NButton, NProgress, NTag } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import { useAgentHubStore } from '@/stores/agentHub'
+import { normalizeProgress } from '@/utils/progress'
 import type { PipelineTaskStatus, PipelineType } from '@/types/pipeline'
 
 const props = defineProps<{
@@ -67,7 +68,7 @@ onMounted(() => {
 
     <n-progress
       type="line"
-      :percentage="Math.round(task?.progress || 0)"
+      :percentage="normalizeProgress(task?.progress)"
       :status="progressStatus"
       :rail-color="'var(--neutral-border)'"
       processing

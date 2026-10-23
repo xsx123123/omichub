@@ -326,7 +326,7 @@ onMounted(fetchSettings)
 <style scoped>
 .page-container {
   min-height: 100%;
-  padding: 24px;
+  padding: 0;
   background: var(--neutral-bg);
 }
 

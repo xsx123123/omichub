@@ -309,7 +309,6 @@ onMounted(() => {
 .reports-page {
   min-height: 100%;
   background: var(--neutral-bg);
-  padding: 24px;
 }
 
 /* 顶部数据看板 */

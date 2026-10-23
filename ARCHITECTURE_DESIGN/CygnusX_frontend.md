@@ -94,6 +94,7 @@ CygnusX 是面向生物信息学任务、数据资产与 AI 工作流的科学�
 | --- | --- | --- |
 | 品牌令牌、明暗主题基础值 | `frontend/src/styles/tokens.css` | 修改品牌、背景或文本基础值时在这里处理明暗成对变量。 |
 | 全局语义变量、交互、辅助类 | `frontend/src/styles/global.css` | 业务样式优先使用其中变量、`card-hover`、`focus-ring` 等共享模式。 |
+| AI 对话场景令牌 | `frontend/src/styles/chat-theme.css` | `--chat-*` 的唯一来源；其颜色必须映射到 `tokens.css` 的 Surface / Text / Border 令牌，不得另建一套色板。 |
 | Naive UI 主题覆盖 | `frontend/src/App.vue` | Naive UI 的色彩、圆角、菜单和组件基础外观只在此维护。 |
 | 主框架、顶部栏、侧栏 | `frontend/src/layouts/DefaultLayout.vue` | 新导航或壳层变更遵循已有折叠、移动端和滚动规则。 |
 | 通用页头 | `frontend/src/components/PageHeader.vue` | 统一标题、说明和右侧操作区；不要在页面重复造页头。 |
@@ -114,7 +115,7 @@ CygnusX 是面向生物信息学任务、数据资产与 AI 工作流的科学�
 ### 3.1 令牌使用规则
 
 - 业务组件只使用语义变量，例如 `--neutral-card`、`--neutral-text-2`、`--arco-primary`；不要在 `.vue` 局部样式中硬编码浅色模式色值。
-- 新令牌先定义在 `tokens.css` 或 `global.css`，并补全深色模式；再在业务组件中消费。
+- 新令牌先定义在 `tokens.css` 或 `global.css`，并补全深色模式；AI 对话专属令牌定义在 `chat-theme.css`，但其取值必须引用平台令牌（§3.3.5）。
 - 图表沿 `--kimi-chart-1` 至 `--kimi-chart-6` 的顺序取色；进度轨道使用 `--neutral-border`。
 - 当组件库 API 需要字符串颜色时，允许传入 `var(--token-name)`，例如 `railColor: 'var(--neutral-border)'`。
 
@@ -174,8 +175,10 @@ CygnusX 深色工作台使用五级 Surface 空间层级，替代“页面背景
 #### 3.3.5 AI 对话输入区
 
 - AI 助手与 AI 工作台复用同一个 `KimiChatInput` 输入组件，外层、文本编辑区和 Naive UI `NInput` 内部背景必须使用同一组语义变量：`--chat-input-bg`、`--chat-input-border`。
-- `--chat-input-bg` / `--chat-input-border` 目前存在**两个令牌源**，现状如下：① `frontend/src/styles/chat-theme.css` 在 `:root[data-theme="dark"]` 全局定义 `--chat-input-bg: #1a1a1a`、`--chat-input-border: #333333`（浅色模式为 `#ffffff` / `#e0e0e0`），由 `main.ts` 全局加载，是全局生效的令牌源；② `frontend/src/styles/global.css` 在 `:root[data-theme="dark"] .kimi-layout` 作用域内以更高优先级把两者覆盖为 `var(--neutral-card)` / `var(--neutral-border)`。约定：**以 `chat-theme.css` 的全局定义为准**描述输入区默认表面；`.kimi-layout` 内的覆盖是既有作用域行为。新增页面若希望输入区与平台卡片同色，应把容器纳入 `.kimi-layout` 或按同样方式作用域覆盖，不得假设全局值已经是 `--neutral-card`。
-- 深色模式下输入区各层保持同色，避免出现"外框深蓝、内部黑色"的割裂效果；调整输入区表面色时必须同步两个令牌源，不让其继续漂移。
+- **令牌只有一个来源**：`frontend/src/styles/chat-theme.css` 的 `:root[data-theme="dark"|"light"]` 块。该文件中的 `--chat-*` 颜色必须映射到平台令牌（例如 `--chat-bg: var(--surface-base)`、`--chat-surface: var(--surface-card)`、`--chat-input-bg: var(--surface-elevated)`、`--chat-border: var(--border-subtle)`），不得写 `#000000` 或另建独立色板。
+- `KimiChatInput.vue` 的最外层容器直接消费 `--chat-input-bg` / `--chat-input-border`；禁止在组件内用 `--neutral-card` 等令牌绕开对话语义。
+- 不允许在 `.kimi-layout` 或页面作用域内复制一套 `--chat-*` 覆盖。需要调整对话表面时，只改 `chat-theme.css` 的映射关系，让 AI 助手与 Studio 同时生效。
+- 深色模式下输入区各层保持同一 Surface 体系，避免出现“外框深蓝、内部纯黑”的割裂效果。
 - 工作台页面按钮激活态使用 `--arco-primary` 与 `--arco-primary-light`（历史命名的品牌色别名，见 §2.2）。
 - 输入区的边框、圆角和阴影遵循组件默认值；页面级覆盖只能用于布局尺寸，不得重新引入独立的表面色和阴影体系。
 
@@ -184,7 +187,7 @@ CygnusX 深色工作台使用五级 Surface 空间层级，替代“页面背景
 | 类别 | 规定 |
 | --- | --- |
 | 间距阶梯 | 仅使用 `4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48px`，对应 `--space-xs` 至 `--space-5xl`。 |
-| 页面内边距 | 默认 `--page-padding: 32px`；密集工具页或窄屏可使用 `16px`。 |
+| 页面内边距 | **由 `DefaultLayout` 统一提供** `--page-padding`：桌面 `32px`，`≤768px` 为 `16px`。页面根元素不得再写 `padding`，否则会叠加成 48–56px。`fullscreen` 路由与生信工具箱区由壳层置 `0`，工具页自行使用 `16px`。 |
 | 卡片 | 默认内边距 `24px`、卡片间距 `20px`；紧凑工具卡片可使用 `12px`。 |
 | 圆角 | 常规控件 `8px`、小控件 `4px`、卡片 `12px`、大型面板/认证卡片 `16px`、状态胶囊 `9999px`。 |
 | 阴影 | 卡片使用 `--shadow-card` 或 `--shadow-soft`；悬停使用 `--shadow-card-hover`；下拉与弹出层使用 `--shadow-dropdown`。 |
@@ -208,7 +211,7 @@ CygnusX 深色工作台使用五级 Surface 空间层级，替代“页面背景
 
 按以下顺序组织大多数业务页面：
 
-1. `.page-container` 或页面根元素：提供页面背景、最小高度和 `--page-padding`。
+1. 页面根元素：只提供页面背景、最小高度和内部布局，**不得再声明页面级 padding**；页面内边距由 `DefaultLayout` 的 `--page-padding` 唯一提供（§3.4）。
 2. `PageHeader`：标题、简短说明和 `#actions` 插槽中的页面级操作。
 3. 信息横幅或筛选区：仅在确实影响当前任务时显示。
 4. 主内容卡片/网格：采用 `16px` 或 `20px` 间距；页面区块以 `24px` 或 `32px` 分隔。
@@ -317,7 +320,7 @@ AI 配置、饼干中心及后续同类后台配置页面使用统一的全宽�
 
 - 使用 `NCard` 或已有 `.arco-card` / `.cygnusx-card` 外观模式；新卡片优先复用 `NCard`。
 - 卡片标题使用 `16px / 24px / 500`；卡片内信息按 `8px`、`12px`、`16px` 阶梯分组。
-- 可点击卡片应有 hover、active、focus-visible 和 selected 状态；悬停位移不超过 `2px`。
+- 可点击卡片应有 hover、active、focus-visible 和 selected 状态；悬停位移不超过 `2px`。共享动画为 `.card-hover`（`translateY(-2px)`）；历史 `.card-hover-lift`（`-4px`）已删除，不得恢复。
 - 只要卡片本身可点击，就不要在内部塞满冲突的次级点击区域；必要时使用显式操作菜单。
 
 #### 可选择卡片协议
@@ -509,7 +512,9 @@ Arco 项目可遵守 Vue 3 `<script setup lang="ts">`、kebab-case 模板属性�
 
 - [ ] 页面是否复用 `tokens.css`、`global.css` 与 `App.vue` 的主题体系？
 - [ ] 是否统一使用 Naive UI 组件（未引入第二套组件库），并复用同一套令牌、主题状态、可访问性和交互语义？
-- [ ] 是否复用了 `PageHeader`，并把页面级操作放入 `#actions`？
+- [ ] 页面内边距是否只由 `DefaultLayout` 提供（`var(--page-padding)`），页面根元素没有再次声明 padding？
+- [ ] AI 对话区域是否只消费 `chat-theme.css` 的 `--chat-*`，且没有在 `.kimi-layout`/页面内复制第二套令牌？
+- [ ] 是否复用 `PageHeader`，并把页面级操作放入 `#actions`？
 - [ ] 是否避免硬编码只适用于浅色模式的背景、边框、图表轨道和状态颜色？
 - [ ] 按钮、卡片、输入和表格是否具备 hover、active、focus-visible、disabled、loading 和 error 等适用状态？
 - [ ] 所有可选择卡片是否使用 `.cygnusx-selectable-card`，并提供连续选中描边、左缘状态线、文本或图标提示与键盘选择？
@@ -522,7 +527,7 @@ Arco 项目可遵守 Vue 3 `<script setup lang="ts">`、kebab-case 模板属性�
 - [ ] 叠层与装饰覆盖层是否符合 §31：无 `.x > *` 等过宽定位/布局选择器；装饰层保持出流并 `pointer-events:none`、`aria-hidden`？
 - [ ] 样式改动是否在**构建产物或 nginx 实际响应**中 grep 到对应选择器/属性（注意路由分包 chunk，不在主 `index-*.css`），并硬刷新验证（§31.5）？
 - [ ] 数据表格/卡片是否符合 §33.2：进度经归一化函数渲染、`NProgress` 百分比不换行（`.n-progress-graph{min-width:0}`）、**所有列固定 `width` 且 `scroll-x`=列宽之和**、短值列 `align:'center'`、卡片垂直间距 24px？
-- [ ] 进度/百分比/计数等派生数值是否在任何数据尺度下都正确（§33.2 进度尺度归一化），而非依赖单一写死约定？
+- [ ] 进度/百分比/计数等派生数值是否统一调用 `normalizeProgress()`，在 0–1 与 0–100 两种数据尺度下都正确（无 1000% / 无 1% 误显）？
 - [ ] 设计是否规避 §33.1 的「AI 默认」清单（纯白无氛围、三列等宽 hero、统一间距/圆角、通用无衬线、对称留白），在不破坏 §1 克制原则的前提下具备品牌辨识度与层次？
 - [ ] 涉及流式/连接类组合式函数（`useChatStream`、`useAgentChatStream`、WebSocket 等）改动时：`isStreaming`/`status` 等入口守卫标志位是否在 `try/finally` 中对**所有**退出路径复位（§18.2 流式状态机纪律）？是否有"同一实例连续第二次调用"的回归测试？diff 中删除 `finally` 一律打回。
 - [ ] 涉及图片/PDF 预览时：是否符合 §17.3/§18.4.4 —— PDF 不内嵌原生查看器（弹窗内 `#toolbar=0&navpanes=0`）、图片可点击放大（25%–500% 缩放）、工具条走语义令牌、打印统一用 `printBlobUrl()`？
@@ -1277,6 +1282,7 @@ frontend/src/
 - 中等任务（10s – 2min）：页面内进度条 + 状态文字。
 - 长任务（> 2min）：提交后跳转任务列表或显示"已提交，可在任务中心查看"；通过 WebSocket 推送进度。
 - 多步骤工作流：显示步骤列表（`NSteps`），当前步骤高亮，已完成步骤可展开查看日志。
+- **进度尺度统一由 `frontend/src/utils/progress.ts` 的 `normalizeProgress()` 处理**：后端同时存在 0–1 与 0–100 两种尺度，任何页面、卡片、导出或 SSE 事件都不得自行写 `progress * 100` 或 `progress > 1 ? …` 的局部判断。
 
 ### 30.3 任务操作
 
@@ -1355,9 +1361,9 @@ Canvas 层必须遵守 §31 的装饰覆盖层契约：`position:absolute; inset
 
 **使用方局部压暗（不改引擎）**：首页在 `.hero :deep(.omic-canvas)` 使用 `opacity: 0.4`（`≤640px` 为 `0.24`）；另以 `.hero::after` 的 `rgba(8,11,18,0.48)` 遮罩位于画布与内容之间，保证玻璃卡副文字的对比度。遮罩 `pointer-events:none; z-index:1`，`.hero-inner` 为 `z-index:2`。登录页与动画引擎档位不变。
 
-**文案与布局（首页 Hero）**：`/api/v1/site-content` 的 `hero` 段驱动平台名、标语、介绍、标签与愿景，`DEFAULT_CONTENT` 逐层兜底。桌面端 `.hero-inner` 为 `minmax(0,1.1fr) / minmax(320px,1fr)` 双栏；左栏依次展示平台名、问候语、唯一 H1、英文定位、介绍、能力标签、两档按钮与愿景。H1 在首个中文逗号后分行，以 `clamp(28px,3vw,44px)`、`text-wrap:balance`、`word-break:keep-all` 控制默认标语两行内排完；后台自定义长文案用 `overflow-wrap:anywhere` 兜底。Hero `min-height:380px; padding:40px 32px`，与公告间隔 `16px`；内容多时允许自然增高。主按钮仍为“开始一项研究”，次按钮文案为“AI 规划研究方案”，分别导航至 `/flows`、`/ai`。右栏 `.hero-lifecycle` 展示科研生命周期，桌面占双栏可用宽度约 48%，`min-height:340px; padding:28px 28px 24px`，标题 `20px`、步骤正文 `14px`、节点 `30px`、行距 `8px`，使用 `rgba(255,255,255,0.10)`、`blur(16px)`、白色主文字与 `rgba(255,255,255,0.85)` 副文字；减少透明度时退回实色。`≤1100px` 收为上下布局，`≤640px` 卡片取消最小高度、使用 `20px` 内边距，精简生命周期后续步骤并以说明文字保留语义。
+**文案与布局（首页 Hero）**：`/api/v1/site-content` 的 `hero` 段驱动平台名、标语、介绍、标签与愿景，`DEFAULT_CONTENT` 逐层兜底。桌面端 `.hero-inner` 为 `minmax(0,1.1fr) / minmax(320px,1fr)` 双栏；左栏依次展示平台名、问候语、唯一 H1、英文定位、介绍、能力标签、两档按钮与愿景。H1 在首个中文逗号后分行，以 `clamp(26px,2.6vw,38px)`、`text-wrap:balance`、`word-break:keep-all` 控制默认标语两行内排完；后台自定义长文案用 `overflow-wrap:anywhere` 兜底。Hero `min-height:380px; padding:40px 32px`，与公告间隔 `16px`；内容多时允许自然增高。主按钮仍为“开始一项研究”，次按钮文案为“AI 规划研究方案”，分别导航至 `/flows`、`/ai`。右栏 `.hero-lifecycle` 展示科研生命周期，桌面占双栏可用宽度约 48%，`min-height:340px; padding:28px 28px 24px`，标题 `20px`、步骤正文 `14px`、节点 `30px`、行距 `8px`，使用 `rgba(255,255,255,0.10)`、`blur(16px)`、白色主文字与 `rgba(255,255,255,0.85)` 副文字；减少透明度时退回实色。`≤1100px` 收为上下布局，`≤640px` 卡片取消最小高度、使用 `20px` 内边距，精简生命周期后续步骤并以说明文字保留语义。
 
-**首页字号与可读性**：`HomeView.vue` 在 `.home-page` 局部定义 `--home-font-section:24px`、`--home-font-card-title:16px`、`--home-font-body:14px`、`--home-font-small:13px`、`--home-font-meta:12px` 与 `--home-font-eyebrow:11px`，首页及 `ResearchWorkbenchPanel.vue` 共同消费，避免逐区块漂移。Hero 介绍为 `15px`；标题自适应 `28–44px`，窄屏 `22–28px`。工作台项目/任务/报告名称统一 `14px`、说明/时间 `12px`，卡片标题 `16px`；中文说明使用 `--neutral-text-2`。状态标签为 `26px` 高、`12px` 字；列表行高至少 `62px`，同步增加留白。移动端区块标题 `22px`，正文和辅助文字保持可读字号，禁止通过全站 zoom 或 transform scale 放大首页。
+**首页字号与可读性**：`HomeView.vue` 在 `.home-page` 局部定义 `--home-font-section:24px`、`--home-font-card-title:16px`、`--home-font-body:14px`、`--home-font-small:13px`、`--home-font-meta:12px` 与 `--home-font-eyebrow:11px`，首页及 `ResearchWorkbenchPanel.vue` 共同消费，避免逐区块漂移。Hero 介绍使用 `--home-font-body`（14px）；标题自适应 `26–38px`，窄屏 `21–26px`。工作台项目/任务/报告名称统一 `14px`、说明/时间 `12px`，卡片标题 `16px`；中文说明使用 `--neutral-text-2`。状态标签为 `26px` 高、`12px` 字；列表行高至少 `62px`，同步增加留白。移动端区块标题 `22px`，正文和辅助文字保持可读字号，禁止通过全站 zoom 或 transform scale 放大首页。
 
 **首页工作台与交互层级**：`ResearchWorkbenchPanel.vue` 仍通过既有项目、运行/排队任务、报告 API 聚合；三张卡片为 `repeat(3,minmax(0,1fr))`，视口 `<1280px` 时单列。长标题单行省略，保留原文 `title`；任务和报告共用 `NTag.status-badge`，蓝/绿/灰区分运行/完成/过期，排队与失败另有黄/红状态。工作台和快捷入口 hover 上移 `2px`，阴影伪元素通过透明度过渡，时长 `200ms`；支柱和生态无悬停位移。`prefers-reduced-motion` 下关闭位移、入场和过渡。首页管理按钮使用 `--brand-gradient`。首页公告传 `remember-dismissal`，按公告 ID 和可见内容版本持久关闭；不传时继续遵守后台 daily/forever/none 策略。顶部积分 `NTag` 使用 `padding:4px 12px`，右侧控件间距 `12px`。
 
@@ -1610,17 +1616,18 @@ function drawAtmosphere() {                                     // 共享氛围�
 
 注意 naive-ui 真实类名是 `n-progress-graph` / `n-progress-graph-line-indicator`，**不是** `n-progress__indicator`（写错选择器会静默不生效，按 §31.5 在产物里 grep 确认）。
 
-**② 进度尺度归一化（后端尺度可能不统一，前端必须容错）。** 进度字段在后端**尺度并不统一**：分析任务的下载路径写 0–1（`task.progress = 1.0`、`progress / 100.0`），富集 / arq 路径写 0–100（实测已完成任务库内即 `100.0`）；BLAST 的 progress 是 `int` 0–100。直接 `Math.round(progress * 100)` 会把已完成的 `100.0` 渲染成 **1000%**；直接当百分比又会让 0–1 的下载任务显示成 1%。统一用归一化函数渲染，分析与 BLAST 进度列都用它：
+**② 进度尺度归一化（后端尺度可能不统一，前端必须容错）。** 进度字段在后端**尺度并不统一**：分析任务的下载路径写 0–1（`task.progress = 1.0`、`progress / 100.0`），富集 / arq 路径写 0–100（实测已完成任务库内即 `100.0`）；BLAST 的 progress 是 `int` 0–100。直接 `Math.round(progress * 100)` 会把已完成的 `100.0` 渲染成 **1000%**；直接当百分比又会让 0–1 的下载任务显示成 1%。统一使用 `frontend/src/utils/progress.ts` 的共享函数：
 
 ```ts
-// >1 视为已是百分比，否则按 0–1 折算；两种尺度都对，且不依赖单一写死约定
-function pct(value: number | null | undefined): number {
-  const n = Number(value) || 0
-  return Math.round(n > 1 ? n : n * 100)
+export function normalizeProgress(value: unknown): number {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return 0
+  const percentage = numericValue > 1 ? numericValue : numericValue * 100
+  return Math.round(Math.min(100, Math.max(0, percentage)))
 }
 ```
 
-彻底修复应在后端统一写入尺度（任选 0–1 或 0–100 其一）并刷历史数据；在此之前前端归一化是必须的兜底，**不要**移除。
+分析与 BLAST 进度列、任务详情、下载列表、AI 任务卡、工作流监控、Excel 导出全部调用该函数；**禁止**在业务文件里复制 `pct()` / `progress * 100` 的等价实现。`TaskProgressCard` 的本地状态也统一存 0–100，避免“先 clamp 到 1、再乘 100”把 45% 误判为完成。共享函数的单元测试位于 `frontend/src/utils/__tests__/progress.test.ts`。
 
 **③ 列宽：全部固定 `width`，禁止"弹性列"吞宽度。** `NDataTable` 中带 `minWidth` 或无 `width` 的列是**弹性列**，会吸收容器全部剩余宽度。把任务名称 / 查询标题设成 `minWidth` 时，该列会 ballooning 到 ~900px，反过来把分析流程 / 状态 / 进度等挤窄、自身文字换行——这正是"其它列被压缩"的根因。规则：
 
@@ -2417,7 +2424,7 @@ export interface AIQuickAction {
 
 ## 36. AI 助手主入口优化执行提示词
 
-下面建议继续追加到 `frontend.md`。第一份用于完整改造，后面几份用于拆分执行，避免一次修改范围过大。
+下面建议追加到 `ARCHITECTURE_DESIGN/CygnusX_frontend.md`。第一份用于完整改造，后面几份用于拆分执行，避免一次修改范围过大。
 
 ```md
 ### 36.1 完整优化提示词
@@ -2427,7 +2434,7 @@ export interface AIQuickAction {
 开始前必须先阅读并遵守：
 
 - 仓库中的 `AGENTS.md`；
-- `frontend.md`，重点检查 §1、§2、§3、§5、§6、§7、§10、§14、§18、§21、§22、§23、§31、§33、§35；
+- 本规范 `ARCHITECTURE_DESIGN/CygnusX_frontend.md`，重点检查 §1、§2、§3、§5、§6、§7、§10、§14、§18、§21、§22、§23、§31、§33、§35；
 - `frontend/src/styles/tokens.css`；
 - `frontend/src/styles/global.css`；
 - `frontend/src/App.vue`；
@@ -2517,7 +2524,7 @@ export interface AIQuickAction {
 7. 布局切换不得丢失输入草稿或附件。
 8. 处理 375px、768px、1024px、1280×720 和 1440px。
 9. 适配深色模式、减少动态和减少透明度。
-10. 严格遵守 frontend.md §31，不用子元素通配选择器修改 position/z-index。
+10. 严格遵守 CygnusX_frontend.md §31，不用子元素通配选择器修改 position/z-index。
 
 先阅读当前实现和设计令牌，再直接修改代码。完成后运行 type-check、相关测试、build 和 git diff --check，并用 Playwright 截取空会话与活跃会话的桌面/移动端截图。
 ```
@@ -2616,7 +2623,7 @@ export interface AIQuickAction {
 6. 不输出泛化视觉建议，不臆测不存在的接口或组件。
 ```
 
-另外建议修正文件名：如果当前仓库实际叫 `frontend.md`，最好迁移为正确拼写的 `frontend.md`，并同步 `$cygnusx-frontend-design`、`AGENTS.md` 和其它文档中的引用。如果已有自动化脚本依赖旧文件名，则先保留一个短的兼容入口，避免技能引用失效。
+本文件正式名称为 `ARCHITECTURE_DESIGN/CygnusX_frontend.md`。`$cygnusx-frontend-design`、`AGENTS.md` 与其它文档引用时统一使用该路径；历史提示词中的 `frontend.md` 是早期占位名，不再作为真实文件名使用。
 
 ## 37. 分析产物与代码输出统一协议
 
@@ -2665,7 +2672,7 @@ export interface AIQuickAction {
 ### 38.1 已核实现状
 
 1. **主平台与寻宝鼠边界**：主平台由 `frontend/src/main.ts` 单入口创建 Vue 应用，路由页面使用动态 import。`/treasure-mouse` 对应 `TreasureMouseView.vue`，当前直接挂载 `TreasureResearchWorkbench.vue`，不含 iframe 或旧账号入口。首屏先读取 `/api/v1/research-agent/capabilities`；native 关闭或模块未授权时不请求项目/会话。窗口重新聚焦或手动刷新会重验许可并清空旧内容。Research BFF 对实际业务请求重验 active、模块和 owner，project=null 允许全局只读历史。开发、生产与独立前端 Nginx 均将精确 `/treasure-mouse` 返回主 SPA index.html，精确 `/treasure-mouse/` 重定向到该页面并保留查询参数；旧 `/treasure-mouse/` 下账号、聊天与静态资源子路径保持 404，Node 科研后端仍留内网。停止接收不保证跨进程取消。当前源码已接入原 React 展示树和消息适配；下载/分析交接、真实视觉验收与发布仍未完成，Gate 仍待审查。详见 `docs/implementation/treasure-native-p0-access-and-entry.md`。
-2. **全局壳层与 fullscreen 语义**：受保护路由均由 `DefaultLayout.vue` 承载。路由 `meta.fullscreen` 在该布局中让内容区 padding 归零并使用原生滚动容器；它不会移除全局 Header 或 Sidebar。AI/Studio 路由会自动折叠全局 Sidebar。工具区域另有零外层 padding 规则，普通内容区使用 24px。
+2. **全局壳层与 fullscreen 语义**：受保护路由均由 `DefaultLayout.vue` 承载。路由 `meta.fullscreen` 在该布局中让内容区 padding 归零并使用原生滚动容器；它不会移除全局 Header 或 Sidebar。AI/Studio 路由会自动折叠全局 Sidebar。工具区域另有零外层 padding 规则；普通内容区由壳层统一使用 `var(--page-padding)`（桌面 32px、移动 16px），页面根元素不再叠加内边距。
 3. **AI/Studio 内部工具栏**：`AIChatView.vue` 挂载 `AgentWorkspace.vue`；后者包含 60px `AgentSidebar`，活跃会话时 `AgentSandbox.vue` 渲染会话级 header。Studio 页面在全局 Header 下方渲染自己的 `.studio-topbar`。这些是全局壳层内的工作区导航/操作区，不替代全局 Header。
 4. **项目上下文**：Agent session 数据包含 `project_id`，`agentHub` 在 chat stream 请求中传递该字段。新 Studio 会话提供项目选择；未选择时前端提示后端将会话归入默认项目。项目详情使用路由 `projectId` 加载项目及关联概览；Studio API DTO 支持 `project_id`，报告转 Studio 使用 `report_id` 来源入口。项目关联确实存在，但各入口的传递规则不同；当前证据不支持“平台缺少项目上下文”或“必须强制选择项目”的结论。
 5. **错误边界**：`App.vue` 的 RouterView 外层存在 `AppErrorBoundary`。`main.ts` 未注册 `app.config.errorHandler`，router 未注册 `router.onError`；动态 import/chunk 错误的实际用户恢复行为尚未通过浏览器验证，因此作为待验收项记录。
@@ -2700,3 +2707,104 @@ Vue 持有身份、项目、会话、草稿和 SSE；researchPresentation.ts 为
 ### 项目科研成果导出 RI06–RI09（代码/隔离层）
 
 ProjectDetailView新增ProjectResearchDelivery卡片，复用既有报告、快照和只读Provenance；独立ProjectExportJob整理已有成果，不触发报告生成或计算。默认证据包，小型结果及复现材料明确选择；缺口partial、当前权限、冻结摘要、真实Job状态及下载SHA分开显示。默认关闭project_export_enabled，真实环境/浏览器未验收。完整现状、关联/容量/授权边界和恢复设计以[科研交付架构](CygnusX_research_delivery_architecture.md)的RI06–RI09节为准。
+
+## 39. 2026-10 平台对齐变更记录
+
+> **日期：2026-10-24。** 本轮以实际 Vue 源码为准，反向校正规范并同步修改代码。记录的是“代码 → 规范”的对齐结果，不是新提案；后续改动应继续遵守本节确定的三条主线：**页面内边距单一归属、对话令牌单一来源、进度尺度单一函数**。
+
+### 39.1 本轮修复的割裂点
+
+| 现象 | 证据 | 根因 |
+| --- | --- | --- |
+| 页面左右留白 48–60px 且各页不一致 | `DefaultLayout` 内容区 24px；Dashboard/Reports/Home/Flows 再写 24px，Settings 写 32px/24px，Projects/Profile 再写 `--page-padding`，Schedules 写 28px | 壳层与页面根元素同时声明 padding，规范却只写“页面 32px”，没有规定归属 |
+| 浅色模式没有五级 Surface | `tokens.css` 的 `--surface-*` 只存在于 `[data-theme="dark"]` | 规范要求明暗共用 Surface 契约，但浅色未补齐，组件只能回退硬编码白色 |
+| AI 输入区出现“外框深蓝、内部纯黑” | `chat-theme.css` 深色 `--chat-bg: #000000`、`--chat-input-bg: #1a1a1a`；`global.css` 又在 `.kimi-layout` 内覆盖为 `--neutral-card` | 两套令牌源 + 规范承认“双来源”并让人手动同步 |
+| 对话输入外框不跟随对话令牌 | `KimiChatInput.vue` 使用 `--neutral-card` / `--neutral-border` | 输入组件绕开 `--chat-input-*`，与内部 Textarea 语义脱节 |
+| 卡片 hover 位移 -4px | `global.css` 存在无人引用的 `.card-hover-lift` | 与 §5.2 的“≤2px”冲突，属于死代码 |
+| 进度百分比在不同页面口径不同 | TaskProgressCard 先 `clamp(..., 0, 1)` 再 `×100`；Downloads 直接 `progress*100`；TaskDetail 直接 `×100`；TaskTableWidget 用 `progress_percent || progress*100` | 7 处各自实现，0–100 输入会被误判（45% → 100%，或 0% 被 `||` 丢弃） |
+| 日程页像“独立小应用” | `SchedulesView.vue` 自带 `<header><h1>`、原生 input/button、`#2563eb`/`#e5e7eb` 硬编码、28px 页面 padding | 未接入 `PageHeader`、Naive UI 与语义令牌 |
+| 退出登录整页刷新 | `handleLogout()` 与 `storage` 事件都调用 `window.location.reload()` | 违反“刷新保持页面上下文”（§10），且丢失 SPA 状态 |
+| 全屏高度抖动 | 壳层/公共样式使用 `100vh`，移动端地址栏会改变可视高度 | 未使用 `100dvh` 渐进增强 |
+| 引用不存在的令牌 | `FilesView` 的 `var(--page-bg, var(--neutral-bg))`；`SharedStudioView` 的 `var(--neutral-bg-1, …)` | `--page-bg` 已删除，`--neutral-bg-1` 从未定义 |
+
+### 39.2 三条主线的落地方式
+
+1. **页面内边距单一归属**：`DefaultLayout.contentStyle` 统一返回 `padding: var(--page-padding)`；`--page-padding` 在 `global.css` 定义为桌面 `32px`，`≤768px` 为 `16px`。`meta.fullscreen` 与 `/tools` 区域继续由壳层置 `0`。所有普通页面根元素改为 `padding: 0`（`AboutView` 的负 margin 同步改为 `calc(-1 * var(--page-padding))`，`FlowSubmitView` 的 `.content-area` 也不再叠加 24px）。
+2. **对话令牌单一来源**：`chat-theme.css` 的 `--chat-bg/surface/surface-hover/sidebar/border/text/input/nav/chip/bubble` 全部映射到 `--surface-*`、`--text-*`、`--border-*`；删除 `.kimi-layout` 内的重复覆盖；`KimiChatInput` 外框改用 `--chat-input-bg` / `--chat-input-border`。深色不再使用 `#000000`。
+3. **进度尺度单一函数**：`utils/progress.ts` 的 `normalizeProgress()` 成为唯一实现（`>1` 视为 0–100，否则视为 0–1，最终 clamp 到 0–100）。所有任务/下载/工作流/导出/AI 卡片统一调用；`TaskProgressCard` 的内部状态改为直接保存 0–100。
+
+### 39.3 代码改动清单
+
+| 文件 | 改动 |
+| --- | --- |
+| `frontend/src/styles/tokens.css` | 补齐浅色 `--surface-base/card/elevated/highlight/glass`、`--border-subtle/default/focus`、`--brand-glow`，使明暗共用同一 Surface 契约。 |
+| `frontend/src/styles/global.css` | 删除废弃 `--page-bg`；明确 `--page-padding` 归属并新增移动端 16px；补充 12px 表头 / 13px 单元格的卡片表格排版；`.page-container` 改为 `padding: 0`；`.page-title` 使用排版令牌；删除死代码 `.card-hover-lift`；移除 `.kimi-layout` 的暗色令牌覆盖；`html/body/#app` 增加 `100dvh`；深色兜底块标注技术债与退出条件。 |
+| `frontend/src/styles/chat-theme.css` | 明暗两套 `--chat-*` 全部改为平台令牌映射；去掉纯黑与独立灰阶；导航、芯片、气泡边框、输入区、阴影接入统一体系。 |
+| `frontend/src/components/ai-chat/KimiChatInput.vue` | 输入框外框消费 `--chat-input-bg` / `--chat-input-border`，焦点/房间态仍用主色混色。 |
+| `frontend/src/layouts/DefaultLayout.vue` | 内容区 padding 改为 `var(--page-padding)`；`.app-shell` 增加 `100dvh`；顶栏/侧栏/折叠菜单改用 `--surface-glass`、`--border-subtle`；退出登录与 token 失效不再 `location.reload()`。 |
+| `frontend/src/components/PageHeader.vue` | 标题改用 `--font-page-title-*`（24/32/600/-0.02em），副标题改用 `--font-body-*`，间距改用 `--space-*`。 |
+| `frontend/src/views/DashboardView.vue` | 移除根 padding；删除本地 `pct()`，改用 `normalizeProgress()`。 |
+| `frontend/src/views/ReportsView.vue` | 移除根 padding。 |
+| `frontend/src/views/HomeView.vue` | 移除根 padding；Hero 标题收至 `clamp(26px,2.6vw,38px)`（窄屏 `21–26px`），介绍由 15px 改为 `--home-font-body`（14px），避免欢迎区字号抢过内容层级。 |
+| `frontend/src/views/FlowsView.vue` | 移除根 padding。 |
+| `frontend/src/views/FlowSubmitView.vue` | `.content-area` 不再叠加 24px。 |
+| `frontend/src/views/ProjectsView.vue` | 根 padding 改为 0，并同步移除窄屏 16px 叠加；保留 `max-width: 1440px` 居中。 |
+| `frontend/src/views/ProjectDetailView.vue` | 根 padding 改为 0，保留 1440px 居中。 |
+| `frontend/src/views/ProfileView.vue` | 仅保留底部间距 `0 0 var(--space-5xl)`。 |
+| `frontend/src/views/SettingsView.vue` | 仅保留底部间距（桌面 `--space-5xl`、移动 `--space-4xl`），移除 32/24px 横向叠加。 |
+| `frontend/src/views/AdminAIProvidersView.vue`、`AdminAnnouncementsView.vue`、`AdminTerminalManagementView.vue`、`AdminHomeQuickEntriesView.vue` | 局部 `.page-container` 改为 `padding: 0`，避免覆盖全局壳层内边距。 |
+| `frontend/src/views/AboutView.vue` | 负 margin 由 `-24px` 改为 `calc(-1 * var(--page-padding))`，修复壳层改为 32px 后露出的 8px 边。 |
+| `frontend/src/views/FilesView.vue` | 背景改用已定义的 `--neutral-bg`；全屏页自身的 16px 内边距保留。 |
+| `frontend/src/views/SharedStudioView.vue` | 补 `100dvh`；背景与文字改用真实令牌，移除不存在的 `--neutral-bg-1`。 |
+| `frontend/src/views/SchedulesView.vue` | 重写为 `PageHeader` + Naive UI（`NInput`/`NDatePicker`/`NSelect`/`NButton`/`NTag`/`NEmpty`/`NSpin`）+ 语义令牌；补齐创建、刷新、选中、取消、推迟、完成的加载与错误反馈；移除 28px 根 padding 与全部硬编码色。 |
+| `frontend/src/components/task/TaskTable.vue` | `pct(task)` 改为调用 `normalizeProgress(task.progress)`。 |
+| `frontend/src/utils/taskExport.ts` | 删除本地 `pct()`，导出列统一调用 `normalizeProgress()`。 |
+| `frontend/src/views/DownloadsView.vue` | 删除 `progress * 100`，改用 `normalizeProgress()`。 |
+| `frontend/src/views/TaskDetailView.vue` | 详情进度条改用 `normalizeProgress()`。 |
+| `frontend/src/components/ai-chat/TaskProgressCard.vue` | 内部进度状态统一为 0–100；SSE 与轮询都经 `normalizeProgress()`；完成态写 `100`；渲染不再二次 `×100`。 |
+| `frontend/src/components/ai-chat/PipelineTaskCard.vue` | 进度百分比改用 `normalizeProgress()`。 |
+| `frontend/src/components/workflow-monitor/widgets/TaskTableWidget.vue` | 新增 `progressPct()`，用 `progress_percent ?? progress` 交给 `normalizeProgress()`；修复 `progress_percent = 0` 被 `||` 丢弃的问题。 |
+
+### 39.4 规范自身的修正
+
+- §2.3 权威实现表新增 `chat-theme.css` 行，明确它是 `--chat-*` 唯一来源且必须映射平台令牌。
+- §3.1 允许对话令牌定义在 `chat-theme.css`，但取值必须引用平台令牌。
+- §3.3.5 删除“两个令牌源、需要手动同步”的旧描述，改为单一来源与禁止作用域覆盖。
+- §3.4 页面内边距改为“由 `DefaultLayout` 统一提供”，明确桌面 32px / 移动 16px 与 fullscreen、工具区例外。
+- §4.1 页面根元素不再“提供 `--page-padding`”，只负责背景、最小高度与布局。
+- §5.2 明确悬停位移 ≤2px，并标注 `.card-hover-lift` 已删除、不得恢复。
+- §30.2 增加“进度必须走 `normalizeProgress()`、禁止局部乘 100”的强制项。
+- §33.2 ② 将内联 `pct()` 示例替换为共享函数源码，列出全部调用方与 `TaskProgressCard` 的 clamp 缺陷，并指向单元测试。
+- §36 将提示词中的历史占位文件名 `frontend.md` 统一为真实路径 `ARCHITECTURE_DESIGN/CygnusX_frontend.md`，删除无意义的“把 frontend.md 改名为 frontend.md”建议。
+- §38.1 第 2 条由“普通内容区使用 24px”更新为壳层 `var(--page-padding)`。
+- §10 验收清单新增“页面内边距单一归属”“对话令牌无第二来源”，并把进度检查改为强制 `normalizeProgress()`。
+
+### 39.5 明确保留的技术债
+
+- 仍有大量 `.vue` 局部样式包含硬编码浅色值，`global.css` 的深色 `!important` 兜底因此暂不能删除。退出条件已写入该兜底块注释：当 `.vue` 源码中的硬编码浅色值清零后整段删除；本轮**不**做大规模批量替换，避免引入不可验证的视觉回归。
+- 后端进度字段仍在 0–1 与 0–100 之间混用；本轮只统一前端消费口径。彻底修复仍需后端选定单一尺度并回刷历史数据。
+- 本轮验证为静态检查 + 类型检查 + 单元测试 + 构建产物 grep，未替代 1920/1440/1024/768/390px 的真实浏览器视觉验收；后续触碰相关页面时仍须按 §10 补做明暗主题与断点检查。
+
+### 39.6 本轮验证命令
+
+```bash
+cd frontend
+npm run type-check
+npm test
+npm run build
+git -C .. diff --check
+```
+
+构建后还需在 `frontend/dist/assets/*.css` 中 grep `--page-padding`、`--chat-input-bg`、`--surface-elevated` 等新增令牌，确认样式进入实际产物而非只存在于源码。
+
+2026-10-24 实际执行结果（全部通过）：
+
+| 门禁 | 结果 |
+|---|---|
+| `npm run type-check` | 通过，无类型错误 |
+| `npm test` | 92 个测试文件、682 个用例全部通过 |
+| `npm run build` | 成功（2317 modules，约 3s）；仅有既有的 chunk > 500 kB 体积告警，与本轮改动无关 |
+| `git diff --check` | 无输出（无空白错误） |
+| 产物令牌 grep | `--page-padding`、`--chat-input-bg`、`--surface-elevated`、`--chat-user-bubble`、`--border-subtle` 均可在 `frontend/dist/assets/*.css` 中检索到 |
+
+后续修改样式令牌时，仍应重复上述 grep；仅源码命中而产物未命中，说明该令牌被构建期裁剪（未被任何选择器引用）或只写在未被打包的样式文件中。

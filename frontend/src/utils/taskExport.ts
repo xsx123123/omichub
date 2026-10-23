@@ -9,6 +9,7 @@
 import * as XLSX from 'xlsx'
 import type { Task } from '@/types'
 import { displayName } from '@/utils/displayName'
+import { normalizeProgress } from '@/utils/progress'
 
 /** 状态枚举 → 中文标签（与 TaskTable.statusMap 对齐）。 */
 const STATUS_LABEL: Record<string, string> = {
@@ -42,14 +43,6 @@ function flowLabel(flowId: string): string {
   return FLOW_LABEL[flowId] || flowId
 }
 
-/** 进度归一化：后端 0-100 与 0-1 混用，统一压成整数百分比（与 TaskTable.pct 同口径）。 */
-function pct(progress: number): number {
-  const value = Number(progress)
-  if (!Number.isFinite(value)) return 0
-  const percentage = value > 1 ? value : value * 100
-  return Math.round(Math.min(100, Math.max(0, percentage)))
-}
-
 /** 提交时间格式化为「M月D日 HH:mm」，与表格列展示一致；缺失记为「-」。 */
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return '-'
@@ -72,7 +65,7 @@ function toRow(task: Task): (string | number)[] {
     task.name ?? '',
     flowLabel(task.flow_id),
     statusLabel(task.status),
-    pct(task.progress),
+    normalizeProgress(task.progress),
     formatTime(task.created_at),
     task.error_message ?? '',
   ]

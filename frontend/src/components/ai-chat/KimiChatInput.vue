@@ -1811,8 +1811,8 @@ watch(() => agentHub.currentSessionId, refreshGoalStatus)
 .kimi-chat-input {
   position: relative;
   min-width: 0;
-  background: var(--neutral-card);
-  border: 1px solid var(--neutral-border);
+  background: var(--chat-input-bg);
+  border: 1px solid var(--chat-input-border);
   border-radius: var(--radius-lg);
   box-shadow: none;
   padding: var(--space-md) var(--space-lg);
@@ -1820,7 +1820,7 @@ watch(() => agentHub.currentSessionId, refreshGoalStatus)
 
   &.room-mode {
     padding: var(--space-md) var(--space-lg) var(--space-sm);
-    border-color: color-mix(in srgb, var(--arco-primary) 32%, var(--neutral-border));
+    border-color: color-mix(in srgb, var(--arco-primary) 32%, var(--chat-input-border));
     border-radius: 20px;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--arco-primary) 10%, transparent);
   }

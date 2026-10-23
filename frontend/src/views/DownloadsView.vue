@@ -11,6 +11,7 @@ import {
 import apiClient from '@/api/client'
 import { getDownloadCapabilities, type DownloadCapabilities } from '@/api/downloadCapabilities'
 import PageHeader from '@/components/PageHeader.vue'
+import { normalizeProgress } from '@/utils/progress'
 
 type SourceTab = 'sra' | 'cloud-drive' | 'cloud-storage' | 'direct-link'
 
@@ -103,7 +104,7 @@ function scfg(status: string) {
 }
 
 function pct(task: DownloadTask) {
-  return Math.round(task.progress * 100)
+  return normalizeProgress(task.progress)
 }
 
 const tasks = ref<DownloadTask[]>([])

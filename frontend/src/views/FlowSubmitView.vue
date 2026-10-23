@@ -764,7 +764,7 @@ onUnmounted(() => {
 .content-area {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 0;
 }
 
 .form-content {

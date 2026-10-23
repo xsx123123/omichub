@@ -591,7 +591,7 @@ onBeforeUnmount(() => { overviewGeneration++; sessionsGeneration++ })
 .project-detail-view {
   width: min(100%, 1440px);
   margin-inline: auto;
-  padding: var(--page-padding);
+  padding: 0;
 }
 
 .project-header-mark {

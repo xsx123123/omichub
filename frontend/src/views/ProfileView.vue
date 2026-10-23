@@ -323,7 +323,7 @@ onUnmounted(() => { if (mediaQuery && handleSystemThemeChange) mediaQuery.remove
 </script>
 
 <style scoped>
-.profile-page-wrapper { min-height: 100%; padding: var(--page-padding) var(--page-padding) var(--space-5xl); background: var(--neutral-bg); }
+.profile-page-wrapper { min-height: 100%; padding: 0 0 var(--space-5xl); background: var(--neutral-bg); }
 .profile-content { width: 100%; min-width: 0; }
 .profile-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--section-gap); }
 .profile-card { min-width: 0; padding: var(--card-padding); }

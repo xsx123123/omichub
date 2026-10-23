@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { NProgress } from 'naive-ui'
 import apiClient from '@/api/client'
+import { normalizeProgress } from '@/utils/progress'
 
 interface Props {
   taskId: string
@@ -87,7 +88,7 @@ function connect() {
     try {
       const data = JSON.parse(event.data) as ProgressEvent
       phase.value = data.phase || phase.value
-      progress.value = Math.min(Math.max(data.progress || 0, 0), 1)
+      progress.value = normalizeProgress(data.progress)
       message.value = data.message || message.value
       if (data.phase === 'COMPLETED') {
         status.value = 'success'
@@ -121,13 +122,13 @@ async function pollTask() {
     const response = await apiClient.get<TaskDetail>(taskApiUrl())
     const task = response.data
     error.value = ''
-    progress.value = Math.min(Math.max(Number(task.progress || 0), 0), 1)
+    progress.value = normalizeProgress(task.progress)
     phase.value = task.status.toUpperCase()
     const lastLog = task.logs?.[task.logs.length - 1]?.message
     message.value = lastLog || task.error_message || message.value
 
     if (task.status === 'success') {
-      progress.value = 1
+      progress.value = 100
       status.value = 'success'
       finish('success')
       return
@@ -171,7 +172,7 @@ onUnmounted(() => {
     </div>
     <n-progress
       type="line"
-      :percentage="Math.round(progress * 100)"
+      :percentage="Math.round(progress)"
       :status="nprogressStatus"
       :show-indicator="true"
     />

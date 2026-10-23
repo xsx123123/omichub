@@ -3,6 +3,7 @@ import { NButton, NProgress, NTag } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import type { MonitorWidget, WorkflowTaskSnapshot } from '@/types/workflowMonitor'
 import { displayName } from '@/utils/displayName'
+import { normalizeProgress } from '@/utils/progress'
 
 defineProps<{
   widget: MonitorWidget
@@ -30,6 +31,10 @@ function statusText(status: string): string {
     cancelled: '已取消',
   }
   return map[status] || status
+}
+
+function progressPct(task: WorkflowTaskSnapshot): number {
+  return normalizeProgress(task.progress_percent ?? task.progress)
 }
 
 function formatTime(value?: string | null): string {
@@ -71,12 +76,12 @@ function formatTime(value?: string | null): string {
             <td class="progress-cell">
               <NProgress
                 type="line"
-                :percentage="Math.round(task.progress_percent || task.progress * 100)"
+                :percentage="progressPct(task)"
                 :height="6"
                 :show-indicator="false"
                 :status="task.status === 'failed' ? 'error' : task.status === 'success' ? 'success' : 'default'"
               />
-              <span>{{ Math.round(task.progress_percent || task.progress * 100) }}%</span>
+              <span>{{ progressPct(task) }}%</span>
             </td>
             <td><span class="rule" :title="task.current_rule || ''">{{ task.current_rule || '-' }}</span></td>
             <td>{{ formatTime(task.last_event_at || task.created_at) }}</td>

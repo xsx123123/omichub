@@ -60,15 +60,15 @@ withDefaults(defineProps<{
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
 }
 
 .page-header-main {
   display: flex;
   align-items: center;
   min-width: 0;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .page-header-back {
@@ -85,17 +85,17 @@ withDefaults(defineProps<{
 .page-header-copy h1 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.33;
+  font-size: var(--font-page-title-size);
+  font-weight: var(--font-page-title-weight);
+  letter-spacing: var(--font-page-title-spacing);
+  line-height: var(--font-page-title-height);
 }
 
 .page-header-copy p {
-  margin: 8px 0 0;
+  margin: var(--space-sm) 0 0;
   color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.57;
+  font-size: var(--font-body-size);
+  line-height: var(--font-body-height);
 }
 
 .page-header-actions {

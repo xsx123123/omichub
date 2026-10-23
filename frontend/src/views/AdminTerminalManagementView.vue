@@ -209,7 +209,7 @@ onMounted(fetchSessions)
 
 <style scoped>
 .page-container {
-  padding: 24px;
+  padding: 0;
   min-height: 100%;
   background: var(--neutral-bg);
 }

@@ -817,7 +817,7 @@ const totpPolicyOptions: { key: SiteSettings['totp_policy']; label: string; desc
 
 <style scoped>
 .settings-page {
-  padding: 32px 24px 48px;
+  padding: 0 0 var(--space-5xl);
 }
 
 .settings-section-grid {
@@ -1050,7 +1050,7 @@ const totpPolicyOptions: { key: SiteSettings['totp_policy']; label: string; desc
 
 @media (max-width: 767px) {
   .settings-page {
-    padding: 24px 16px 40px;
+    padding: 0 0 var(--space-4xl);
   }
 
   .platform-settings-grid {

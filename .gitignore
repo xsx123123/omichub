@@ -58,6 +58,8 @@ coverage.xml
 .env
 .env.local
 .env.*.local
+# 本地实验/临时环境副本（.env.test 等含真实开发凭据，禁止入库）
+.env.test
 !.env.example
 deploy/agentteams/bridge.env
 deploy/agentteams/gateway.env

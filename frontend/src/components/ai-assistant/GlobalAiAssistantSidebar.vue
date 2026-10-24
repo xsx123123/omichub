@@ -116,9 +116,11 @@ function openSidebar() {
 
 function onSend() {
   const text = inputValue.value
-  if (!text.trim() || store.isStreaming) return
-  inputValue.value = ''
-  void store.sendMessage(text, buildPageContext())
+  if (!text.trim()) return
+  // 流式回复期间进入队列，回复完成后自动发送（消息排队）
+  void store.sendOrQueue(text, buildPageContext()).then((outcome) => {
+    if (outcome !== 'dropped') inputValue.value = ''
+  })
 }
 
 function onEnter(e: KeyboardEvent) {
@@ -128,8 +130,8 @@ function onEnter(e: KeyboardEvent) {
 }
 
 function quickSend(text: string) {
-  if (store.isStreaming || !store.modelId) return
-  void store.sendMessage(text, buildPageContext())
+  if (!store.modelId) return
+  void store.sendOrQueue(text, buildPageContext())
 }
 
 // ===== 当前页面上下文：随消息发给后端注入系统提示词，让 Agent 知道"当前页面"指哪里 =====
@@ -294,6 +296,35 @@ function errorSummary(error: string): string {
               aria-label="选择模型"
             />
           </div>
+          <!-- 消息排队条：流式回复期间提交的消息在此保留，回复完成后自动发送 -->
+          <div
+            v-if="store.isStreaming || store.queuedMessages.length"
+            class="ai-sidebar__queue-strip"
+            role="status"
+          >
+            <span class="ai-sidebar__queue-caption">
+              {{ store.queuedMessages.length
+                ? `已排队 ${store.queuedMessages.length} 条，当前回复完成后自动发送`
+                : 'AI 正在回复，现在发送的消息将排队等待' }}
+            </span>
+            <div v-if="store.queuedMessages.length" class="ai-sidebar__queue-list">
+              <span
+                v-for="item in store.queuedMessages"
+                :key="item.id"
+                class="ai-sidebar__queue-chip"
+              >
+                <span class="ai-sidebar__queue-text">{{ item.content }}</span>
+                <button
+                  type="button"
+                  class="ai-sidebar__queue-remove"
+                  aria-label="撤销排队消息"
+                  @click="store.removeQueuedMessage(item.id)"
+                >
+                  <NIcon :size="12" aria-hidden="true"><CloseOutline /></NIcon>
+                </button>
+              </span>
+            </div>
+          </div>
           <div class="ai-sidebar__input-row">
             <NInput
               v-model:value="inputValue"
@@ -302,6 +333,21 @@ function errorSummary(error: string): string {
               placeholder="输入问题，Enter 发送，Shift+Enter 换行"
               @keydown="onEnter"
             />
+            <NTooltip v-if="store.isStreaming">
+              <template #trigger>
+                <NButton
+                  size="small"
+                  circle
+                  type="primary"
+                  :disabled="!inputValue.trim() || !store.modelId"
+                  aria-label="加入发送队列"
+                  @click="onSend"
+                >
+                  <NIcon :size="16"><SendOutline /></NIcon>
+                </NButton>
+              </template>
+              加入队列（当前回复完成后自动发送，Enter 同效）
+            </NTooltip>
             <NButton
               v-if="store.isStreaming"
               size="small"
@@ -314,7 +360,7 @@ function errorSummary(error: string): string {
               <NIcon :size="16"><StopOutline /></NIcon>
             </NButton>
             <NButton
-              v-else
+              v-if="!store.isStreaming"
               size="small"
               circle
               type="primary"
@@ -798,6 +844,68 @@ function errorSummary(error: string): string {
 }
 .ai-sidebar__input-row :deep(.n-input) {
   flex: 1;
+}
+
+/* 消息排队条：流式回复期间提示 + 排队消息保留（发送前可撤销） */
+.ai-sidebar__queue-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 18px;
+  border: 1px dashed color-mix(in srgb, var(--arco-primary, #165dff) 35%, transparent);
+  border-radius: 8px;
+  color: var(--neutral-text-2, inherit);
+}
+
+.ai-sidebar__queue-caption {
+  color: var(--arco-primary, #165dff);
+}
+
+.ai-sidebar__queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-sidebar__queue-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: var(--neutral-hover, rgba(127, 127, 127, 0.12));
+  border-radius: 6px;
+  min-width: 0;
+}
+
+.ai-sidebar__queue-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-sidebar__queue-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  color: var(--neutral-text-3, inherit);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ai-sidebar__queue-remove:hover {
+  color: var(--arco-danger, #e5484d);
+  background: color-mix(in srgb, var(--arco-danger, #e5484d) 12%, transparent);
 }
 
 @media (max-width: 480px) {

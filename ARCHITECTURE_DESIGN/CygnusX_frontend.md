@@ -2811,7 +2811,7 @@ git -C .. diff --check
 
 ## 40. 2026-10-25 消息排队（流式期间可继续输入）
 
-> **日期：2026-10-25。** AI 助手 / AI 工作台在 AI 回复（SSE 流式）期间，输入框保持可用：此时提交的消息不再被丢弃，而是进入**会话级等待队列**，当前回复完成后自动按序发送。排队消息在发送前可撤销。L4 协作室（`DepartmentView`）走房间网关另一套发送链路，未在本轮范围。
+> **日期：2026-10-25。** AI 交互的三个入口（L2 AI 助手 / L3 AI 工作台、平台侧全局单栏 AI 助手、L4 生物信息协作室）在 AI 处理期间，输入框保持可用：此时提交的消息不再被丢弃，而是进入**等待队列**，当前处理结束后自动按序发送。排队消息在发送前可撤销。
 
 ### 40.1 交互契约
 
@@ -2822,6 +2822,8 @@ git -C .. diff --check
 | 当前回复结束（完成/出错/手动停止） | 队列按序自动发送；多条排队消息逐条串行处理 |
 | 发送按钮（流式期间） | 与"停止生成"并排出现"加入队列"按钮（上箭头），Enter 同效 |
 | 会话切换 / 删除会话 | 队列按会话隔离：切回有排队消息的会话且空闲时自动冲刷；删除会话清掉其队列 |
+| 全局侧栏 AI 助手（全站浮层） | 同一契约；排队项携带**入队时的页面上下文**（在哪个页面问就带哪里的上下文）；`newChat` 清空队列 |
+| 协作室（MAS 房间） | 队列按 `runActive`（run_started→done/error）门控：run 执行期间排队、结束后自动发送；POST 完成到 run_started 之间由 2s 兜底探测补位；"停止"按钮语义为清空排队（房间无中断 run 的后端 API，经 `stopLabel` 定制文案） |
 | 临时会话首轮即排队 | 会话物化（`onSessionCreated`）时排队项的会话键同步改写，不产生孤儿队列项 |
 
 ### 40.2 实现要点
@@ -2832,10 +2834,16 @@ git -C .. diff --check
 | `stores/agentHub.ts`（竞态修复） | 新增 `activeStreamSeq` 流式轮次序号：旧一轮 `sendMessage` 的兜底块与状态回落不得清掉队列冲刷出的新一轮流式状态（onDone 置 false → watch 同步冲刷 → 旧轮继续执行时 `isStreaming` 已被重新置 true）；标题生成条件由 `!isStreaming` 改为 `aiMsg.status === 'complete'`（同因） |
 | `components/agent-workspace/AgentSandbox.vue` | `handleSend` 移除 `if (store.isStreaming) return` 静默丢弃，改走 `store.sendOrQueue`；输入框接 `:queued-items` / `@remove-queued` |
 | `views/StudioView.vue` | 同上；产物基线快照（`captureArtifactBaseline`）与结束后的报告自动打开（`settleArtifactsAfterSend`）挂在队列项钩子上，排队消息真实发送时机的行为与手动发送一致 |
-| `components/ai-chat/KimiChatInput.vue` | 新增 `queuedItems` prop 与 `remove-queued` emit；输入区顶部渲染排队条（状态提示 + 可撤销队列芯片，`TransitionGroup` 动画）；流式期间"加入队列"按钮与停止按钮并排；新增 `TimeOutline` 图标与配套样式 |
+| `stores/aiAssistantSidebar.ts` | 平台侧单栏 AI：新增 `queuedMessages` / `sendOrQueue` / `removeQueuedMessage` / `clearQueuedMessages`，`watch(isStreaming)` 自动冲刷；排队项保留入队时页面上下文；`newChat` 清队 |
+| `components/ai-assistant/GlobalAiAssistantSidebar.vue` | 输入行流式期间"加入队列"发送按钮与停止按钮并排；输入区上方排队条（状态提示 + 可撤销芯片）；快捷问题同样支持排队 |
+| `stores/masRoom.ts` | 协作室：新增 `queuedMessages` / `currentQueuedSends` / `sendOrQueue` / `removeQueuedMessage` / `clearQueuedMessages`；`watch(runActive)` 在 run 结束时冲刷，POST 后 2s 兜底探测覆盖 run_started 延迟窗口 |
+| `views/DepartmentView.vue` | `KimiChatInput` 接 `:is-streaming="store.runActive"`、排队 props 与 `@remove-queued`；`@stop` 语义为清空排队（`stopLabel` 定制文案）；移除 sending 期间禁用输入 |
+| `components/ai-chat/KimiChatInput.vue` | 新增 `queuedItems` / `stopLabel` prop 与 `remove-queued` emit；输入区顶部渲染排队条（状态提示 + 可撤销队列芯片，`TransitionGroup` 动画）；流式期间"加入队列"按钮与停止按钮并排；新增 `TimeOutline` 图标与配套样式 |
 
 ### 40.3 验证
 
-- 新增 `stores/__tests__/message-queue.test.ts`（3 例）：流式期间排队 → 回复结束自动发送且请求体内容正确；排队消息撤销后不再发送；多条排队按序串行发送。第 1 例在未加 `activeStreamSeq` 守卫时失败，复现旧轮兜底块清掉新一轮流式状态的竞态。
-- `npm run type-check` / `npm test`（93 文件 685 用例）/ `npm run build` 全部通过。
+- 新增 `stores/__tests__/message-queue.test.ts`（3 例，agentHub）：流式期间排队 → 回复结束自动发送且请求体内容正确；排队消息撤销后不再发送；多条排队按序串行发送。第 1 例在未加 `activeStreamSeq` 守卫时失败，复现旧轮兜底块清掉新一轮流式状态的竞态。
+- 扩展 `stores/__tests__/ai-assistant-sidebar.test.ts`（2 例）：侧栏流式期间排队、页面上下文随队列项保留、撤销与 `newChat` 清队；`useChatStream` mock 重构为随 streamChat 翻转 isStreaming（贴近真实 composable）。
+- 新增 `stores/__tests__/mas-room-message-queue.test.ts`（4 例）：run 期间排队、run 结束自动发送、撤销、清空队列、空闲直发。
+- `npm run type-check` / `npm test`（94 文件 691 用例）/ `npm run build` 全部通过。
 - 浏览器手工 E2E：SSE 流式、输入排队、撤销、停止后冲刷需人工验证（见 AGENTS.md 前端门禁）。

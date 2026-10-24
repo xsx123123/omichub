@@ -110,6 +110,8 @@ interface Props {
    * 空数组/不传则不渲染队列条；由调用方（AI 助手 / AI 工作台）接 store。
    */
   queuedItems?: { id: string; content: string }[]
+  /** 停止按钮的提示文案；协作室等无中断能力的场景可改为"停止排队"等语义 */
+  stopLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -128,6 +130,7 @@ const props = withDefaults(defineProps<Props>(), {
   sendLoading: false,
   toolbarConfig: undefined,
   queuedItems: () => [],
+  stopLabel: '停止生成',
 })
 
 const emit = defineEmits<{
@@ -1713,7 +1716,7 @@ watch(() => agentHub.currentSessionId, refreshGoalStatus)
                     <span class="stop-square" aria-hidden="true" />
                   </n-button>
                 </template>
-                停止生成
+                {{ stopLabel }}
               </n-tooltip>
             </template>
 

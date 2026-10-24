@@ -30,9 +30,10 @@ const timelineMessages = computed(() =>
 
 async function handleSend(content: string) {
   const text = (content || '').trim()
-  if (!text || store.sending) return
-  await store.sendMessage(DEFAULT_ROOM, text)
-  scrollToBottom()
+  if (!text) return
+  // MAS run 执行期间提交的消息进入队列，run 结束后自动发送（消息排队）
+  const outcome = await store.sendOrQueue(DEFAULT_ROOM, text)
+  if (outcome !== 'dropped') scrollToBottom()
 }
 
 function handleScroll() {
@@ -202,11 +203,15 @@ onBeforeUnmount(() => {
             v-model="draft"
             room-mode
             :placeholder="composerPlaceholder"
-            :disabled="store.sending"
+            :is-streaming="store.runActive"
+            :queued-items="store.currentQueuedSends"
             :send-loading="store.sending"
             :room-mention-agents="store.members"
+            stop-label="清空排队（运行中的任务不受影响）"
             hint="Enter 发送，Shift+Enter 换行"
             @send="handleSend"
+            @remove-queued="store.removeQueuedMessage"
+            @stop="store.clearQueuedMessages()"
           />
         </div>
       </section>

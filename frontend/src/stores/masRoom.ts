@@ -1,10 +1,18 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 /**
  * 生物信息部门（MAS 房间）Pinia store：
  * 消息列表 + SSE 消费（fetch-stream，断线按平台惯例指数退避重连）+ 计划卡片状态。
  */
+
+/** 排队中的待发送消息：MAS run 执行期间提交，run 结束后自动按序发送 */
+export interface MasQueuedSend {
+  id: string
+  roomId: string
+  content: string
+  createdAt: string
+}
 export interface MasRoomMessage {
   id: string
   room_id: string
@@ -58,6 +66,16 @@ export const useMasRoomStore = defineStore('masRoom', () => {
   const connected = ref(false)
   const runActive = ref(false)
   const activePlan = ref<Record<string, unknown> | null>(null)
+
+  // ========== 消息排队（MAS run 执行期间可继续输入，run 结束后自动发送） ==========
+  const queuedMessages = ref<MasQueuedSend[]>([])
+  const isFlushingQueue = ref(false)
+  /** 当前房间的排队消息（输入框队列条渲染用） */
+  const currentQueuedSends = computed(() =>
+    queuedMessages.value.filter((item) => item.roomId === DEFAULT_ROOM),
+  )
+  /** POST 完成到 run_started 之间（或事件丢失时）的兜底冲刷探测 */
+  let flushProbeTimer: ReturnType<typeof setTimeout> | null = null
 
   let abortController: AbortController | null = null
   let reconnectTries = 0
@@ -120,6 +138,65 @@ export const useMasRoomStore = defineStore('masRoom', () => {
       loading.value = false
     }
   }
+
+  function removeQueuedMessage(id: string): void {
+    queuedMessages.value = queuedMessages.value.filter((item) => item.id !== id)
+  }
+
+  function clearQueuedMessages(roomId?: string): void {
+    queuedMessages.value = roomId
+      ? queuedMessages.value.filter((item) => item.roomId !== roomId)
+      : []
+  }
+
+  /** 统一发送入口：空闲直发；MAS run 执行/提交期间进入队列，run 结束后自动按序发送 */
+  async function sendOrQueue(roomId: string, content: string): Promise<'sent' | 'queued' | 'dropped'> {
+    const text = content.trim()
+    if (!text) return 'dropped'
+    if (sending.value || runActive.value || isFlushingQueue.value) {
+      queuedMessages.value.push({
+        id: `mas_q_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        roomId,
+        content: text,
+        createdAt: new Date().toISOString(),
+      })
+      return 'queued'
+    }
+    await sendMessage(roomId, text)
+    return 'sent'
+  }
+
+  async function flushQueuedMessages(): Promise<void> {
+    if (sending.value || runActive.value || isFlushingQueue.value) return
+    const next = queuedMessages.value.find((item) => item.roomId === DEFAULT_ROOM)
+    if (!next) return
+    isFlushingQueue.value = true
+    try {
+      removeQueuedMessage(next.id)
+      await sendMessage(next.roomId, next.content)
+    } catch (error) {
+      console.warn('[masRoom] 排队消息发送失败，保留后续队列继续', error)
+    } finally {
+      isFlushingQueue.value = false
+    }
+    // 兜底探测：POST 完成后 run_started 事件可能尚未到达（runActive 仍 false），
+    // 延迟复查一次；run 已启动则由 watch(runActive) 在 run 结束时接管
+    scheduleFlushProbe()
+  }
+
+  function scheduleFlushProbe(): void {
+    if (queuedMessages.value.length === 0) return
+    if (flushProbeTimer !== null) clearTimeout(flushProbeTimer)
+    flushProbeTimer = setTimeout(() => {
+      flushProbeTimer = null
+      void flushQueuedMessages()
+    }, 2000)
+  }
+
+  // MAS run 结束（done/error）自动冲刷排队消息
+  watch(runActive, (active) => {
+    if (!active) void flushQueuedMessages()
+  })
 
   async function sendMessage(roomId: string, content: string) {
     if (sending.value) return
@@ -262,9 +339,15 @@ export const useMasRoomStore = defineStore('masRoom', () => {
     connected,
     runActive,
     activePlan,
+    queuedMessages,
+    isFlushingQueue,
+    currentQueuedSends,
     loadMembers,
     loadMessages,
     sendMessage,
+    sendOrQueue,
+    removeQueuedMessage,
+    clearQueuedMessages,
     connectStream,
     disconnectStream,
   }

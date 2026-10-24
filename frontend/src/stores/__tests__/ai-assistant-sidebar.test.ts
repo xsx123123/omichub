@@ -10,13 +10,24 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/api/client', () => ({ default: { get: mocks.get } }))
-vi.mock('@/composables/useChatStream', () => ({
-  useChatStream: () => ({
-    streamChat: mocks.streamChat,
-    abortStream: mocks.abortStream,
-    isStreaming: ref(false),
-  }),
-}))
+vi.mock('@/composables/useChatStream', () => {
+  // 模拟真实 composable：streamChat 执行期间 isStreaming 置 true，结束回落 false
+  const isStreaming = ref(false)
+  return {
+    useChatStream: () => ({
+      streamChat: async (options: unknown, callbacks: unknown) => {
+        isStreaming.value = true
+        try {
+          await mocks.streamChat(options, callbacks)
+        } finally {
+          isStreaming.value = false
+        }
+      },
+      abortStream: mocks.abortStream,
+      isStreaming,
+    }),
+  }
+})
 
 import { useAiAssistantSidebarStore } from '@/stores/aiAssistantSidebar'
 
@@ -147,5 +158,73 @@ describe('aiAssistantSidebar store', () => {
 
     expect(store.loadError).toContain('暂无可用')
     expect(mocks.streamChat).not.toHaveBeenCalled()
+  })
+
+  it('消息排队：流式期间 sendOrQueue 入队，回复结束后自动发送', async () => {
+    let releaseFirst!: () => void
+    const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve })
+    let firstCall = true
+    mocks.streamChat.mockImplementation(async (_options: unknown, callbacks: {
+      onText: (t: string) => void
+      onSessionCreated: (sid: string, mid: string) => void
+      onDone: () => void
+    }) => {
+      if (firstCall) {
+        firstCall = false
+        callbacks.onText('第一条回复')
+        callbacks.onSessionCreated('cs-q', 'm1')
+        await firstGate
+        callbacks.onDone()
+      } else {
+        callbacks.onText('第二条回复')
+        callbacks.onSessionCreated('cs-q', 'm2')
+        callbacks.onDone()
+      }
+    })
+    const store = useAiAssistantSidebarStore()
+    const first = store.sendMessage('第一条')
+    await vi.waitFor(() => expect(store.isStreaming).toBe(true))
+
+    expect(await store.sendOrQueue('排队消息', '页面上下文')).toBe('queued')
+    expect(store.queuedMessages).toHaveLength(1)
+
+    releaseFirst()
+    await first
+    await vi.waitFor(() => expect(store.queuedMessages).toHaveLength(0))
+    await vi.waitFor(() =>
+      expect(store.messages.some((m) => m.role === 'user' && m.content === '排队消息')).toBe(true),
+    )
+    // 第二次 streamChat 调用携带入队时捕获的页面上下文
+    const secondCallOptions = mocks.streamChat.mock.calls[1]?.[0] as { pageContext?: string }
+    expect(secondCallOptions?.pageContext).toBe('页面上下文')
+  })
+
+  it('消息排队：撤销后不再发送，newChat 清空队列', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    mocks.streamChat.mockImplementation(async (_options: unknown, callbacks: {
+      onText: (t: string) => void
+      onSessionCreated: (sid: string, mid: string) => void
+      onDone: () => void
+    }) => {
+      callbacks.onText('回复')
+      callbacks.onSessionCreated('cs-q2', 'm1')
+      await gate
+      callbacks.onDone()
+    })
+    const store = useAiAssistantSidebarStore()
+    const first = store.sendMessage('第一条')
+    await vi.waitFor(() => expect(store.isStreaming).toBe(true))
+
+    expect(await store.sendOrQueue('会撤销的消息')).toBe('queued')
+    store.removeQueuedMessage(store.queuedMessages[0]!.id)
+    expect(await store.sendOrQueue('newChat 清掉的消息')).toBe('queued')
+    store.newChat()
+    expect(store.queuedMessages).toHaveLength(0)
+
+    release()
+    await first
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(mocks.streamChat).toHaveBeenCalledTimes(1)
   })
 })

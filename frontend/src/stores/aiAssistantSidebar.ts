@@ -9,7 +9,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import apiClient from '@/api/client'
 import { useChatStream } from '@/composables/useChatStream'
 import type { ChatModelOption } from '@/types/chat'
@@ -22,6 +22,15 @@ export interface SidebarMessage {
   status: 'complete' | 'streaming' | 'error'
   error?: string
   created_at: string
+}
+
+/** 排队中的待发送消息：流式回复期间提交，回复完成后自动发送 */
+export interface SidebarQueuedSend {
+  id: string
+  content: string
+  /** 入队时捕获的页面上下文（用户在哪个页面提问就带哪里的上下文） */
+  pageContext?: string
+  createdAt: string
 }
 
 // 侧栏本来就使用独立于 AI 工作区的本地命名空间，保持 key 兼容已有侧栏历史。
@@ -82,6 +91,59 @@ export const useAiAssistantSidebarStore = defineStore('aiAssistantSidebar', () =
   }
 
   const { streamChat, abortStream, isStreaming } = useChatStream()
+
+  // ========== 消息排队（流式期间可继续输入，回复完成后自动发送） ==========
+  const queuedMessages = ref<SidebarQueuedSend[]>([])
+  const isFlushingQueue = ref(false)
+
+  function removeQueuedMessage(id: string): void {
+    queuedMessages.value = queuedMessages.value.filter((item) => item.id !== id)
+  }
+
+  function clearQueuedMessages(): void {
+    queuedMessages.value = []
+  }
+
+  /** 统一发送入口：空闲直发；流式期间进入队列，回复完成后自动按序发送 */
+  async function sendOrQueue(
+    content: string,
+    pageContext?: string,
+  ): Promise<'sent' | 'queued' | 'dropped'> {
+    const text = content.trim()
+    if (!text) return 'dropped'
+    if (isStreaming.value || isFlushingQueue.value) {
+      queuedMessages.value.push({
+        id: `sb_q_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        content: text,
+        pageContext,
+        createdAt: new Date().toISOString(),
+      })
+      return 'queued'
+    }
+    await sendMessage(content, pageContext)
+    return 'sent'
+  }
+
+  async function flushQueuedMessages(): Promise<void> {
+    if (isStreaming.value || isFlushingQueue.value) return
+    const next = queuedMessages.value[0]
+    if (!next) return
+    isFlushingQueue.value = true
+    try {
+      removeQueuedMessage(next.id)
+      await sendMessage(next.content, next.pageContext)
+    } catch (error) {
+      console.warn('[aiAssistantSidebar] 排队消息发送失败，保留后续队列继续', error)
+    } finally {
+      isFlushingQueue.value = false
+    }
+    if (!isStreaming.value) await flushQueuedMessages()
+  }
+
+  // 回复结束（完成/出错/停止）自动冲刷；useChatStream 的 isStreaming 回落覆盖全部路径
+  watch(isStreaming, (streaming) => {
+    if (!streaming) void flushQueuedMessages()
+  })
 
   // ========== Actions ==========
 
@@ -194,11 +256,12 @@ export const useAiAssistantSidebarStore = defineStore('aiAssistantSidebar', () =
     }
   }
 
-  /** 开启新对话：清空本地上下文（历史会话仍保留在会话列表中） */
+  /** 开启新对话：清空本地上下文与排队消息（历史会话仍保留在会话列表中） */
   function newChat() {
     abortStream()
     messages.value = []
     sessionId.value = ''
+    clearQueuedMessages()
     persist()
   }
 
@@ -211,8 +274,13 @@ export const useAiAssistantSidebarStore = defineStore('aiAssistantSidebar', () =
     modelsLoaded,
     loadError,
     isStreaming,
+    queuedMessages,
+    isFlushingQueue,
     ensureModels,
     sendMessage,
+    sendOrQueue,
+    removeQueuedMessage,
+    clearQueuedMessages,
     stopStreaming,
     newChat,
   }

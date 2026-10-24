@@ -95,6 +95,26 @@
 | Lint | `uv run ruff check <本轮改动文件>` | 0 错误（3 处 import 排序已自动修复）；仓库其余 265 个 ruff 存量错误未动 |
 | 类型 | `uv run mypy <本轮 6 个 src 文件>` | 0 新增错误（53 对比基线 56，按错误文本去行号比对无差异；CI 不跑 mypy，本地补跑） |
 
+#### 2026-10-24 运行验收补记（同日第二轮）
+
+按 `ARCHITECTURE_DESIGN/CygnusX_Project_Workspace_Test_Plan.md` 完成运行验收，报告见
+`evidence/project-identity-acceptance-20261024/TEST_REPORT.md`：
+
+- **Fixed**：验收 DEF-04 发现真实缺陷——默认项目被删、替代身份（`默认项目-2`）建立后，
+  再次解析会继续分配 `-3/-4`（每个后续会话各建一个新项目）。`reserve_project_identity`
+  复用语义补按显示名回退识别既有替代身份（与统一前默认路径名称优先语义一致）。
+- **真实 PostgreSQL 并发验收 8/8 PASS**（`scripts/poc/verify_project_identity_pg.py`，
+  一次性临时库验后销毁）：owner/项目行锁串行化（并发插入被阻塞、删除先提交则插入被
+  FK 拒绝、无悬空引用）、未登记引用表 FK 异常保持原分类、冲突后会话可复用、并发删除
+  tombstone 唯一、并发默认解析/显式竞争/跨用户同名收敛。
+- **真实 HTTP 验收 14/14 PASS**（`scripts/poc/verify_project_identity_http.py`，进程内
+  ASGI + 真实 PG/Redis/JWT/审计/限流）：创建→改名（slug 不变）→overview→删除全链、
+  409 `PROJECT_HAS_RETAINED_REFERENCES` 错误结构、跨用户 404 不泄露引用计数、真实会话
+  入口默认项目复用、删除默认项目后新身份 `默认项目-2`、物理目录稳定。
+- 单测新增 12 例（A 层补充：DEF-04/05/09/10、DEL-02/04/06/07、开关开启态、会话归档
+  slug），全套 4122 passed（7 个与本轮无关的存量失败不变）；B 层相邻回归 121 passed。
+- 上线前置：合并本分支后需重建/重启 cygnusx-web（容器当前为 10-18 旧构建 `e78fd1ef`）。
+
 #### 未验证与已知边界（如实列出）
 
 - **真实 PostgreSQL 并发未验收**：owner 行锁并发建项目、RESTRICT 兜底的真实 PG 行为、

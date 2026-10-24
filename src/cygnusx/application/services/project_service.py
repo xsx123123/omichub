@@ -196,6 +196,11 @@ class ProjectService:
 
         await self._lock_owner(user_id)
         existing = await self._find_project_by_slug(user_id, slug)
+        if existing is None and reuse_existing:
+            # 名称语义复用：slug 被 tombstone 保留或已分配变体（-2 起）时，
+            # 默认项目 / 按名建单仍按显示名识别同一逻辑项目，复用既有替代
+            # 身份而不是继续分配 -3/-4（与统一前默认路径的名称优先查找一致）。
+            existing = await self._find_project_by_name(user_id, name)
         if existing is not None:
             if reuse_existing:
                 return existing, False
@@ -451,6 +456,12 @@ class ProjectService:
     async def _find_project_by_slug(self, user_id: UUID, slug: str) -> ProjectModel | None:
         result = await self._session.execute(
             select(ProjectModel).where(ProjectModel.user_id == user_id, ProjectModel.slug == slug)
+        )
+        return result.scalar_one_or_none()
+
+    async def _find_project_by_name(self, user_id: UUID, name: str) -> ProjectModel | None:
+        result = await self._session.execute(
+            select(ProjectModel).where(ProjectModel.user_id == user_id, ProjectModel.name == name)
         )
         return result.scalar_one_or_none()
 

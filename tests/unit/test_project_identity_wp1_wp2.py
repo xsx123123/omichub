@@ -18,6 +18,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
@@ -470,3 +471,246 @@ async def test_delete_foreign_project_is_not_found(
     created = await service.create_project(env.owner, "mine-only")
     with pytest.raises(NotFoundError):
         await service.delete_project(env.other, UUID(created["id"]))
+
+
+# ----------------------------------------------------------------------
+# A 层补充验收（CygnusX_Project_Workspace_Test_Plan.md，2026-10-24）
+# ----------------------------------------------------------------------
+
+
+async def test_default_project_replacement_stable_across_sessions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEF-04：替代默认项目建立后连续 5 次解析复用同一身份，不产生 -3/-4。"""
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+    created = await service.create_project(env.owner, ChatSessionManagement.DEFAULT_PROJECT_NAME)
+    await service.delete_project(env.owner, UUID(created["id"]))
+
+    svc = _SessionSvc()
+    svc._db = env.db
+    ids = [await svc._resolve_default_project_id(str(env.owner)) for _ in range(5)]
+
+    assert len(set(ids)) == 1 and ids[0] != created["id"]
+    model = env.db.sync.get(ProjectModel, UUID(ids[0]))
+    assert model is not None and model.slug == f"{created['slug']}-2"
+
+
+async def test_default_project_second_deletion_allocates_third_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEF-05：替代默认项目再次删除后不复用任何被保留 slug。"""
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+    created = await service.create_project(env.owner, ChatSessionManagement.DEFAULT_PROJECT_NAME)
+    await service.delete_project(env.owner, UUID(created["id"]))
+
+    svc = _SessionSvc()
+    svc._db = env.db
+    second = await svc._resolve_default_project_id(str(env.owner))
+    await service.delete_project(env.owner, UUID(second))
+
+    third = await svc._resolve_default_project_id(str(env.owner))
+    model = env.db.sync.get(ProjectModel, UUID(third))
+    assert model is not None and model.slug == f"{created['slug']}-3"
+    tombs = {t.slug for t in env.db.sync.execute(sa.select(ProjectTombstoneModel)).scalars()}
+    assert {created["slug"], f"{created['slug']}-2"} <= tombs
+
+
+async def test_reserve_identity_does_not_commit_outer_transaction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEF-09：身份预留仅 flush；外层事务回滚后不留行（helper 不得提前 commit）。"""
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+
+    model, created = await service.reserve_project_identity(
+        env.owner, "外层事务项目", reuse_existing=True
+    )
+    assert created
+    assert env.db.sync.get(ProjectModel, model.id) is not None
+    await env.db.rollback()
+    assert env.db.sync.get(ProjectModel, model.id) is None
+
+
+async def test_default_project_skips_occupied_suffix_slug(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEF-10：后缀 slug 已被存量项目占用时跳过，分配下一个可用值。"""
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+    name = ChatSessionManagement.DEFAULT_PROJECT_NAME
+    base = await service.create_project(env.owner, name)
+    await service.create_project(env.owner, f"{name}-2")
+    await service.delete_project(env.owner, UUID(base["id"]))
+
+    svc = _SessionSvc()
+    svc._db = env.db
+    resolved = await svc._resolve_default_project_id(str(env.owner))
+
+    model = env.db.sync.get(ProjectModel, UUID(resolved))
+    assert model is not None and model.slug == f"{base['slug']}-3"
+
+
+async def test_renamed_default_project_still_reused_by_slug(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """契约核对：默认项目按 slug 识别；改名（slug 不变）后仍复用，不另建默认项目。"""
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+    created = await service.create_project(env.owner, ChatSessionManagement.DEFAULT_PROJECT_NAME)
+    await service.update_project(env.owner, UUID(created["id"]), {"name": "我的收纳项目"})
+
+    svc = _SessionSvc()
+    svc._db = env.db
+    resolved = await svc._resolve_default_project_id(str(env.owner))
+
+    assert resolved == created["id"]
+
+
+async def test_delete_blocked_reports_multiple_reference_types(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEL-02：多类引用同时存在时完整返回阻断信息。"""
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+    created = await service.create_project(env.owner, "multi-ref")
+    pid = UUID(created["id"])
+    _seed_dataset(env, pid)
+    await _seed_reference("research_plan", env, pid)
+    await env.db.commit()
+
+    with pytest.raises(ConflictError) as excinfo:
+        await service.delete_project(env.owner, pid)
+
+    assert excinfo.value.code == "PROJECT_HAS_RETAINED_REFERENCES"
+    assert "数据集 1" in str(excinfo.value.detail)
+    assert "科研计划 1" in str(excinfo.value.detail)
+
+
+async def test_double_delete_is_not_found(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEL-04：重复删除返回 404 语义，tombstone 唯一。"""
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+    created = await service.create_project(env.owner, "double-delete")
+    pid = UUID(created["id"])
+
+    assert await service.delete_project(env.owner, pid) is True
+    with pytest.raises(NotFoundError):
+        await service.delete_project(env.owner, pid)
+    tombs = env.db.sync.execute(sa.select(ProjectTombstoneModel)).scalars().all()
+    assert len(tombs) == 1 and tombs[0].slug == created["slug"]
+
+
+async def test_unidentifiable_integrity_error_keeps_original_classification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEL-06：预检查清单之外的约束异常回滚后原样抛出，不伪装成科研引用冲突。"""
+    from sqlalchemy.exc import IntegrityError
+
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+    created = await service.create_project(env.owner, "unknown-ref")
+    pid = UUID(created["id"])
+    _seed_dataset(env, pid)
+    await env.db.commit()
+
+    async def always_empty(*args: object, **kwargs: object) -> list[tuple[str, int]]:
+        return []
+
+    monkeypatch.setattr(service, "_retained_reference_counts", always_empty)
+    with pytest.raises(IntegrityError):
+        await service.delete_project(env.owner, pid)
+
+    assert env.db.sync.get(ProjectModel, pid) is not None
+    assert env.db.sync.execute(sa.select(ProjectTombstoneModel)).scalars().all() == []
+
+
+async def test_delete_mid_operation_failure_no_partial_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DEL-07：删除中途注入失败，调用方回滚后无部分提交（项目在、无 tombstone）。"""
+
+    class _ExplodingDirs:
+        def __init__(self, _session: object) -> None:
+            pass
+
+        async def get_by_path(self, *args: object, **kwargs: object) -> object:
+            return None
+
+        async def save(self, *args: object, **kwargs: object) -> object:
+            return None
+
+        async def delete(self, *args: object, **kwargs: object) -> bool:
+            raise RuntimeError("注入失败：目录删除前崩溃")
+
+    env = build_identity_env(tmp_path, monkeypatch)
+    monkeypatch.setattr(project_service_module, "DirectoryRepositoryImpl", _ExplodingDirs)
+    service = ProjectService(env.db)
+    created = await service.create_project(env.owner, "midfail")
+    pid = UUID(created["id"])
+
+    with pytest.raises(RuntimeError):
+        await service.delete_project(env.owner, pid)
+    await env.db.rollback()
+
+    assert env.db.sync.get(ProjectModel, pid) is not None
+    assert env.db.sync.execute(sa.select(ProjectTombstoneModel)).scalars().all() == []
+
+
+async def test_delete_blocked_with_export_flag_enabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """开关开启时科研引用同样阻断（与关闭态一致的错误码）。"""
+    monkeypatch.setattr(
+        project_service_module,
+        "get_settings",
+        lambda: Settings(_env_file=None, project_export_enabled=True),
+    )
+    env = build_identity_env(tmp_path, monkeypatch)
+    service = ProjectService(env.db)
+    created = await service.create_project(env.owner, "flag-on")
+    pid = UUID(created["id"])
+    await _seed_reference("export_job", env, pid)
+    await env.db.commit()
+
+    with pytest.raises(ConflictError) as excinfo:
+        await service.delete_project(env.owner, pid)
+
+    assert excinfo.value.code == "PROJECT_HAS_RETAINED_REFERENCES"
+
+
+async def test_ensure_chat_archive_uses_bound_project_slug(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ID-01（普通会话归档入口）：绑定项目的会话 run 目录按稳定 slug 落盘。"""
+    from cygnusx.application.services import chat_archive_service
+    from cygnusx.application.services.chat_archive_service import ensure_chat_archive
+
+    factory = StoragePathFactory(StorageConfig(data_root=str(tmp_path), users_subdir="users"))
+    monkeypatch.setattr(chat_archive_service, "get_path_factory", lambda: factory)
+
+    uid = str(uuid4())
+    project = SimpleNamespace(
+        user_id=uid, name="改名后的标题", slug="chat-stable-slug",
+        description="", customer="", created_at=None,
+    )
+    session = SimpleNamespace(
+        session_id="sess-abc12345", user_id=uid, project_id=str(uuid4()),
+        title="改名后的标题", sandbox_meta=None,
+    )
+
+    class _Db:
+        async def scalar(self, _stmt: object) -> Any:
+            return session
+
+        async def get(self, model: object, _pk: object) -> Any:
+            return project if model is ProjectModel else None
+
+    ctx = await ensure_chat_archive(_Db(), uid, "sess-abc12345")
+
+    assert ctx is not None
+    assert ctx.run_dir.parent.parent.name == "chat-stable-slug"
+    assert ctx.metadata["project_slug"] == "chat-stable-slug"

@@ -239,7 +239,7 @@ run 扫描所有非隐藏一级子目录，不依赖数据库或归档标记；�
 
 ## 9. 测试与已知缺口
 
-- 测试：`test_project_get_or_create.py`、`test_session_project_binding.py`、`test_project_overview.py`、`test_project_archive_service.py`、`test_project_identity_wp1_wp2.py`（F01/F02/F03 回归：稳定 slug 落盘、默认项目身份预留、删除保留引用与 FK 兜底）、`test_file_service.py`、`test_file_service_presigned.py`、`test_upload_dedup_guard.py`、`test_team_file_acl.py`、`test_workspace_archive.py`、`test_workspace_env_restore.py`、`tests/integration/test_chat_upload.py`。
+- 测试：`test_project_get_or_create.py`、`test_session_project_binding.py`、`test_project_overview.py`、`test_project_archive_service.py`、`test_project_identity_wp1_wp2.py`（F01/F02/F03 回归：稳定 slug 落盘、默认项目身份预留、删除保留引用与 FK 兜底）、`test_file_service.py`、`test_file_service_presigned.py`、`test_upload_dedup_guard.py`、`test_team_file_acl.py`、`test_workspace_archive.py`、`test_workspace_env_restore.py`、`tests/integration/test_chat_upload.py`。运行验收方案见 [CygnusX_Project_Workspace_Test_Plan.md](CygnusX_Project_Workspace_Test_Plan.md)；2026-10-24 首轮运行验收（真实 PG 并发 8/8、真实 HTTP 14/14，含 DEF-04 替代默认身份复用缺陷的发现与修复）报告见 `evidence/project-identity-acceptance-20261024/TEST_REPORT.md`。
 - 缺口：
   - 设计边界（非缺口）：项目刻意采用单所有者模型；团队 ACL 与项目完全独立。
   - 迁移后 status 显式化；NULL 读取兼容保留一个版本（至 lifecycle02）。

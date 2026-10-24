@@ -658,7 +658,21 @@ async function handleSend(
   options: { attachments?: FileAttachment[]; enableWebSearch?: boolean; enableCodeExecution?: boolean } = {},
 ) {
   if (!content.trim() && !options.attachments?.length) return
-  if (store.isStreaming) return
+  // 流式回复期间提交的消息进入队列，回复完成后自动发送（消息排队）；
+  // 产物基线快照与结束后的报告自动打开挂在队列项的 beforeSend/afterSend 上，
+  // 保证排队消息真正发送的时机点行为与手动发送一致。
+  let baseline = new Set<string>()
+  const outcome = await store.sendOrQueue(content, options, {
+    beforeSend: async () => {
+      baseline = await captureArtifactBaseline()
+    },
+    afterSend: () => settleArtifactsAfterSend(baseline),
+  })
+  if (outcome !== 'dropped') input.value = ''
+}
+
+/** 发送前快照当前会话产物路径，作为"本轮新报告"判定的基线 */
+async function captureArtifactBaseline(): Promise<Set<string>> {
   const currentId = sessionId.value
   const previousArtifactPaths = new Set<string>()
   if (currentId) {
@@ -669,24 +683,24 @@ async function handleSend(
       // 产物列表暂不可用时不阻塞用户发起分析，结束后仍会统一刷新。
     }
   }
+  return previousArtifactPaths
+}
+
+/** 发送结束后刷新工作区，并自动打开基线之外最新产出的 Markdown 报告 */
+async function settleArtifactsAfterSend(previousArtifactPaths: Set<string>): Promise<void> {
+  refreshWorkspace()
+  const currentId = sessionId.value
+  if (!currentId) return
   try {
-    await store.sendMessage(content, options)
-  } finally {
-    refreshWorkspace()
-    if (currentId) {
-      try {
-        const artifacts = await studioApi.listArtifacts(currentId)
-        const latestReport = artifacts
-          .filter((artifact) => !previousArtifactPaths.has(artifact.path))
-          .filter((artifact) => /\.(md|markdown)$/i.test(artifact.path))
-          .sort((left, right) => right.mtime - left.mtime)[0]
-        if (latestReport) await openFileInEditor(latestReport.path, { pin: true })
-      } catch {
-        // 右栏会保留可重试错误状态；报告自动打开失败不影响本轮对话结果。
-      }
-    }
+    const artifacts = await studioApi.listArtifacts(currentId)
+    const latestReport = artifacts
+      .filter((artifact) => !previousArtifactPaths?.has(artifact.path))
+      .filter((artifact) => /\.(md|markdown)$/i.test(artifact.path))
+      .sort((left, right) => right.mtime - left.mtime)[0]
+    if (latestReport) await openFileInEditor(latestReport.path, { pin: true })
+  } catch {
+    // 右栏会保留可重试错误状态；报告自动打开失败不影响本轮对话结果。
   }
-  input.value = ''
 }
 
 function findSourceUserMessage(messageId: string): ChatMessage | undefined {
@@ -1332,12 +1346,14 @@ function formatSessionTime(iso: string): string {
                 ref="composerRef"
                 v-model="input"
                 :is-streaming="store.isStreaming"
+                :queued-items="store.currentQueuedSends"
                 :placeholder="longRunPlaceholder"
                 show-overdrive-control
                 :overdrive-enabled="overdriveEnabled"
                 @toggle-overdrive="overdriveEnabled = !overdriveEnabled"
                 @send="handleSend"
                 @stop="store.stopStreaming"
+                @remove-queued="store.removeQueuedMessage"
               />
             </div>
           </section>

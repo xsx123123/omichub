@@ -416,12 +416,16 @@ function handleSend(
   } = {},
 ) {
   if (!content.trim() && !options.attachments?.length) return
-  if (store.isStreaming) return
   notifyDefaultProjectIfUnset()
   // AI 助手页面：需确认的操作（写入文件、代码执行、网络访问等）默认自动执行，
   // 不逐次弹审批卡；AI 工作台页面（StudioView）不传该标记，维持逐次审批。
-  void store.sendMessage(content, { ...options, autoApprove: true })
-  input.value = ''
+  // 流式回复期间提交的消息进入队列，回复完成后自动发送（消息排队）。
+  void store
+    .sendOrQueue(content, { ...options, autoApprove: true })
+    .then((outcome) => {
+      // 两种去向都清空输入框：排队成功时消息已保留在队列条中
+      if (outcome !== 'dropped') input.value = ''
+    })
 }
 
 function findSourceUserMessage(messageId: string): ChatMessage | undefined {
@@ -691,6 +695,7 @@ onUnmounted(() => {
             ref="composerRef"
             v-model="input"
             :is-streaming="store.isStreaming"
+            :queued-items="store.currentQueuedSends"
             :show-overdrive-control="true"
             :overdrive-enabled="overdriveEnabled"
             :show-workbench-control="true"
@@ -698,6 +703,7 @@ onUnmounted(() => {
             :placeholder="inputPlaceholder"
             @send="handleSend"
             @stop="store.stopStreaming"
+            @remove-queued="store.removeQueuedMessage"
             @toggle-overdrive="overdriveEnabled = !overdriveEnabled"
             @enter-workbench="handleEnterStudio"
           >

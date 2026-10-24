@@ -2808,3 +2808,34 @@ git -C .. diff --check
 | 产物令牌 grep | `--page-padding`、`--chat-input-bg`、`--surface-elevated`、`--chat-user-bubble`、`--border-subtle` 均可在 `frontend/dist/assets/*.css` 中检索到 |
 
 后续修改样式令牌时，仍应重复上述 grep；仅源码命中而产物未命中，说明该令牌被构建期裁剪（未被任何选择器引用）或只写在未被打包的样式文件中。
+
+## 40. 2026-10-25 消息排队（流式期间可继续输入）
+
+> **日期：2026-10-25。** AI 助手 / AI 工作台在 AI 回复（SSE 流式）期间，输入框保持可用：此时提交的消息不再被丢弃，而是进入**会话级等待队列**，当前回复完成后自动按序发送。排队消息在发送前可撤销。L4 协作室（`DepartmentView`）走房间网关另一套发送链路，未在本轮范围。
+
+### 40.1 交互契约
+
+| 场景 | 行为 |
+| --- | --- |
+| 流式期间输入并 Enter / 点发送 | 消息进入队列，输入框清空；队列条显示"已排队 N 条，当前回复完成后自动发送"，每条可点 × 撤销 |
+| 流式期间无排队消息 | 队列条显示轻量状态"AI 正在回复，现在发送的消息将排队等待" |
+| 当前回复结束（完成/出错/手动停止） | 队列按序自动发送；多条排队消息逐条串行处理 |
+| 发送按钮（流式期间） | 与"停止生成"并排出现"加入队列"按钮（上箭头），Enter 同效 |
+| 会话切换 / 删除会话 | 队列按会话隔离：切回有排队消息的会话且空闲时自动冲刷；删除会话清掉其队列 |
+| 临时会话首轮即排队 | 会话物化（`onSessionCreated`）时排队项的会话键同步改写，不产生孤儿队列项 |
+
+### 40.2 实现要点
+
+| 文件 | 改动 |
+| --- | --- |
+| `stores/agentHub.ts` | 新增 `queuedMessages` / `isFlushingQueue` / `currentQueuedSends` 与 `sendOrQueue` / `queueMessage` / `removeQueuedMessage` / `clearQueuedMessages` / `flushQueuedMessages`；`watch(isStreaming)` 覆盖全部回落路径（onDone/onError/兜底/stop）自动冲刷，`watch(currentSessionId)` 处理切回会话；`sendMessage` options 提取为共享类型 `AgentChatSendOptions`，队列项支持 `beforeSend`/`afterSend` 钩子（工作台产物基线快照用）；删除会话清队列；临时会话物化时改写队列会话键 |
+| `stores/agentHub.ts`（竞态修复） | 新增 `activeStreamSeq` 流式轮次序号：旧一轮 `sendMessage` 的兜底块与状态回落不得清掉队列冲刷出的新一轮流式状态（onDone 置 false → watch 同步冲刷 → 旧轮继续执行时 `isStreaming` 已被重新置 true）；标题生成条件由 `!isStreaming` 改为 `aiMsg.status === 'complete'`（同因） |
+| `components/agent-workspace/AgentSandbox.vue` | `handleSend` 移除 `if (store.isStreaming) return` 静默丢弃，改走 `store.sendOrQueue`；输入框接 `:queued-items` / `@remove-queued` |
+| `views/StudioView.vue` | 同上；产物基线快照（`captureArtifactBaseline`）与结束后的报告自动打开（`settleArtifactsAfterSend`）挂在队列项钩子上，排队消息真实发送时机的行为与手动发送一致 |
+| `components/ai-chat/KimiChatInput.vue` | 新增 `queuedItems` prop 与 `remove-queued` emit；输入区顶部渲染排队条（状态提示 + 可撤销队列芯片，`TransitionGroup` 动画）；流式期间"加入队列"按钮与停止按钮并排；新增 `TimeOutline` 图标与配套样式 |
+
+### 40.3 验证
+
+- 新增 `stores/__tests__/message-queue.test.ts`（3 例）：流式期间排队 → 回复结束自动发送且请求体内容正确；排队消息撤销后不再发送；多条排队按序串行发送。第 1 例在未加 `activeStreamSeq` 守卫时失败，复现旧轮兜底块清掉新一轮流式状态的竞态。
+- `npm run type-check` / `npm test`（93 文件 685 用例）/ `npm run build` 全部通过。
+- 浏览器手工 E2E：SSE 流式、输入排队、撤销、停止后冲刷需人工验证（见 AGENTS.md 前端门禁）。

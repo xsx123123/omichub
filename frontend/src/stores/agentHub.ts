@@ -13,7 +13,7 @@
  */
 
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { isToday, isYesterday, parseISO } from 'date-fns'
 import type {
   AgentCategory,
@@ -175,6 +175,44 @@ export interface AvailableModel {
   output_cache_price?: number | null
 }
 
+/** sendMessage 的可选参数（排队复用同一结构，队列仅在内存中） */
+export interface AgentChatSendOptions {
+  attachments?: FileAttachment[]
+  enableWebSearch?: boolean
+  enableCodeExecution?: boolean
+  /** @ 显式指定的智能体：本条消息转交该专家回答 */
+  explicitAgentId?: string
+  /** @ 挂载到本次对话的技能名 */
+  skillNames?: string[]
+  mcpMode?: 'off' | 'auto' | 'manual'
+  extraMcpServers?: string[]
+  multiAgent?: boolean
+  overdrive?: boolean
+  /** 当前用户消息的受控操作元数据。 */
+  messageMetadata?: Record<string, unknown>
+  /** 工具轮次触顶后用户确认继续：本次请求上限扩展到 1000 轮 */
+  extendMaxRounds?: boolean
+  /**
+   * AI 助手页面专用：本轮需确认的操作（代码执行/写入文件/网络访问）由后端直接执行，
+   * 不再逐次弹审批卡。AI 工作台页面不传，维持逐次审批语义。
+   */
+  autoApprove?: boolean
+}
+
+/** 排队中的待发送消息：AI 流式回复期间提交，回复结束后自动发送 */
+export interface QueuedChatSend {
+  id: string
+  /** 入队时的会话 ID（临时会话物化后同步改写） */
+  sessionId: string
+  content: string
+  options: AgentChatSendOptions
+  /** 真正发送前回调（如工作台产物基线快照） */
+  beforeSend?: () => void | Promise<void>
+  /** 发送完成后回调（如工作台刷新） */
+  afterSend?: () => void | Promise<void>
+  createdAt: string
+}
+
 export const useAgentHubStore = defineStore('agentHub', () => {
   // ========== State ==========
   const mcps = ref<McpService[]>([])
@@ -201,6 +239,17 @@ export const useAgentHubStore = defineStore('agentHub', () => {
     content: string
     attachments: FileAttachment[]
   } | null>(null)
+
+  /** 流式回复期间排队的待发送消息（消息排队：回复完成后按会话自动发送） */
+  const queuedMessages = ref<QueuedChatSend[]>([])
+  /** 队列冲刷进行中，防止 sendOrQueue 在冲刷间隙误判为可直发 */
+  const isFlushingQueue = ref(false)
+  /**
+   * 流式轮次序号：旧一轮的收尾代码（兜底块/状态回落）不得清掉新一轮的流式状态。
+   * 消息排队引入后，onDone 置 isStreaming=false → watch 冲刷下一轮，会在旧轮
+   * sendMessage 继续执行前把 isStreaming 重新置 true，必须靠序号区分归属。
+   */
+  let activeStreamSeq = 0
 
   /** 目标 Agent 声明默认工作台模式且当前是普通聊天会话时，发起工作台跳转 */
   function maybeRedirectToStudio(agentId: string, agentName: string): void {
@@ -1505,6 +1554,7 @@ export const useAgentHubStore = defineStore('agentHub', () => {
 
   async function deleteSession(id: string) {
     if (currentSessionId.value === id) stopStreaming()
+    clearQueuedMessages(id)
     if (currentSessionId.value === id) {
       stopAgentTeamsCaseEvents()
       stopOverdriveEvents()
@@ -2026,31 +2076,96 @@ export const useAgentHubStore = defineStore('agentHub', () => {
     roomSpeechMessages.clear()
   }
 
+  // ========== 消息排队（流式期间可继续输入，回复完成后自动发送） ==========
+
+  /** 当前会话的排队消息（输入框队列条渲染用） */
+  const currentQueuedSends = computed(() =>
+    queuedMessages.value.filter((item) => item.sessionId === currentSessionId.value),
+  )
+
+  function queueMessage(
+    content: string,
+    options: AgentChatSendOptions = {},
+    hooks: { beforeSend?: () => void | Promise<void>; afterSend?: () => void | Promise<void> } = {},
+  ): boolean {
+    const session = currentSession.value
+    const text = content.trim()
+    if (!session || (!text && !options.attachments?.length)) return false
+    queuedMessages.value.push({
+      id: `queued-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      sessionId: session.id,
+      content: text,
+      options: { ...options },
+      beforeSend: hooks.beforeSend,
+      afterSend: hooks.afterSend,
+      createdAt: new Date().toISOString(),
+    })
+    return true
+  }
+
+  function removeQueuedMessage(id: string): void {
+    queuedMessages.value = queuedMessages.value.filter((item) => item.id !== id)
+  }
+
+  function clearQueuedMessages(sessionId?: string): void {
+    queuedMessages.value = sessionId
+      ? queuedMessages.value.filter((item) => item.sessionId !== sessionId)
+      : []
+  }
+
+  /**
+   * 统一发送入口：空闲时直接发送；流式/冲刷期间进入队列，回复完成后自动发送。
+   * 返回实际去向，供调用方决定是否清空输入框（排队成功也要清空）。
+   */
+  async function sendOrQueue(
+    content: string,
+    options: AgentChatSendOptions = {},
+    hooks: { beforeSend?: () => void | Promise<void>; afterSend?: () => void | Promise<void> } = {},
+  ): Promise<'sent' | 'queued' | 'dropped'> {
+    const session = currentSession.value
+    if (!session) return 'dropped'
+    if (isStreaming.value || isFlushingQueue.value) {
+      return queueMessage(content, options, hooks) ? 'queued' : 'dropped'
+    }
+    await sendMessage(content, options)
+    return 'sent'
+  }
+
+  /** 冲刷当前会话的下一条排队消息；发送结束后继续冲刷剩余项 */
+  async function flushQueuedMessages(): Promise<void> {
+    if (isStreaming.value || isFlushingQueue.value) return
+    const session = currentSession.value
+    if (!session) return
+    const next = queuedMessages.value.find((item) => item.sessionId === session.id)
+    if (!next) return
+    isFlushingQueue.value = true
+    try {
+      removeQueuedMessage(next.id)
+      await next.beforeSend?.()
+      await sendMessage(next.content, next.options)
+      await next.afterSend?.()
+    } catch (error) {
+      console.warn('[agentHub] 排队消息发送失败，保留后续队列继续', error)
+    } finally {
+      isFlushingQueue.value = false
+    }
+    // 本条完成后继续处理剩余排队消息（sendMessage 结束时 isStreaming 已回落）
+    if (!isStreaming.value) await flushQueuedMessages()
+  }
+
+  // 回复结束（正常完成/出错/手动停止）与会话切换时自动冲刷队列。
+  // isStreaming 的全部回落路径（onDone/onError/兜底/stopStreaming）都会触发这里。
+  watch(isStreaming, (streaming) => {
+    if (!streaming) void flushQueuedMessages()
+  })
+  watch(currentSessionId, () => {
+    if (!isStreaming.value) void flushQueuedMessages()
+  })
+
   /** 发送消息（真实 SSE 流式，走 Agent 调度中枢） */
   async function sendMessage(
     content: string,
-    options: {
-      attachments?: FileAttachment[]
-      enableWebSearch?: boolean
-      enableCodeExecution?: boolean
-      /** @ 显式指定的智能体：本条消息转交该专家回答 */
-      explicitAgentId?: string
-      /** @ 挂载到本次对话的技能名 */
-      skillNames?: string[]
-      mcpMode?: 'off' | 'auto' | 'manual'
-      extraMcpServers?: string[]
-      multiAgent?: boolean
-      overdrive?: boolean
-      /** 当前用户消息的受控操作元数据。 */
-      messageMetadata?: Record<string, unknown>
-      /** 工具轮次触顶后用户确认继续：本次请求上限扩展到 1000 轮 */
-      extendMaxRounds?: boolean
-      /**
-       * AI 助手页面专用：本轮需确认的操作（代码执行/写入文件/网络访问）由后端直接执行，
-       * 不再逐次弹审批卡。AI 工作台页面不传，维持逐次审批语义。
-       */
-      autoApprove?: boolean
-    } = {},
+    options: AgentChatSendOptions = {},
   ): Promise<void> {
     const session = currentSession.value
     if (!session || isStreaming.value || !content.trim()) return
@@ -2159,6 +2274,7 @@ export const useAgentHubStore = defineStore('agentHub', () => {
       recursive: a.recursive === true,
     })) || []
 
+    const streamSeq = ++activeStreamSeq
     isStreaming.value = true
     streamingContent.value = ''
     streamingThought.value = ''
@@ -2189,9 +2305,11 @@ export const useAgentHubStore = defineStore('agentHub', () => {
         } catch (e: any) {
           aiMsg.content = `切换沙箱运行时失败: ${e?.response?.data?.detail || e?.message || '未知错误'}`
           aiMsg.status = 'error'
-          isStreaming.value = false
-          streamingContent.value = ''
-          streamingThought.value = ''
+          if (activeStreamSeq === streamSeq) {
+            isStreaming.value = false
+            streamingContent.value = ''
+            streamingThought.value = ''
+          }
           releaseSessionIdLock()
           return
         }
@@ -2247,6 +2365,11 @@ export const useAgentHubStore = defineStore('agentHub', () => {
           // 首个文本块只回填后端 ID。不要在流式过程中加载历史消息：
           // 此时后端助手行仍是 streaming/0 token，会替换正在更新的 aiMsg。
           if (session.id.startsWith('sess-')) {
+            // 临时会话物化：排队消息的会话键同步改写，避免成为永不冲刷的孤儿项
+            const tempId = session.id
+            queuedMessages.value = queuedMessages.value.map((item) =>
+              item.sessionId === tempId ? { ...item, sessionId } : item,
+            )
             session.id = sessionId
             session.agent_id = agent.id
             currentSessionId.value = sessionId
@@ -2863,14 +2986,17 @@ export const useAgentHubStore = defineStore('agentHub', () => {
       },
     )
 
-    if (shouldGenerateTitle && !isStreaming.value && aiMsg.status === 'complete') {
+    // 标题生成只看本轮是否干净完成（onDone 已置 complete）；
+    // 消息排队场景下 isStreaming 可能已被下一轮重新置 true，不能再用它判断
+    if (shouldGenerateTitle && aiMsg.status === 'complete') {
       void generateSessionTitle(session.id)
     } else if (isFirstTurn && session.title === '生成中...') {
       session.title = '新对话'
     }
 
-    // 兜底：若流异常中断未触发 onDone/onError（极罕见，onDone 已有内部兜底）
-    if (isStreaming.value) {
+    // 兜底：若流异常中断未触发 onDone/onError（极罕见，onDone 已有内部兜底）。
+    // 序号守卫：本轮已让位给队列冲刷出的下一轮时，不清理新一轮的流式状态
+    if (isStreaming.value && activeStreamSeq === streamSeq) {
       finalizeRoomSpeeches()
       cleanupStreamRetryNotices(session)
       if (!session.overdrive) {
@@ -3238,6 +3364,9 @@ export const useAgentHubStore = defineStore('agentHub', () => {
     startSessionFromAgent, selectSession, openSessionWithRestore, restoreArchivedSession,
     newChat, deleteSession, renameSession, generateSessionTitle,
     searchSessions, switchSessionModel, loadSessionMessages, sendMessage, stopStreaming, pauseStreaming,
+    // 消息排队（流式期间可继续输入，回复完成后自动发送）
+    queuedMessages, isFlushingQueue, currentQueuedSends,
+    sendOrQueue, queueMessage, removeQueuedMessage, clearQueuedMessages,
     submitMessageFeedback, updateResearchMode,
     approveToolCall, rejectToolCall, approveOverdriveApproval, rejectOverdriveApproval, answerAskRequest,
     decideOverdrivePlan,

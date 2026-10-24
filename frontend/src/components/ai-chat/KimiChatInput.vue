@@ -27,6 +27,7 @@ import {
   CloseOutline,
   DesktopOutline,
   CubeOutline,
+  TimeOutline,
 } from '@vicons/ionicons5'
 import SlashCommandMenu from './SlashCommandMenu.vue'
 import MentionMenu from './MentionMenu.vue'
@@ -104,6 +105,11 @@ interface Props {
   maxlength?: number
   /** 工具行显隐配置；未传时按 roomMode 推导：协作室默认只保留附件、@引用、清空、发送，避免死按钮 */
   toolbarConfig?: ToolbarConfig
+  /**
+   * 消息排队：流式回复期间提交、等待当前回复完成后自动发送的队列条目。
+   * 空数组/不传则不渲染队列条；由调用方（AI 助手 / AI 工作台）接 store。
+   */
+  queuedItems?: { id: string; content: string }[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -121,6 +127,7 @@ const props = withDefaults(defineProps<Props>(), {
   hint: '',
   sendLoading: false,
   toolbarConfig: undefined,
+  queuedItems: () => [],
 })
 
 const emit = defineEmits<{
@@ -147,6 +154,8 @@ const emit = defineEmits<{
   regenerate: []
   toggleOverdrive: []
   enterWorkbench: []
+  /** 移除一条排队消息（发送前撤销） */
+  'remove-queued': [id: string]
 }>()
 
 const chatStore = useChatStore()
@@ -1247,6 +1256,26 @@ watch(() => agentHub.currentSessionId, refreshGoalStatus)
 
 <template>
   <div ref="composerShellRef" class="ai-composer-shell">
+    <!-- 消息排队条：流式回复期间提交的消息在此保留，回复完成后自动发送 -->
+    <div v-if="isStreaming || queuedItems.length" class="queue-strip" role="status">
+      <span class="queue-strip__caption">
+        <n-icon size="14" aria-hidden="true"><TimeOutline /></n-icon>
+        {{ queuedItems.length ? `已排队 ${queuedItems.length} 条，当前回复完成后自动发送` : 'AI 正在回复，现在发送的消息将排队等待' }}
+      </span>
+      <TransitionGroup v-if="queuedItems.length" name="queue-chip" tag="div" class="queue-strip__list">
+        <span v-for="item in queuedItems" :key="item.id" class="queue-chip">
+          <span class="queue-chip__text">{{ item.content }}</span>
+          <button
+            type="button"
+            class="queue-chip__remove"
+            aria-label="撤销排队消息"
+            @click="emit('remove-queued', item.id)"
+          >
+            <n-icon size="12" aria-hidden="true"><CloseOutline /></n-icon>
+          </button>
+        </span>
+      </TransitionGroup>
+    </div>
     <Transition name="ask-pill">
       <button
         v-if="askPillVisible"
@@ -1661,14 +1690,32 @@ watch(() => agentHub.currentSessionId, refreshGoalStatus)
           </n-popover>
 
           <template v-if="toolbar.send">
-            <n-tooltip v-if="isStreaming" trigger="hover">
-              <template #trigger>
-                <n-button circle class="send-btn stop-btn" aria-label="停止生成" @click="handleStop">
-                  <span class="stop-square" aria-hidden="true" />
-                </n-button>
-              </template>
-              停止生成
-            </n-tooltip>
+            <template v-if="isStreaming">
+              <n-tooltip trigger="hover">
+                <template #trigger>
+                  <n-button
+                    circle
+                    class="send-btn queue-btn"
+                    :class="{ active: canSend }"
+                    :type="canSend ? 'primary' : 'default'"
+                    :disabled="!canSend || disabled"
+                    aria-label="加入发送队列"
+                    @click="handleSend"
+                  >
+                    <template #icon><n-icon size="18"><ArrowUpOutline /></n-icon></template>
+                  </n-button>
+                </template>
+                加入队列（当前回复完成后自动发送，Enter 同效）
+              </n-tooltip>
+              <n-tooltip trigger="hover">
+                <template #trigger>
+                  <n-button circle class="send-btn stop-btn" aria-label="停止生成" @click="handleStop">
+                    <span class="stop-square" aria-hidden="true" />
+                  </n-button>
+                </template>
+                停止生成
+              </n-tooltip>
+            </template>
 
             <template v-else-if="isPaused">
               <n-tooltip trigger="hover">
@@ -1734,6 +1781,91 @@ watch(() => agentHub.currentSessionId, refreshGoalStatus)
 .ai-composer-shell {
   width: 100%;
   min-width: 0;
+}
+
+/* 消息排队条：流式回复期间提示 + 排队消息保留（发送前可撤销） */
+.queue-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 auto var(--space-sm);
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--neutral-text-2);
+  background: color-mix(in srgb, var(--chat-ai-card, var(--neutral-card)) 82%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--chat-accent, var(--arco-primary)) 35%, transparent);
+  border-radius: 10px;
+  max-width: 100%;
+}
+
+.queue-strip__caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--chat-accent, var(--arco-primary));
+}
+
+.queue-strip__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.queue-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--neutral-hover);
+  border-radius: 6px;
+  min-width: 0;
+}
+
+.queue-chip__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--neutral-text-1);
+}
+
+.queue-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  color: var(--neutral-text-3);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+
+  &:hover {
+    color: var(--arco-danger, #e5484d);
+    background: color-mix(in srgb, var(--arco-danger, #e5484d) 12%, transparent);
+  }
+}
+
+.queue-chip-enter-active,
+.queue-chip-leave-active {
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.queue-chip-enter-from,
+.queue-chip-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+/* 流式期间的"加入队列"发送按钮：与停止按钮并排，视觉与常规发送一致 */
+.queue-btn {
+  margin-right: 8px;
 }
 
 /* 待回答 pill：毛玻璃轻量提示，点击平滑滚动到待回答卡片 */

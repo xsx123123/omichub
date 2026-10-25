@@ -2809,41 +2809,112 @@ git -C .. diff --check
 
 后续修改样式令牌时，仍应重复上述 grep；仅源码命中而产物未命中，说明该令牌被构建期裁剪（未被任何选择器引用）或只写在未被打包的样式文件中。
 
-## 40. 2026-10-25 消息排队（流式期间可继续输入）
+## 40. 消息排队（AI 处理期间可继续输入，as-built）
 
-> **日期：2026-10-25。** AI 交互的三个入口（L2 AI 助手 / L3 AI 工作台、平台侧全局单栏 AI 助手、L4 生物信息协作室）在 AI 处理期间，输入框保持可用：此时提交的消息不再被丢弃，而是进入**等待队列**，当前处理结束后自动按序发送。排队消息在发送前可撤销。
+> **日期：2026-10-25（首个实现版本）**。AI 交互的三个前端入口在 AI 处理期间，输入框保持可用：此时提交的消息不再被丢弃（旧行为：AI 助手 / AI 工作台 `handleSend` 里 `if (store.isStreaming) return` 静默丢弃），而是进入**等待队列**，当前处理结束后自动按序发送；排队消息在发送前可撤销。本节是该行为的 as-built 权威描述；后端无任何改动，纯前端 store 层交互模式。
 
-### 40.1 交互契约
+### 40.1 架构总览
+
+三个入口各自持有独立队列实现（语义一致、门控信号不同），共享组件 `KimiChatInput` 通过 props 渲染排队 UI：
+
+```mermaid
+flowchart TB
+    subgraph Entries[三个 AI 入口]
+        AS[AgentSandbox<br/>L2 AI 助手]
+        SV[StudioView<br/>L3 AI 工作台]
+        SB[GlobalAiAssistantSidebar<br/>全站单栏 AI 助手]
+        DV[DepartmentView<br/>L4 生物信息协作室]
+    end
+    subgraph SharedUI[共享输入组件]
+        KCI[KimiChatInput<br/>queuedItems / remove-queued / stopLabel props<br/>排队条 + 加入队列按钮]
+    end
+    subgraph Stores[store 层队列（各自实现，语义一致）]
+        AH[agentHub.queuedMessages<br/>门控: isStreaming]
+        AIS[aiAssistantSidebar.queuedMessages<br/>门控: isStreaming]
+        MR[masRoom.queuedMessages<br/>门控: runActive + sending]
+    end
+    AS -->|sendOrQueue| AH
+    SV -->|sendOrQueue + beforeSend/afterSend 钩子| AH
+    SB -->|sendOrQueue（保留页面上下文）| AIS
+    DV -->|sendOrQueue| MR
+    AS & SV & DV --> KCI
+    SB -. 自有输入行 .- KCI
+    AH -->|watch isStreaming / currentSessionId| FLUSH[flushQueuedMessages<br/>逐条串行冲刷]
+    AIS -->|watch isStreaming| FLUSH
+    MR -->|watch runActive + 2s 兜底探测| FLUSH
+```
+
+### 40.2 交互契约
 
 | 场景 | 行为 |
 | --- | --- |
-| 流式期间输入并 Enter / 点发送 | 消息进入队列，输入框清空；队列条显示"已排队 N 条，当前回复完成后自动发送"，每条可点 × 撤销 |
-| 流式期间无排队消息 | 队列条显示轻量状态"AI 正在回复，现在发送的消息将排队等待" |
-| 当前回复结束（完成/出错/手动停止） | 队列按序自动发送；多条排队消息逐条串行处理 |
-| 发送按钮（流式期间） | 与"停止生成"并排出现"加入队列"按钮（上箭头），Enter 同效 |
+| 处理期间输入并 Enter / 点发送 | 消息进入队列，输入框清空；队列条显示"已排队 N 条，当前回复完成后自动发送"，每条可点 × 撤销 |
+| 处理期间无排队消息 | 队列条显示轻量状态"AI 正在回复，现在发送的消息将排队等待" |
+| 当前处理结束（完成/出错/手动停止） | 队列按序自动发送；多条排队消息逐条串行处理 |
+| 发送按钮（处理期间） | 与"停止生成"并排出现"加入队列"按钮（上箭头），Enter 同效 |
 | 会话切换 / 删除会话 | 队列按会话隔离：切回有排队消息的会话且空闲时自动冲刷；删除会话清掉其队列 |
 | 全局侧栏 AI 助手（全站浮层） | 同一契约；排队项携带**入队时的页面上下文**（在哪个页面问就带哪里的上下文）；`newChat` 清空队列 |
 | 协作室（MAS 房间） | 队列按 `runActive`（run_started→done/error）门控：run 执行期间排队、结束后自动发送；POST 完成到 run_started 之间由 2s 兜底探测补位；"停止"按钮语义为清空排队（房间无中断 run 的后端 API，经 `stopLabel` 定制文案） |
 | 临时会话首轮即排队 | 会话物化（`onSessionCreated`）时排队项的会话键同步改写，不产生孤儿队列项 |
 
-### 40.2 实现要点
+### 40.3 一次排队消息的生命周期（以 agentHub 为例）
+
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant V as View（AgentSandbox/StudioView）
+    participant S as agentHub store
+    participant SSE as /chat/stream
+
+    Note over SSE: 第一条消息流式回复中（isStreaming=true）
+    U->>V: 输入第二条消息并 Enter
+    V->>S: sendOrQueue(content, options, hooks)
+    S-->>V: 'queued'（入队；View 清空输入框）
+    Note over S: queuedMessages = [{sessionId, content, options}]
+    SSE-->>S: onDone（isStreaming → false）
+    Note over S: watch(isStreaming) 触发 flushQueuedMessages
+    S->>S: beforeSend()（工作台产物基线快照）
+    S->>S: sendMessage(queued.content, queued.options)
+    Note over SSE: 第二条消息开始流式（isStreaming → true）
+    SSE-->>S: onDone（isStreaming → false）
+    S->>S: afterSend()（工作台刷新 + 新报告自动打开）
+    S->>S: 队列非空则继续冲刷下一条
+```
+
+### 40.4 关键不变量与竞态守卫
+
+1. **轮次归属（activeStreamSeq）**：agentHub 每轮 `sendMessage` 前自增序号；旧一轮的兜底块与状态回落仅在该轮仍是当前轮时执行。背景：`onDone` 置 `isStreaming=false` 后，Vue 的 watch 会在旧轮 `sendMessage` 继续执行前同步冲刷下一轮并把 `isStreaming` 重新置 true——没有序号守卫时旧轮兜底块会清掉新一轮的流式状态（回归测试 `message-queue.test.ts` 第 1 例复现）。
+2. **标题生成不依赖 `isStreaming`**：条件由 `!isStreaming.value` 改为 `aiMsg.status === 'complete'`，避免排队场景下误跳过（同因）。
+3. **串行冲刷**：`isFlushingQueue` 在冲刷期间使新提交继续入队而非直发；每条完成后串行处理下一条，不并发。
+4. **队列与触发源同生命周期**：队列仅存内存（刷新页面即清空，符合"排队是临时缓冲"语义）；冲刷触发源覆盖该入口"忙碌"信号的全部回落路径（完成/出错/停止/兜底）。
+5. **会话隔离**：agentHub 队列项带 `sessionId`，仅当前会话空闲时冲刷本会话条目；临时会话物化时改写队列键；删除会话清队列。
+6. **上下文保真**：侧栏排队项在**入队时**捕获页面上下文（而非冲刷时的当前页面）；工作台的 beforeSend/afterSend 钩子保证排队消息在真实发送时机执行产物基线快照与报告打开，行为与手动发送一致。
+7. **协作室兜底探测**：`flushQueuedMessages` 末尾安排 2s 延迟探测，覆盖"POST 完成但 run_started 事件未到"的窗口；run 已启动时由 `watch(runActive)` 在 run 结束时接管，探测空转。
+
+### 40.5 实现要点
 
 | 文件 | 改动 |
 | --- | --- |
-| `stores/agentHub.ts` | 新增 `queuedMessages` / `isFlushingQueue` / `currentQueuedSends` 与 `sendOrQueue` / `queueMessage` / `removeQueuedMessage` / `clearQueuedMessages` / `flushQueuedMessages`；`watch(isStreaming)` 覆盖全部回落路径（onDone/onError/兜底/stop）自动冲刷，`watch(currentSessionId)` 处理切回会话；`sendMessage` options 提取为共享类型 `AgentChatSendOptions`，队列项支持 `beforeSend`/`afterSend` 钩子（工作台产物基线快照用）；删除会话清队列；临时会话物化时改写队列会话键 |
-| `stores/agentHub.ts`（竞态修复） | 新增 `activeStreamSeq` 流式轮次序号：旧一轮 `sendMessage` 的兜底块与状态回落不得清掉队列冲刷出的新一轮流式状态（onDone 置 false → watch 同步冲刷 → 旧轮继续执行时 `isStreaming` 已被重新置 true）；标题生成条件由 `!isStreaming` 改为 `aiMsg.status === 'complete'`（同因） |
-| `components/agent-workspace/AgentSandbox.vue` | `handleSend` 移除 `if (store.isStreaming) return` 静默丢弃，改走 `store.sendOrQueue`；输入框接 `:queued-items` / `@remove-queued` |
-| `views/StudioView.vue` | 同上；产物基线快照（`captureArtifactBaseline`）与结束后的报告自动打开（`settleArtifactsAfterSend`）挂在队列项钩子上，排队消息真实发送时机的行为与手动发送一致 |
-| `stores/aiAssistantSidebar.ts` | 平台侧单栏 AI：新增 `queuedMessages` / `sendOrQueue` / `removeQueuedMessage` / `clearQueuedMessages`，`watch(isStreaming)` 自动冲刷；排队项保留入队时页面上下文；`newChat` 清队 |
-| `components/ai-assistant/GlobalAiAssistantSidebar.vue` | 输入行流式期间"加入队列"发送按钮与停止按钮并排；输入区上方排队条（状态提示 + 可撤销芯片）；快捷问题同样支持排队 |
-| `stores/masRoom.ts` | 协作室：新增 `queuedMessages` / `currentQueuedSends` / `sendOrQueue` / `removeQueuedMessage` / `clearQueuedMessages`；`watch(runActive)` 在 run 结束时冲刷，POST 后 2s 兜底探测覆盖 run_started 延迟窗口 |
+| `stores/agentHub.ts` | 新增 `queuedMessages` / `isFlushingQueue` / `currentQueuedSends` 与 `sendOrQueue` / `queueMessage` / `removeQueuedMessage` / `clearQueuedMessages` / `flushQueuedMessages`；`watch(isStreaming)` 覆盖全部回落路径自动冲刷，`watch(currentSessionId)` 处理切回会话；`sendMessage` options 提取为共享类型 `AgentChatSendOptions`，队列项（`QueuedChatSend`）支持 `beforeSend`/`afterSend` 钩子；删除会话清队列；临时会话物化时改写队列会话键；`activeStreamSeq` 轮次守卫（见 40.4.1） |
+| `stores/aiAssistantSidebar.ts` | 单栏 AI：`queuedMessages`（`SidebarQueuedSend`，含 `pageContext`）/ `sendOrQueue` / `removeQueuedMessage` / `clearQueuedMessages`，`watch(isStreaming)` 自动冲刷；`newChat` 清队 |
+| `stores/masRoom.ts` | 协作室：`queuedMessages`（`MasQueuedSend`）/ `currentQueuedSends` / `sendOrQueue` / `removeQueuedMessage` / `clearQueuedMessages`；`watch(runActive)` 在 run 结束时冲刷 + 2s 兜底探测（见 40.4.7） |
+| `components/agent-workspace/AgentSandbox.vue` | `handleSend` 移除流式期间静默丢弃，改走 `store.sendOrQueue`（`autoApprove` 语义保留）；输入框接 `:queued-items` / `@remove-queued` |
+| `views/StudioView.vue` | 同上；产物基线快照（`captureArtifactBaseline`）与结束后的报告自动打开（`settleArtifactsAfterSend`）经闭包挂在队列项钩子上 |
+| `components/ai-assistant/GlobalAiAssistantSidebar.vue` | 输入行处理期间"加入队列"发送按钮与停止按钮并排；输入区上方排队条（状态提示 + 可撤销芯片）；快捷问题入口同样支持排队 |
 | `views/DepartmentView.vue` | `KimiChatInput` 接 `:is-streaming="store.runActive"`、排队 props 与 `@remove-queued`；`@stop` 语义为清空排队（`stopLabel` 定制文案）；移除 sending 期间禁用输入 |
-| `components/ai-chat/KimiChatInput.vue` | 新增 `queuedItems` / `stopLabel` prop 与 `remove-queued` emit；输入区顶部渲染排队条（状态提示 + 可撤销队列芯片，`TransitionGroup` 动画）；流式期间"加入队列"按钮与停止按钮并排；新增 `TimeOutline` 图标与配套样式 |
+| `components/ai-chat/KimiChatInput.vue` | 新增 `queuedItems` / `stopLabel` prop 与 `remove-queued` emit；输入区顶部渲染排队条（状态提示 + 可撤销队列芯片，`TransitionGroup` 动画）；处理期间"加入队列"按钮与停止按钮并排 |
 
-### 40.3 验证
+### 40.6 验证
 
-- 新增 `stores/__tests__/message-queue.test.ts`（3 例，agentHub）：流式期间排队 → 回复结束自动发送且请求体内容正确；排队消息撤销后不再发送；多条排队按序串行发送。第 1 例在未加 `activeStreamSeq` 守卫时失败，复现旧轮兜底块清掉新一轮流式状态的竞态。
-- 扩展 `stores/__tests__/ai-assistant-sidebar.test.ts`（2 例）：侧栏流式期间排队、页面上下文随队列项保留、撤销与 `newChat` 清队；`useChatStream` mock 重构为随 streamChat 翻转 isStreaming（贴近真实 composable）。
-- 新增 `stores/__tests__/mas-room-message-queue.test.ts`（4 例）：run 期间排队、run 结束自动发送、撤销、清空队列、空闲直发。
-- `npm run type-check` / `npm test`（94 文件 691 用例）/ `npm run build` 全部通过。
-- 浏览器手工 E2E：SSE 流式、输入排队、撤销、停止后冲刷需人工验证（见 AGENTS.md 前端门禁）。
+- `stores/__tests__/message-queue.test.ts`（3 例，agentHub）：流式期间排队 → 回复结束自动发送且请求体内容正确；排队消息撤销后不再发送；多条排队按序串行发送。第 1 例在未加 `activeStreamSeq` 守卫时失败，复现旧轮兜底清掉新一轮状态的竞态。
+- `stores/__tests__/ai-assistant-sidebar.test.ts`（2 例）：侧栏流式期间排队、页面上下文随队列项保留、撤销与 `newChat` 清队；`useChatStream` mock 重构为随 streamChat 翻转 isStreaming（贴近真实 composable）。
+- `stores/__tests__/mas-room-message-queue.test.ts`（4 例）：run 期间排队、run 结束自动发送、撤销、清空队列、空闲直发。
+- 门禁：`npm run type-check` / `npm test`（94 文件 691 用例）/ `npm run build` 全部通过（2026-10-25）。
+- 浏览器手工 E2E（AGENTS.md 前端门禁要求）：三入口各验证"回复中发两条 → 撤销一条 → 自动发送"；协作室额外验证 run 结束后接力与"清空排队"按钮。
+
+### 40.7 修改验证清单（改本节所述行为时必查）
+
+1. 动 `sendMessage` 的收尾路径（onDone/onError/兜底/stopStreaming）→ 确认 `activeStreamSeq` 守卫仍覆盖所有 `isStreaming` 回落写点，跑 `message-queue.test.ts`。
+2. 新增"忙碌"信号或入口 → 冲刷触发 watch 必须覆盖该信号的全部回落路径；评估是否需要兜底探测（参照 masRoom）。
+3. 动 `KimiChatInput` 发送/停止按钮区 → 三入口的 `queuedItems` / `stopLabel` 契约不回退（不传 props 时行为不变）。
+4. 动会话生命周期（切换/删除/物化）→ 队列隔离与键改写逻辑同步；跑侧栏与 masRoom 队列测试。

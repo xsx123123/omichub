@@ -15,13 +15,17 @@ try {
   let buildRoot = source;
   try { await access(resolve(source, 'vite.island.config.ts')); }
   catch {
-    // The child SPA archived its platform presentation. Reuse that frozen adapter
-    // with today's shared components without modifying the child worktree.
+    // Reuse the frozen adapter with today's shared components. Platform-owned
+    // presentation overrides live here, rather than changing the child archive.
     const archive = resolve(source, 'archive/island');
     await access(resolve(archive, 'vite.island.config.ts'));
     staging = await mkdtemp(resolve(tmpdir(), 'cygnusx-treasure-island-'));
     await cp(resolve(source, 'src'), resolve(staging, 'src'), { recursive: true });
+    await cp(resolve(source, 'shared'), resolve(staging, 'shared'), { recursive: true });
     await cp(resolve(archive, 'src/island'), resolve(staging, 'src/island'), { recursive: true });
+    for (const name of ['FullPresentation.tsx', 'index.tsx']) {
+      await cp(resolve(frontend, 'treasure-island', name), resolve(staging, 'src/island', name));
+    }
     for (const name of ['vite.island.config.ts', 'tsconfig.island.json']) {
       await cp(resolve(archive, name), resolve(staging, name));
     }

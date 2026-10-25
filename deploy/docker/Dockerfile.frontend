@@ -17,7 +17,9 @@ COPY pipelines/Treasure-Seeking_Mouse/package.json pipelines/Treasure-Seeking_Mo
 RUN pnpm install --frozen-lockfile --registry="${NPM_REGISTRY}" \
     || pnpm install --frozen-lockfile --registry=https://registry.npmjs.org
 COPY pipelines/Treasure-Seeking_Mouse/src ./src
-COPY pipelines/Treasure-Seeking_Mouse/vite.island.config.ts ./
+COPY pipelines/Treasure-Seeking_Mouse/shared ./shared
+COPY pipelines/Treasure-Seeking_Mouse/archive/island ./archive/island
+COPY pipelines/Treasure-Seeking_Mouse/tsconfig.json ./
 
 WORKDIR /app/frontend
 

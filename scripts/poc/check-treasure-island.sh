@@ -5,10 +5,8 @@ cd "$cygnus_repo_root"
 (
   cd pipelines/Treasure-Seeking_Mouse
   ./node_modules/.bin/tsc --noEmit
-  ./node_modules/.bin/tsc --noEmit -p tsconfig.island.json
-  ./node_modules/.bin/vite build --config vite.island.config.ts
-  ./node_modules/.bin/vite build --config vite.island-reference.config.ts
 )
+node frontend/scripts/build-treasure-island.mjs
 (
   cd frontend
   ./node_modules/.bin/vue-tsc --noEmit -p poc/treasure-island/tsconfig.json
@@ -16,8 +14,8 @@ cd "$cygnus_repo_root"
   ./node_modules/.bin/vite build --config poc/treasure-island/vite.config.ts
 )
 if [[ -n "${TREASURE_POC_PLAYWRIGHT_PATH:-}" ]]; then
-  node scripts/poc/treasure-island-browser.mjs
+  PLAYWRIGHT_MODULE="$TREASURE_POC_PLAYWRIGHT_PATH" \
+    CHROMIUM_PATH="${TREASURE_POC_CHROMIUM:-}" node scripts/poc/treasure-ui-browser.mjs
 else
-  echo 'Browser evidence not run: set TREASURE_POC_PLAYWRIGHT_PATH to an installed playwright-core module.'
-  echo 'G-P1A remains pending until real browser checks and human visual review pass.'
+  echo 'Browser evidence not run: set TREASURE_POC_PLAYWRIGHT_PATH and TREASURE_POC_CHROMIUM.'
 fi

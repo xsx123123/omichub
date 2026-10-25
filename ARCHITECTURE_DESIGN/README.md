@@ -4,6 +4,8 @@
 
 > 科研寻宝鼠端到端链路现状入口：[CygnusX_treasure_mouse_architecture.md](CygnusX_treasure_mouse_architecture.md)（as-built；发现→Dataset→下载/分析预案→双报告读取，全部写执行运行门禁 BLOCKED）。
 
+> 科研寻宝鼠界面与更新接入：[CygnusX_treasure_mouse_ui.md](CygnusX_treasure_mouse_ui.md)（共享 UI/平台业务/运行镜像更新边界、归档布局构建修复、960px 回复区与视觉验证）。
+
 > 科研交付链现状入口：[CygnusX_research_delivery_architecture.md](CygnusX_research_delivery_architecture.md)（Phase4 受保护代码；运行准入 BLOCKED）。
 
 > 项目科研成果与导出现状同见科研交付架构的RI06–RI09节：ProjectDetail只读聚合、版本化Manifest、独立ProjectExportJob与授权下载已接代码/隔离验证；默认关闭；真实隔离 PG/Worker 已启动、浏览器预览已验，非空科研成果/ZIP 导出仍受 corpus 门禁阻断。

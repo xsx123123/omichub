@@ -27,7 +27,7 @@ describe('original React display island contract', () => {
     const shadow = el.shadowRoot!
     expect(shadow.textContent).toContain('EXECUTION_BLOCKED')
     expect(shadow.textContent).toContain('TRANSPORT_RUNTIME_UNVERIFIED')
-    const assets = [...shadow.querySelectorAll<HTMLButtonElement>('button')].filter(button => button.textContent?.includes('现有项目资产'))
+    const assets = [...shadow.querySelectorAll<HTMLButtonElement>('button')].filter(button => button.textContent?.includes('项目数据资产'))
     expect(assets.length).toBeGreaterThan(0)
     expect(assets.every(button => button.disabled)).toBe(true)
     expect(shadow.querySelector('textarea')).not.toBeNull()

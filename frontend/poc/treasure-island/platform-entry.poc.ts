@@ -42,7 +42,7 @@ describe('actual platform uses the complete original React presentation', () => 
     expect(calls.projects).not.toHaveBeenCalled(); expect(calls.sessions).not.toHaveBeenCalled()
     expect(shadow.querySelector('[href*="login"]')).toBeNull()
   })
-  it('restores original messages, collapsed sessions, cards, follow-ups and original composer in one tree', async () => {
+  it('restores original messages, sessions, cards, follow-ups and original composer in one tree', async () => {
     allowed(); calls.sessions.mockResolvedValue([{ session_id: 's1', title: '干扰素数据', project_id: null, updated_at: '2026-10-15T00:00:00Z' }])
     calls.messages.mockResolvedValue([
       { message_id: 'u1', role: 'user', content: '寻找干扰素数据', status: 'complete', metadata_json: {} },
@@ -59,10 +59,11 @@ describe('actual platform uses the complete original React presentation', () => 
     expect(shadow.querySelector('strong')!.textContent).toBe('已检索')
     expect(shadow.textContent).toContain('1305ms')
     expect(shadow.textContent).not.toContain(':::followup')
+    button(shadow, '收起会话列表').click(); await settle()
     button(shadow, '展开会话列表').click(); await settle()
     expect(shadow.textContent).toContain('干扰素数据')
     expect(shadow.querySelector('textarea')).not.toBeNull()
-    expect(shadow.querySelector('[role=img]')).not.toBeNull()
+    expect(button(shadow, '桌宠设置')).toBeDefined()
     const sent = vi.fn(async (_url: string, _init: RequestInit) => new Response(new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('data: {"event":"end"}\n\n')); controller.close() } })))
     vi.stubGlobal('fetch', sent)
     ;[...shadow.querySelectorAll<HTMLButtonElement>('button')].find(el => el.textContent?.includes('阿寻的下一铲建议'))!.click(); await settle()
@@ -78,6 +79,7 @@ describe('actual platform uses the complete original React presentation', () => 
     const { shadow } = await render()
     const example = shadow.querySelector<HTMLButtonElement>('section button')!
     example.click(); await settle()
+    await vi.waitFor(() => expect(shadow.querySelector('textarea')!.value).not.toBe(''))
     button(shadow, '下铲挖宝').click(); await settle()
     try {
       feed.enqueue(new TextEncoder().encode('data: {"delta":"已找到 GSE12345"}\n\ndata: {"event":"tool","name":"search_geo","label":"检索","status":"done","ms":10}\n\n'))

@@ -68,7 +68,7 @@ flowchart TD
 
 | 层 | 位置 |
 |---|---|
-| React 展示树（子仓） | `pipelines/Treasure-Seeking_Mouse/src/island/FullPresentation.tsx`、`src/island/contract.ts`（`ResearchActionV1` / `TreasureIslandProps`）、`src/components/chat/*`（`DatasetCard` / `LiteratureCard` / `ToolTrace` / `GroundingNotice`…） |
+| React 展示树 | 子仓 `src/components/chat/*` 为共享组件；`archive/island/src/island/` 提供冻结适配器与 `contract.ts`；父仓 `frontend/treasure-island/{index,FullPresentation}.tsx` 为当前平台展示覆盖层（由构建脚本暂存到 `src/island`） |
 | React→Node 平台工具 | `pipelines/Treasure-Seeking_Mouse/functions/seqout-chat/platform-tools.ts` |
 | Vue 外壳 | `frontend/src/views/TreasureMouseView.vue`（薄壳）→ `TreasureResearchWorkbench.vue`（工作台） |
 | Vue 展示桥 | `frontend/src/components/research/TreasureOriginalDisplay.vue`、`treasureIslandLoader.ts`（`public/treasure-island/treasure-island.js` 动态 import） |
@@ -472,7 +472,7 @@ BFF 流式端点 `POST /research-agent/sessions/{sid}/messages:stream`（`api/v1
 | D1 | `/research-agent/capabilities` 字段 | 前端 `ResearchCapabilities` 与服务端需共享 `enabled / read_sessions / read_discovery / prepare_import / prepare_analysis / reason_code` 等字段 | 已闭合：服务端 `ResearchAgentCapabilities` 声明能力投影及 `write_execution: Literal[False]`；`ResearchTreasureService.capabilities()` 计算模块、Node 与 Prepare 状态；HTTP 路由返回该 DTO。后端隔离测试检查能力裁剪，前端访问层类型声明对应 | 当前源码不再存在 Pydantic 丢字段问题；仍以运行配置和真实 API 环境验证为准，不能将隔离 DTO 测试升级为 Runtime |
 | D2 | Widget/Node 委托 transport | 任务书 §6 描述 Node 用固定 callback 回落 Gateway | 已闭合：父仓记录的子仓提交 `b780b7c2f01fb3ea9aaaef82c6eb91e41cde57db` 包含 `index.ts` 接线与 `platform-tools.ts` adapter；adapter 只暴露 `bioops_*` 的 `none`/`confirmation` 能力并剔除 `.submit`/`tasks.cancel`，callback URL 仅来自服务端 operator 配置。`server/local.mjs` 只在 `/cygnusx/discovery` 校验内部 token 后注入信任标记，其他路径会剥除该标记。子仓定向离线 Node 测试通过 | 实际运行镜像/tag/digest 是否包含该提交仍 `UNKNOWN`；源代码与离线测试不构成部署或真实 callback 验收 |
 | D3 | Network 化后的 count summ | 任务书列 `downloads.prepare` 与 `dataset.prepare_import` | 二者均存在于能力目录（`agent_tools.py:154,168`），职责按 W2 文档划分：前者绑下载资源/运输参数，后者绑科研来源/DatasetVersion；**`downloads.prepare` 不走 `dataset_import_write` 门禁**（仅校核目录 containment） | 需评审确认二者不重复审批（当前不重复） |
-| D4 | Island 构建产物 | 前端动态 import `public/treasure-island/treasure-island.js` | 子仓已将平台展示适配器移至 `archive/island/`。父仓 `frontend/scripts/build-treasure-island.mjs` 优先使用根 Island 配置；配置缺失时，在临时目录组合归档适配器与当前 `src/` 共享组件，复用子仓依赖执行 Island TypeScript 检查和 Vite 构建，完成后清理临时目录。不改归档或子仓源码，不复制服务配置。公开产物移除模块路径清单 | 当前归档布局的构建通过；视觉/行为仍须实际浏览器验收，`VISUAL_RELEASE_READY` 保持否 |
+| D4 | Island 构建产物 | 前端动态 import `public/treasure-island/treasure-island.js` | 子仓已将平台展示适配器移至 `archive/island/`。父仓构建脚本在临时目录组合当前 `src/`、`shared/`、冻结归档适配器及父仓 `frontend/treasure-island/` 展示覆盖层，执行 Island TypeScript 检查、Vite 构建及禁止导入 SPA 业务实现的边界检查；完成后清理临时目录，不复制服务配置，公开产物移除模块路径清单。Docker 上下文同步复制当前目录布局。旧 PoC 命令已改为测试实际构建产物 | 本地构建、Vue/React 接入与 Chromium 的 4 视口×2 语言×2 主题检查通过（fixture props，无真实科研后端）；不据此改变端到端运行准入状态 |
 
 > 其余文档声明（WRITE_RUNTIME_ACCEPTED=False、worker_paths_verified=false、迁移链 bioopsphase2→5、Flow 版本号、幂等/对账语义）均与源码一致，不再逐条列出。
 

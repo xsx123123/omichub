@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-dimensionality-reduction-plots
 description: Produce and interpret PCA, t-SNE, UMAP, and PHATE plots for high-dimensional omics data with rigor about which method preserves what (variance, local structure, manifold, transitions), hyperparameter sensitivity, and the well-documented limits of 2D embeddings. Covers PCA biplot/scree/loadings, t-SNE PCA initialization (Kobak-Berens 2019), UMAP n_neighbors/min_dist trade-offs, and the Chari-Pachter 2023 critique. Use when visualizing high-dimensional data — bulk PCA, single-cell embeddings, multi-omics integration projections.
+version: 1.0.0
+display_name: 降维可视化
+display_name_en: Dimensionality Reduction Plots
+description_zh: 为高维组学数据生成并解读 PCA、t-SNE、UMAP 与 PHATE 图，明确各方法保留的信息（方差、局部结构、流形、状态转移）、超参数敏感性及二维嵌入的局限。涵盖 PCA 双标图/碎石图/载荷图、t-SNE 的 PCA 初始化（Kobak-Berens 2019）、UMAP 的 n_neighbors/min_dist 权衡及 Chari-Pachter 2023 的批评，适用于 bulk PCA、单细胞嵌入和多组学整合投影。
+description_en: >-
+  Produce and interpret PCA, t-SNE, UMAP, and PHATE plots for high-dimensional omics data with rigor about which method preserves what (variance, local structure, manifold, transitions), hyperparameter sensitivity, and the well-documented limits of 2D embeddings. Covers PCA biplot/scree/loadings, t-SNE PCA initialization (Kobak-Berens 2019), UMAP n_neighbors/min_dist trade-offs, and the Chari-Pachter 2023 critique. Use when visualizing high-dimensional data — bulk PCA, single-cell embeddings, multi-omics integration projections.
 tool_type: mixed
 primary_tool: scanpy
 ---

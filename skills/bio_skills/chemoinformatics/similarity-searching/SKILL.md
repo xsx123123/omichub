@@ -1,6 +1,13 @@
 ---
 name: bio-similarity-searching
 description: Performs molecular similarity searching using Tanimoto, Tversky, Dice, and cosine coefficients on bit/count fingerprints with explicit choice rules for symmetric vs asymmetric measures, scaffold-hopping vs lead-optimization regimes, activity-cliff diagnosis, and large-library nearest-neighbor methods (BulkTanimoto, MHFP6 LSH forest, USRCAT). Use when ranking compounds by structural resemblance to a query, clustering libraries, finding analogs, or diagnosing activity cliffs.
+version: 1.0.0
+display_name: 分子相似性搜索与聚类
+display_name_en: Molecular Similarity Search and Clustering
+description_zh: >-
+  使用 Tanimoto、Tversky、Dice 与余弦系数在位/计数指纹上执行分子相似性搜索，涵盖对称与非对称度量选择、骨架跃迁与先导优化场景、活性悬崖诊断及大规模库最近邻方法（BulkTanimoto、MHFP6 LSH、USRCAT）。适用于结构相似化合物排序、化合物库聚类与类似物发现。
+description_en: >-
+  Performs molecular similarity searching using Tanimoto, Tversky, Dice, and cosine coefficients on bit/count fingerprints with explicit choice rules for symmetric vs asymmetric measures, scaffold-hopping vs lead-optimization regimes, activity-cliff diagnosis, and large-library nearest-neighbor methods (BulkTanimoto, MHFP6 LSH forest, USRCAT). Use when ranking compounds by structural resemblance to a query, clustering libraries, finding analogs, or diagnosing activity cliffs.
 tool_type: python
 primary_tool: RDKit
 ---

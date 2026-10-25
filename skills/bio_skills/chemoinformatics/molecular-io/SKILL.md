@@ -1,6 +1,13 @@
 ---
 name: bio-molecular-io
 description: Reads, writes, and converts molecular file formats (SMILES, InChI, SDF V2000/V3000, MOL2, PDB, and BinaryCIF) using RDKit and Open Babel with rigorous handling of aromaticity perception, stereochemistry, implicit/explicit hydrogens, kekulization, and salt/fragment separation. Use when loading chemical libraries, debugging parse failures, or preparing molecules for downstream standardization, descriptor calculation, or docking.
+version: 1.0.0
+display_name: 分子文件读写与格式转换
+display_name_en: Molecular File I/O and Conversion
+description_zh: >-
+  使用 RDKit 与 Open Babel 读写并转换 SMILES、InChI、SDF V2000/V3000、MOL2、PDB 与 BinaryCIF 等分子格式，严格处理芳香性感知、立体化学、氢原子、kekulization 及盐/片段分离。适用于化合物库加载、解析排错及下游标准化与对接准备。
+description_en: >-
+  Reads, writes, and converts molecular file formats (SMILES, InChI, SDF V2000/V3000, MOL2, PDB, and BinaryCIF) using RDKit and Open Babel with rigorous handling of aromaticity perception, stereochemistry, implicit/explicit hydrogens, kekulization, and salt/fragment separation. Use when loading chemical libraries, debugging parse failures, or preparing molecules for downstream standardization, descriptor calculation, or docking.
 tool_type: python
 primary_tool: RDKit
 ---

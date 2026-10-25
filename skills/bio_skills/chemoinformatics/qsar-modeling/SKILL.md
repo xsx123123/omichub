@@ -1,6 +1,13 @@
 ---
 name: bio-qsar-modeling
 description: Builds QSAR / QSPR models using chemprop D-MPNN, MolFormer, Uni-Mol, ChemBERTa, random forest baselines, and Gaussian processes with explicit handling of OECD 5 principles, applicability domain (kNN, leverage, conformal prediction, Mahalanobis), scaffold-balanced splits, ensemble uncertainty, calibration (Platt, isotonic), feature importance (SHAP, atomic attribution), and prospective validation. Use when building target-specific predictive models from in-house bioassay data, ADMET endpoints, or selectivity profiles.
+version: 1.0.0
+display_name: QSAR 定量构效关系建模
+display_name_en: QSAR Modeling
+description_zh: >-
+  使用 chemprop D-MPNN、MolFormer、Uni-Mol、ChemBERTa、随机森林与高斯过程构建 QSAR/QSPR 模型，涵盖 OECD 五原则、适用域（kNN、杠杆、共形预测）、骨架平衡划分、集成不确定性、校准、特征重要性及前瞻验证。适用于内部生物活性数据的靶点特异性建模。
+description_en: >-
+  Builds QSAR / QSPR models using chemprop D-MPNN, MolFormer, Uni-Mol, ChemBERTa, random forest baselines, and Gaussian processes with explicit handling of OECD 5 principles, applicability domain (kNN, leverage, conformal prediction, Mahalanobis), scaffold-balanced splits, ensemble uncertainty, calibration (Platt, isotonic), feature importance (SHAP, atomic attribution), and prospective validation. Use when building target-specific predictive models from in-house bioassay data, ADMET endpoints, or selectivity profiles.
 tool_type: python
 primary_tool: chemprop
 ---

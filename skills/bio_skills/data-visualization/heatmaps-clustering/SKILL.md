@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-heatmaps-clustering
 description: Build clustered heatmaps for expression matrices and other features-by-samples data with rigorous distance/linkage/scaling choices, robust color mapping, optimal leaf ordering, and ComplexHeatmap/pheatmap/seaborn rendering. Covers the ward.D vs ward.D2 trap, the row-vs-column scaling decision, multi-track annotations, oncoPrint, and raster rendering for large matrices. Use when visualizing expression patterns across samples or identifying co-regulated clusters.
+version: 1.0.0
+display_name: 聚类热图
+display_name_en: Heatmaps and Clustering
+description_zh: 为表达矩阵及“特征×样本”数据构建聚类热图，严谨处理距离/连接/标准化选择、稳健颜色映射、最优叶序及 ComplexHeatmap/pheatmap/seaborn 渲染。涵盖 ward.D 与 ward.D2 陷阱、行/列标准化决策、多轨道注释、oncoPrint 及大矩阵栅格化，适用于样本间表达模式可视化与共调控簇识别。
+description_en: >-
+  Build clustered heatmaps for expression matrices and other features-by-samples data with rigorous distance/linkage/scaling choices, robust color mapping, optimal leaf ordering, and ComplexHeatmap/pheatmap/seaborn rendering. Covers the ward.D vs ward.D2 trap, the row-vs-column scaling decision, multi-track annotations, oncoPrint, and raster rendering for large matrices. Use when visualizing expression patterns across samples or identifying co-regulated clusters.
 tool_type: mixed
 primary_tool: ComplexHeatmap
 ---

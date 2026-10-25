@@ -1,6 +1,13 @@
 ---
 name: bio-protac-degraders
 description: Designs PROTACs, molecular glues, and bivalent degraders with explicit handling of E3 ligase choice (VHL, CRBN, IAP, MDM2, KEAP1), linker design (length, composition, rigidity), ternary complex prediction (PRosettaC, DeepTernary, AlphaFold3), cooperativity (alpha), DC50 / Dmax characterization, hook effect, and prediction-experiment reconciliation. Use when designing targeted protein degraders, planning linker SAR, predicting ternary complex stability, or building generative degrader workflows.
+version: 1.0.0
+display_name: PROTAC 与分子胶设计
+display_name_en: PROTAC and Molecular Glue Design
+description_zh: >-
+  设计 PROTAC、分子胶与双价降解剂，涵盖 VHL、CRBN、IAP、MDM2 等 E3 连接酶选择、连接子长度与刚性、三元复合物预测（PRosettaC、AlphaFold3）、协同性、DC50/Dmax、钩状效应及预测-实验校准。适用于靶向蛋白降解剂设计与连接子 SAR。
+description_en: >-
+  Designs PROTACs, molecular glues, and bivalent degraders with explicit handling of E3 ligase choice (VHL, CRBN, IAP, MDM2, KEAP1), linker design (length, composition, rigidity), ternary complex prediction (PRosettaC, DeepTernary, AlphaFold3), cooperativity (alpha), DC50 / Dmax characterization, hook effect, and prediction-experiment reconciliation. Use when designing targeted protein degraders, planning linker SAR, predicting ternary complex stability, or building generative degrader workflows.
 tool_type: python
 primary_tool: PRosettaC
 ---

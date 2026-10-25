@@ -2,6 +2,13 @@
 name: bio-ml-docking-rescoring
 description: >-
   Performs ML-based protein-ligand pose prediction and scoring using DiffDock-L (diffusion-based), Boltz-1 / Boltz-2 (foundation model with affinity), Chai-1, AlphaFold3 ligand, EquiBind, TANKBind, NeuralPLexer, and hybrid workflows (DiffDock pose + GNINA rescore + PoseBusters QC). Explicit handling of when ML beats classical docking, when classical beats ML, the PB-invalid pose problem, and rescoring as the standard production hybrid. Use when modern docking is needed: foundation-model ligand-pose prediction, AI rescoring of classical poses, or scaffold-hopping in cross-docking scenarios.
+version: 1.0.0
+display_name: 机器学习对接与重评分
+display_name_en: ML Docking and Rescoring
+description_zh: >-
+  使用 DiffDock-L、Boltz-1/2、Chai-1、EquiBind 与 NeuralPLexer 进行机器学习蛋白-配体构象预测与打分，并结合 GNINA 重评分与 PoseBusters 质控，说明 ML 与经典对接的适用边界。适用于基础模型构象预测、AI 重评分及跨对接骨架跃迁。
+description_en: >-
+  Performs ML-based protein-ligand pose prediction and scoring using DiffDock-L (diffusion-based), Boltz-1 / Boltz-2 (foundation model with affinity), Chai-1, AlphaFold3 ligand, EquiBind, TANKBind, NeuralPLexer, and hybrid workflows (DiffDock pose + GNINA rescore + PoseBusters QC). Explicit handling of when ML beats classical docking, when classical beats ML, the PB-invalid pose problem, and rescoring as the standard production hybrid. Use when modern docking is needed: foundation-model ligand-pose prediction, AI rescoring of classical poses, or scaffold-hopping in cross-docking scenarios.
 tool_type: python
 primary_tool: DiffDock
 ---

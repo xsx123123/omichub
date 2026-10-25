@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-myvariant-queries
 description: Queries myvariant.info BioThings aggregator for ClinVar, gnomAD, dbSNP, dbNSFP, COSMIC, CADD, and CIViC annotations in batched, version-tracked requests. Use when annotating variant lists from multiple databases simultaneously without managing per-source APIs, and when reproducibility-grade analyses require recording source data versions via _meta.
+version: 1.0.0
+display_name: MyVariant 多库聚合注释
+display_name_en: MyVariant.info Aggregated Variant Annotation
+description_zh: 通过 BioThings 聚合器批量查询 ClinVar、gnomAD、dbSNP、dbNSFP、COSMIC、CADD 与 CIViC 注释，并通过 _meta 记录来源版本以保证结果可复现。适用于无需逐库管理 API 的变异列表注释，以及需要追溯数据版本、统一多库证据的分析场景。
+description_en: >-
+  Queries myvariant.info BioThings aggregator for ClinVar, gnomAD, dbSNP, dbNSFP, COSMIC, CADD, and CIViC annotations in batched, version-tracked requests. Use when annotating variant lists from multiple databases simultaneously without managing per-source APIs, and when reproducibility-grade analyses require recording source data versions via _meta.
 tool_type: python
 primary_tool: myvariant
 ---

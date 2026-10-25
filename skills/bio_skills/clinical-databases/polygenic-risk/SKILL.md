@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-polygenic-risk
 description: Constructs and validates polygenic risk scores using LDpred2-auto, SBayesRC, MegaPRS, PRS-CS, PROSPER, MUSSEL, BridgePRS, JointPRS, PRSmix, or PGS Catalog Calculator with ancestry-aware reference panels (HapMap3, UKB-LD), ancestry-conditional calibration, and PRS-RS reporting standards. Use when computing PRS for cohorts, applying absolute-risk transformation, assessing cross-ancestry portability (Martin 2017 / Ding 2023 continuous ancestry), or auditing PRS manuscripts against the 22-item PRS-RS reviewer checklist.
+version: 1.0.0
+display_name: 多基因风险评分构建与评估
+display_name_en: Polygenic Risk Score Construction
+description_zh: 使用 LDpred2-auto、SBayesRC、PRS-CS、BridgePRS 或 PGS Catalog Calculator 构建并验证多基因风险评分，涵盖祖先感知参考面板、条件校准与 PRS-RS 报告规范。适用于队列 PRS 计算、绝对风险转换、跨祖先可迁移性评估以及按 PRS-RS 清单审计研究稿件。
+description_en: >-
+  Constructs and validates polygenic risk scores using LDpred2-auto, SBayesRC, MegaPRS, PRS-CS, PROSPER, MUSSEL, BridgePRS, JointPRS, PRSmix, or PGS Catalog Calculator with ancestry-aware reference panels (HapMap3, UKB-LD), ancestry-conditional calibration, and PRS-RS reporting standards. Use when computing PRS for cohorts, applying absolute-risk transformation, assessing cross-ancestry portability (Martin 2017 / Ding 2023 continuous ancestry), or auditing PRS manuscripts against the 22-item PRS-RS reviewer checklist.
 tool_type: mixed
 primary_tool: PGS Catalog Calculator
 ---

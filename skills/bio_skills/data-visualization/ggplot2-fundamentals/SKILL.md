@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-ggplot2-fundamentals
 description: Build publication-quality figures in R with ggplot2 using the grammar of graphics (data + aesthetics + geometries + scales + facets + themes) with CVD-safe palettes, cairo_pdf TrueType embedding, programmatic aes via tidy evaluation, and the theme_classic publication baseline. Use when producing static figures in R for papers, presentations, or reports.
+version: 1.0.0
+display_name: ggplot2 基础
+display_name_en: ggplot2 Fundamentals
+description_zh: 使用 ggplot2 的图形语法（数据、美学映射、几何对象、标度、分面、主题）在 R 中绘制发表级图表，涵盖色盲友好配色、cairo_pdf TrueType 字体嵌入、基于 tidy evaluation 的编程式 aes 映射及 theme_classic 出版基线。适用于论文、报告或演示中的 R 静态图制作。
+description_en: >-
+  Build publication-quality figures in R with ggplot2 using the grammar of graphics (data + aesthetics + geometries + scales + facets + themes) with CVD-safe palettes, cairo_pdf TrueType embedding, programmatic aes via tidy evaluation, and the theme_classic publication baseline. Use when producing static figures in R for papers, presentations, or reports.
 tool_type: r
 primary_tool: ggplot2
 goal_approach_exempt: true

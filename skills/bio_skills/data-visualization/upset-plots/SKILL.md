@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-upset-plots
 description: Build UpSet plots to visualize set intersections beyond 4 sets (where Venn fails) using ComplexUpset (modern, ggplot2-grammar) or the unmaintained UpSetR, with explicit cardinality vs degree sorting, attribute panels, and query highlighting. Use when comparing overlap across many gene sets, peak sets, variant lists, or any set membership matrix where Venn diagrams become illegible.
+version: 1.0.0
+display_name: UpSet 集合交集图
+display_name_en: UpSet Plots
+description_zh: 使用 ComplexUpset（现代、ggplot2 语法）或已停止维护的 UpSetR 构建 UpSet 图，以可视化超过 4 个集合的交集（Venn 图失效之处），包含按基数或度数排序、属性面板与查询高亮。适用于比较多个基因集、peak 集、变异列表或任何 Venn 图难以清晰表达的集合成员矩阵。
+description_en: >-
+  Build UpSet plots to visualize set intersections beyond 4 sets (where Venn fails) using ComplexUpset (modern, ggplot2-grammar) or the unmaintained UpSetR, with explicit cardinality vs degree sorting, attribute panels, and query highlighting. Use when comparing overlap across many gene sets, peak sets, variant lists, or any set membership matrix where Venn diagrams become illegible.
 tool_type: mixed
 primary_tool: ComplexUpset
 ---

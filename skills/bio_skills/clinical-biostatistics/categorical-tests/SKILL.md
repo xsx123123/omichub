@@ -1,6 +1,13 @@
 ---
 name: bio-clinical-biostatistics-categorical-tests
 description: Tests associations between categorical variables in clinical data using chi-square, Fisher's exact, Boschloo, Cochran-Mantel-Haenszel, and modern McNemar variants with calibrated confidence intervals (Wilson, Newcombe, Miettinen-Nurminen). Use when analyzing categorical outcomes, paired binary endpoints, or testing treatment-outcome independence in confirmatory or exploratory clinical trials.
+version: 1.0.0
+display_name: 分类变量关联检验
+display_name_en: Categorical Association Tests
+description_zh: >-
+  对临床数据中的分类变量开展关联检验，提供卡方、Fisher 精确检验、Boschloo、Cochran-Mantel-Haenszel 及 McNemar 变体，并给出 Wilson、Newcombe 等校准置信区间。适用于分类结局、配对二分类终点及试验中的独立性检验。
+description_en: >-
+  Tests associations between categorical variables in clinical data using chi-square, Fisher's exact, Boschloo, Cochran-Mantel-Haenszel, and modern McNemar variants with calibrated confidence intervals (Wilson, Newcombe, Miettinen-Nurminen). Use when analyzing categorical outcomes, paired binary endpoints, or testing treatment-outcome independence in confirmatory or exploratory clinical trials.
 tool_type: python
 primary_tool: scipy
 ---

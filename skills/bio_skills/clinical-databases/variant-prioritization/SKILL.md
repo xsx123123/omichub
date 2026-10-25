@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-variant-prioritization
 description: Prioritizes rare-disease variants from trio/quad WES/WGS with de novo (DeNovoGear, Triodenovo), compound-heterozygous phasing (WhatsHap), mosaic VAF tiering, phenotype-driven ranking (Exomiser, Phen2Gene, AMELIE), ClinGen gene-disease validity gating, and ACMG SF v3.2 secondary findings reporting. Use when running diagnostic exome / genome pipelines, identifying candidate Mendelian disease genes, screening for incidental findings, or auditing VUS reclassification cycles. The ACMG/AMP classification framework (PVS1 decision tree, Pejaver PP3/BP4 calibration, Tavtigian point system) is in clinical-databases/acmg-classification.
+version: 1.0.0
+display_name: 罕见病变异优先级排序
+display_name_en: Rare-Disease Variant Prioritization
+description_zh: 面向 trio/quad WES/WGS 的罕见病变异优先级流程，整合 de novo 检测、复合杂合定相、嵌合 VAF 分层、表型驱动排序、ClinGen 基因-疾病有效性门控与 ACMG SF v3.2 次要发现报告。适用于诊断性外显子/基因组分析、孟德尔候选基因筛选及 VUS 重分类审计。
+description_en: >-
+  Prioritizes rare-disease variants from trio/quad WES/WGS with de novo (DeNovoGear, Triodenovo), compound-heterozygous phasing (WhatsHap), mosaic VAF tiering, phenotype-driven ranking (Exomiser, Phen2Gene, AMELIE), ClinGen gene-disease validity gating, and ACMG SF v3.2 secondary findings reporting. Use when running diagnostic exome / genome pipelines, identifying candidate Mendelian disease genes, screening for incidental findings, or auditing VUS reclassification cycles. The ACMG/AMP classification framework (PVS1 decision tree, Pejaver PP3/BP4 calibration, Tavtigian point system) is in clinical-databases/acmg-classification.
 tool_type: python
 primary_tool: pandas
 ---

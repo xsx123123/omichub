@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-color-palettes
 description: Select colormaps and qualitative palettes for scientific figures using perceptual-uniformity, color-vision-deficiency safety, and luminance-monotonicity criteria. Covers Crameri scientific colormaps, viridis/cividis/magma, Okabe-Ito categorical, ColorBrewer, and the rainbow/jet critique. Use when choosing palettes for heatmaps, scatter, networks, or any encoding where color carries quantitative or categorical meaning.
+version: 1.0.0
+display_name: 科学配色与调色板
+display_name_en: Color Palettes
+description_zh: 为科学图表选择感知均匀、色盲友好且符合亮度单调性的连续、发散或定性配色方案，涵盖 Crameri 科学色图、viridis/cividis/magma、Okabe-Ito 分类色、ColorBrewer，以及对 rainbow/jet 的批评。适用于热图、散点图、网络图等以颜色编码定量或分类信息的场景。
+description_en: >-
+  Select colormaps and qualitative palettes for scientific figures using perceptual-uniformity, color-vision-deficiency safety, and luminance-monotonicity criteria. Covers Crameri scientific colormaps, viridis/cividis/magma, Okabe-Ito categorical, ColorBrewer, and the rainbow/jet critique. Use when choosing palettes for heatmaps, scatter, networks, or any encoding where color carries quantitative or categorical meaning.
 tool_type: mixed
 primary_tool: viridis
 goal_approach_exempt: true

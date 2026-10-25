@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-somatic-signatures
 description: Extracts and assigns COSMIC v3.4 mutational signatures (86 SBS / 11 DBS / 18 ID / 21 CN / 16 SV) from somatic VCFs using SigProfilerSuite, MutationalPatterns, MuSiCal mvNMF, SigNet, or HRDetect. Use when characterizing DNA-damage etiology (BRCA1/2 HRD, MMR-D, POLE, APOBEC3A, UV, tobacco, aflatoxin, 5-FU/SBS17b, platinum, colibactin SBS88), routing PARP inhibitor decisions, or auditing de novo extraction vs refit choice for cohort size.
+version: 1.0.0
+display_name: 体细胞突变特征解析
+display_name_en: Somatic Mutational Signature Analysis
+description_zh: 使用 SigProfilerSuite、MutationalPatterns、MuSiCal mvNMF、SigNet 或 HRDetect 从体细胞 VCF 中提取并匹配 COSMIC v3.4 的 SBS/DBS/ID/CN/SV 突变特征，并评估提取稳定性与匹配质量。适用于 DNA 损伤病因推断（HRD、MMR-D、POLE、APOBEC、UV、烟草）、PARP 抑制剂决策支持，以及结合队列规模的 De novo 与 refit 方案选择。
+description_en: >-
+  Extracts and assigns COSMIC v3.4 mutational signatures (86 SBS / 11 DBS / 18 ID / 21 CN / 16 SV) from somatic VCFs using SigProfilerSuite, MutationalPatterns, MuSiCal mvNMF, SigNet, or HRDetect. Use when characterizing DNA-damage etiology (BRCA1/2 HRD, MMR-D, POLE, APOBEC3A, UV, tobacco, aflatoxin, 5-FU/SBS17b, platinum, colibactin SBS88), routing PARP inhibitor decisions, or auditing de novo extraction vs refit choice for cohort size.
 tool_type: mixed
 primary_tool: SigProfilerAssignment
 ---

@@ -1,6 +1,13 @@
 ---
 name: bio-reaction-enumeration
 description: Enumerates virtual chemical libraries via reaction SMARTS transformations using RDKit and reaction templates, with explicit handling of atom mapping, RDChiral template extraction, product validation, RECAP/BRICS fragmentation, R-group decomposition, matched molecular pair analysis (MMPA), and Free-Wilson analysis. Use when generating combinatorial libraries from building blocks, enumerating analog series, deriving structure-activity rules, or extracting transformations from reaction data.
+version: 1.0.0
+display_name: 反应虚拟库枚举
+display_name_en: Reaction-Based Library Enumeration
+description_zh: >-
+  基于 RDKit 与反应模板，通过反应 SMARTS 枚举虚拟化合物库，涵盖原子映射、RDChiral 模板提取、产物校验、RECAP/BRICS 片段化、R 基分解、匹配分子对分析（MMPA）与 Free-Wilson 分析。适用于由砌块生成组合库、类似物系列枚举及构效规则提取。
+description_en: >-
+  Enumerates virtual chemical libraries via reaction SMARTS transformations using RDKit and reaction templates, with explicit handling of atom mapping, RDChiral template extraction, product validation, RECAP/BRICS fragmentation, R-group decomposition, matched molecular pair analysis (MMPA), and Free-Wilson analysis. Use when generating combinatorial libraries from building blocks, enumerating analog series, deriving structure-activity rules, or extracting transformations from reaction data.
 tool_type: python
 primary_tool: RDKit
 ---

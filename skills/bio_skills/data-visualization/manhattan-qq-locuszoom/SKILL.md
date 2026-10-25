@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-manhattan-qq-locuszoom
 description: Build Manhattan, Miami, QQ, and locuszoom-style regional plots from GWAS, TWAS, PWAS, and QTL summary statistics with correct genomic-inflation diagnostics, multi-trait overlays, lead-SNP labeling, and LD-aware regional rendering. Use when visualizing association results across the genome, comparing two traits, computing genomic inflation lambda, or zooming into a locus with LD coloring.
+version: 1.0.0
+display_name: 曼哈顿图、QQ 图与区域关联图
+display_name_en: Manhattan, QQ and LocusZoom Plots
+description_zh: 基于 GWAS、TWAS、PWAS 与 QTL 汇总统计构建曼哈顿图、Miami 图、QQ 图及 locuszoom 式区域图，涵盖基因组膨胀诊断、多性状叠加、lead SNP 标注与 LD 感知区域渲染。适用于全基因组关联结果可视化、双性状比较、基因组膨胀系数 λ 计算及按 LD 着色的位点放大。
+description_en: >-
+  Build Manhattan, Miami, QQ, and locuszoom-style regional plots from GWAS, TWAS, PWAS, and QTL summary statistics with correct genomic-inflation diagnostics, multi-trait overlays, lead-SNP labeling, and LD-aware regional rendering. Use when visualizing association results across the genome, comparing two traits, computing genomic inflation lambda, or zooming into a locus with LD coloring.
 tool_type: mixed
 primary_tool: qqman
 ---

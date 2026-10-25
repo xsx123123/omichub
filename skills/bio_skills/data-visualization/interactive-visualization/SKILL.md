@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-interactive-visualization
 description: Build interactive HTML/web visualizations with plotly (Python/R), bokeh (Python), and gganimate/plotly frames for animation, with awareness of current Kaleido static-export model (post-orca-EOL), HTML file-size bloat, and the limits of interactive-only output for journal submission. Use when producing zoomable/hoverable plots for notebook EDA, supplementary HTML, dashboards, or animated time-course / iteration visualizations.
+version: 1.0.0
+display_name: 交互式可视化
+display_name_en: Interactive Visualization
+description_zh: 使用 plotly（Python/R）、bokeh（Python）及 gganimate/plotly 帧构建交互式 HTML/Web 可视化与动画，关注 Kaleido 静态导出模型（orca 停止维护后）、HTML 文件体积膨胀及仅交互输出对期刊投稿的局限。适用于 notebook EDA、补充 HTML、仪表盘以及时间序列/迭代动画。
+description_en: >-
+  Build interactive HTML/web visualizations with plotly (Python/R), bokeh (Python), and gganimate/plotly frames for animation, with awareness of current Kaleido static-export model (post-orca-EOL), HTML file-size bloat, and the limits of interactive-only output for journal submission. Use when producing zoomable/hoverable plots for notebook EDA, supplementary HTML, dashboards, or animated time-course / iteration visualizations.
 tool_type: mixed
 primary_tool: plotly
 ---

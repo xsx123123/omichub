@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-msi-detection
 description: Calls microsatellite instability from WES/WGS/targeted-panel with MSIsensor, MSIsensor-pro, MSIsensor-ct (panel-aware), mSINGS, and MANTIS for FDA pembrolizumab MSI-H pan-tumor / Lynch syndrome / dMMR ICI biomarker. Use when stratifying ICI eligibility (Le 2015), pairing MSI with TMB-H (Sha 2020 / Salem 2018), screening Lynch syndrome (universal IHC + MSI), or distinguishing MSI-H tumors from POLE-exo hypermutator with overlapping signatures.
+version: 1.0.0
+display_name: 微卫星不稳定性检测
+display_name_en: Microsatellite Instability Detection
+description_zh: 使用 MSIsensor、MSIsensor-pro、MSIsensor-ct、mSINGS 与 MANTIS 从 WES/WGS/靶向 panel 中判定微卫星不稳定状态及 dMMR 表型，并处理不同 panel 的阈值差异，按 FoCR 指南设定判定阈值。适用于 ICI 获益分层、MSI 与 TMB-H 联合评估、Lynch 综合征筛查，以及区分 MSI-H 与 POLE 超突变肿瘤。
+description_en: >-
+  Calls microsatellite instability from WES/WGS/targeted-panel with MSIsensor, MSIsensor-pro, MSIsensor-ct (panel-aware), mSINGS, and MANTIS for FDA pembrolizumab MSI-H pan-tumor / Lynch syndrome / dMMR ICI biomarker. Use when stratifying ICI eligibility (Le 2015), pairing MSI with TMB-H (Sha 2020 / Salem 2018), screening Lynch syndrome (universal IHC + MSI), or distinguishing MSI-H tumors from POLE-exo hypermutator with overlapping signatures.
 tool_type: cli
 primary_tool: MSIsensor-pro
 ---

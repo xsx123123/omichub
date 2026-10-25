@@ -1,6 +1,13 @@
 ---
 name: bio-retrosynthesis
 description: Performs retrosynthetic planning using AiZynthFinder (template-based MCTS), maintained or version-pinned template-free models, ASKCOS, and emerging RetroSynFormer with explicit handling of route scoring, configurable MCTS rewards, building-block availability, and forward-prediction checks. Use when assessing synthetic feasibility of generated or selected molecules, planning multi-step syntheses, building synthesis-aware design pipelines, or screening libraries for retro-route feasibility.
+version: 1.0.0
+display_name: 逆合成路线规划
+display_name_en: Retrosynthetic Planning
+description_zh: >-
+  使用 AiZynthFinder（模板驱动 MCTS）、无模板模型、ASKCOS 与 RetroSynFormer 进行逆合成规划，涵盖路线评分、可配置 MCTS 奖励、砌块可获得性及正向预测校验。适用于评估生成或候选分子的合成可行性、多步路线规划及合成感知的设计流程。
+description_en: >-
+  Performs retrosynthetic planning using AiZynthFinder (template-based MCTS), maintained or version-pinned template-free models, ASKCOS, and emerging RetroSynFormer with explicit handling of route scoring, configurable MCTS rewards, building-block availability, and forward-prediction checks. Use when assessing synthetic feasibility of generated or selected molecules, planning multi-step syntheses, building synthesis-aware design pipelines, or screening libraries for retro-route feasibility.
 tool_type: python
 primary_tool: AiZynthFinder
 ---

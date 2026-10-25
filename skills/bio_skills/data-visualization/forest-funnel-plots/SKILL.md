@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-forest-funnel-plots
 description: Build forest plots (HR, OR, RR, beta-coefficient summaries with CIs) and funnel plots (meta-analysis publication-bias diagnostics) using forestplot, metafor, ggforest, and MendelianRandomization with proper axis-scaling, summary-diamond placement, subgroup nesting, and Egger / trim-and-fill asymmetry tests. Use when summarizing effects across subgroups, trials, or instruments — meta-analysis, Mendelian randomization, subgroup HRs.
+version: 1.0.0
+display_name: 森林图与漏斗图
+display_name_en: Forest and Funnel Plots
+description_zh: 使用 forestplot、metafor、ggforest 与 MendelianRandomization 构建森林图（HR、OR、RR、beta 系数及置信区间汇总）和漏斗图（meta 分析发表偏倚诊断），涵盖坐标轴缩放、汇总菱形位置、亚组嵌套及 Egger/剪补法不对称检验。适用于亚组、试验或工具变量间的效应汇总——meta 分析、孟德尔随机化、亚组 HR。
+description_en: >-
+  Build forest plots (HR, OR, RR, beta-coefficient summaries with CIs) and funnel plots (meta-analysis publication-bias diagnostics) using forestplot, metafor, ggforest, and MendelianRandomization with proper axis-scaling, summary-diamond placement, subgroup nesting, and Egger / trim-and-fill asymmetry tests. Use when summarizing effects across subgroups, trials, or instruments — meta-analysis, Mendelian randomization, subgroup HRs.
 tool_type: r
 primary_tool: metafor
 ---

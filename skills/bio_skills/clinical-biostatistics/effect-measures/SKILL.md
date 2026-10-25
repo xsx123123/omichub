@@ -1,6 +1,13 @@
 ---
 name: bio-clinical-biostatistics-effect-measures
 description: Computes and interprets treatment effect measures (OR, RR, RD, HR, NNT) with calibrated confidence intervals (Wilson, Newcombe, Miettinen-Nurminen, MOVER, profile likelihood, Bender NNT) and reports marginal vs conditional estimands per FDA 2023 covariate adjustment guidance. Use when reporting treatment effects in confirmatory trials, comparing effect sizes across studies, or constructing forest plots.
+version: 1.0.0
+display_name: 治疗效应量计算
+display_name_en: Treatment Effect Measures
+description_zh: >-
+  计算并解释 OR、RR、RD、HR、NNT 等治疗效应量及其校准置信区间，支持 MOVER、剖面似然与 Bender NNT 方法，并按 FDA 2023 协变量调整指南区分边际与条件估计目标。适用于确证性试验的效应报告、跨研究效应比较及森林图绘制。
+description_en: >-
+  Computes and interprets treatment effect measures (OR, RR, RD, HR, NNT) with calibrated confidence intervals (Wilson, Newcombe, Miettinen-Nurminen, MOVER, profile likelihood, Bender NNT) and reports marginal vs conditional estimands per FDA 2023 covariate adjustment guidance. Use when reporting treatment effects in confirmatory trials, comparing effect sizes across studies, or constructing forest plots.
 tool_type: python
 primary_tool: statsmodels
 ---

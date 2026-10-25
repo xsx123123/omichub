@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-tumor-mutational-burden
 description: Calculates tumor mutational burden from WES/WGS/panel data with Friends of Cancer Research harmonization equations, per-assay calibration (FDA 10/Mb = 7.8 TSO500 = 8.4 OncomineTML), synonymous/indel/germline filtering, hypermutator tiering, blood TMB, and integration with HLA-LOH and neoantigen quality (Luksza 2017 fitness). Use when assessing ICI eligibility under tumor-specific cutoffs (McGrail 2021), comparing tissue vs bTMB, or auditing TMB-H reporting against ESMO 2024 and FDA pembrolizumab pan-tumor 2020.
+version: 1.0.0
+display_name: 肿瘤突变负荷计算与校准
+display_name_en: Tumor Mutational Burden Calculation
+description_zh: 基于 WES/WGS/panel 数据计算肿瘤突变负荷，应用 Friends of Cancer Research 跨 panel 校准、同义/indel/胚系过滤、超突变分层与血液 TMB，并可整合 HLA-LOH 和新抗原质量。适用于 ICI 适应证评估、组织与 bTMB 比较以及 TMB-H 报告审计。
+description_en: >-
+  Calculates tumor mutational burden from WES/WGS/panel data with Friends of Cancer Research harmonization equations, per-assay calibration (FDA 10/Mb = 7.8 TSO500 = 8.4 OncomineTML), synonymous/indel/germline filtering, hypermutator tiering, blood TMB, and integration with HLA-LOH and neoantigen quality (Luksza 2017 fitness). Use when assessing ICI eligibility under tumor-specific cutoffs (McGrail 2021), comparing tissue vs bTMB, or auditing TMB-H reporting against ESMO 2024 and FDA pembrolizumab pan-tumor 2020.
 tool_type: python
 primary_tool: cyvcf2
 ---

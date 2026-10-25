@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-gnomad-frequencies
 description: Queries gnomAD v4 (807k samples), v3, v2.1.1, and constraint metrics with grpmax FAF95, bottleneck-group exclusion, LOEUF interpretation, SV/CNV/mtDNA catalogs, and Whiffin max-credible-AF framework. Use when filtering rare variants, applying ACMG BS1/BA1, ranking genes by LoF intolerance, or selecting between v2 (GRCh37 + chrX/Y constraint) and v4 (GRCh38 + 807k samples).
+version: 1.0.0
+display_name: gnomAD 人群频率与约束查询
+display_name_en: gnomAD Frequencies and Constraint
+description_zh: 查询 gnomAD v4、v3 与 v2.1.1 的人群频率及基因约束指标，支持 grpmax FAF95、LOEUF 解读和 SV/CNV/mtDNA 目录查询，并说明亚群过滤与版本差异。适用于罕见变异过滤、ACMG BS1/BA1 判定、LoF 不耐受基因排序以及 v2 与 v4 版本选择。
+description_en: >-
+  Queries gnomAD v4 (807k samples), v3, v2.1.1, and constraint metrics with grpmax FAF95, bottleneck-group exclusion, LOEUF interpretation, SV/CNV/mtDNA catalogs, and Whiffin max-credible-AF framework. Use when filtering rare variants, applying ACMG BS1/BA1, ranking genes by LoF intolerance, or selecting between v2 (GRCh37 + chrX/Y constraint) and v4 (GRCh38 + 807k samples).
 tool_type: python
 primary_tool: requests
 ---

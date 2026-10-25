@@ -1,6 +1,13 @@
 ---
 name: bio-clinical-biostatistics-adaptive-designs
 description: Designs adaptive clinical trials including group-sequential (O'Brien-Fleming, Pocock, Lan-DeMets spending), sample-size re-estimation (blinded Friede-Kieser, unblinded Cui-Hung-Wang, Mehta-Pocock promising zone), seamless Phase 2/3 with treatment-arm selection, population enrichment, and response-adaptive randomisation. Covers FDA 2019 Final Adaptive Designs Guidance, FDA 2022 Master Protocols, and ICH E20 Step 2b/3 draft (June 2025, NOT final). Use when planning interim analyses, sample-size re-estimation, or master/platform-trial designs.
+version: 1.0.0
+display_name: 适应性临床试验设计
+display_name_en: Adaptive Clinical Trial Design
+description_zh: >-
+  设计采用成组序贯、样本量重估、无缝 II/III 期与应答适应性随机化的适应性临床试验，覆盖 FDA 2019 适应性设计指南及 ICH E20 草案。适用于规划期中分析、样本量重估及主方案/平台试验设计。
+description_en: >-
+  Designs adaptive clinical trials including group-sequential (O'Brien-Fleming, Pocock, Lan-DeMets spending), sample-size re-estimation (blinded Friede-Kieser, unblinded Cui-Hung-Wang, Mehta-Pocock promising zone), seamless Phase 2/3 with treatment-arm selection, population enrichment, and response-adaptive randomisation. Covers FDA 2019 Final Adaptive Designs Guidance, FDA 2022 Master Protocols, and ICH E20 Step 2b/3 draft (June 2025, NOT final). Use when planning interim analyses, sample-size re-estimation, or master/platform-trial designs.
 tool_type: r
 primary_tool: rpact
 goal_approach_exempt: true

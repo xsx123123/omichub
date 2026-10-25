@@ -1,6 +1,13 @@
 ---
 name: bio-clinical-biostatistics-bayesian-trials
 description: Designs Bayesian clinical trials including Phase I dose-finding (BOIN, CRM, EWOC, mTPI-2), meta-analytic-predictive (MAP) priors with robust mixtures for external data borrowing, EXNEX for basket trials, hierarchical models for safety AE (Berry-Berry), Bayesian platform trials (I-SPY 2, GBM AGILE, REMAP-CAP), and posterior probability stopping rules. Covers FDA Bayesian Devices Guidance (2010), FDA Bayesian Methodology in Drugs Draft (January 2026), BOIN Fit-for-Purpose qualification (December 2021), and Project Optimus dose-optimisation. Use when designing dose-finding studies, platform trials, or sensitivity analyses with informative priors.
+version: 1.0.0
+display_name: 贝叶斯临床试验设计
+display_name_en: Bayesian Clinical Trial Design
+description_zh: >-
+  设计贝叶斯临床试验，涵盖 BOIN/CRM 剂量探索、MAP 先验与 EXNEX 外部数据借用、安全性事件层级模型及后验概率停止规则。适用于剂量探索研究、平台试验及采用信息先验的敏感性分析。
+description_en: >-
+  Designs Bayesian clinical trials including Phase I dose-finding (BOIN, CRM, EWOC, mTPI-2), meta-analytic-predictive (MAP) priors with robust mixtures for external data borrowing, EXNEX for basket trials, hierarchical models for safety AE (Berry-Berry), Bayesian platform trials (I-SPY 2, GBM AGILE, REMAP-CAP), and posterior probability stopping rules. Covers FDA Bayesian Devices Guidance (2010), FDA Bayesian Methodology in Drugs Draft (January 2026), BOIN Fit-for-Purpose qualification (December 2021), and Project Optimus dose-optimisation. Use when designing dose-finding studies, platform trials, or sensitivity analyses with informative priors.
 tool_type: r
 primary_tool: RBesT
 goal_approach_exempt: true

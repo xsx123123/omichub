@@ -1,6 +1,13 @@
 ---
 name: bio-shape-similarity
 description: Performs 3D shape-based similarity searching using ROCS (OpenEye), USRCAT (ultra-fast), Open3DAlign (RDKit), ESPSim (electrostatic), and ShaEP with explicit handling of Tanimoto-Combo (shape + color), shape vs ECFP4 complementarity, conformer-ensemble searching, alignment optimization, and scaffold hopping. Use when searching for shape-mimicking compounds with different scaffolds, identifying bioisosteric replacements, prospective scaffold hopping, or expanding hit series beyond 2D similarity.
+version: 1.0.0
+display_name: 三维形状相似性搜索
+display_name_en: 3D Shape Similarity Search
+description_zh: >-
+  使用 ROCS、USRCAT、Open3DAlign、ESPSim 与 ShaEP 进行三维形状相似性搜索，涵盖 Tanimoto-Combo（形状+颜色）、形状与 ECFP4 互补性、构象集合搜索、对齐优化及骨架跃迁。适用于跨骨架形状模拟化合物检索、生物电子等排替换与命中系列扩展。
+description_en: >-
+  Performs 3D shape-based similarity searching using ROCS (OpenEye), USRCAT (ultra-fast), Open3DAlign (RDKit), ESPSim (electrostatic), and ShaEP with explicit handling of Tanimoto-Combo (shape + color), shape vs ECFP4 complementarity, conformer-ensemble searching, alignment optimization, and scaffold hopping. Use when searching for shape-mimicking compounds with different scaffolds, identifying bioisosteric replacements, prospective scaffold hopping, or expanding hit series beyond 2D similarity.
 tool_type: python
 primary_tool: RDKit
 ---

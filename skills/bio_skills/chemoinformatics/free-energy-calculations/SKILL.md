@@ -1,6 +1,13 @@
 ---
 name: bio-free-energy-calculations
 description: Performs alchemical free-energy calculations including relative binding free energy (RBFE / FEP+) and absolute binding free energy (ABFE) via OpenFE, FEP+, GROMACS, AMBER pmemd, and OpenMM with explicit lambda scheduling, soft-core potentials, MBAR/BAR analysis, cycle-closure validation, and protocol-appropriate enhanced sampling. Compares ML alternatives (Boltz-2 affinity, DeepDock). Use when ranking analogs by binding affinity beyond docking accuracy, performing prospective lead optimization, or validating SAR predictions.
+version: 1.0.0
+display_name: 结合自由能计算
+display_name_en: Binding Free-Energy Calculations
+description_zh: >-
+  通过 OpenFE、FEP+、GROMACS、AMBER 与 OpenMM 执行 RBFE/FEP+ 与 ABFE 炼金自由能计算，涵盖 lambda 调度、软核势、MBAR/BAR 分析、闭环验证及增强采样，并比较 Boltz-2 等机器学习方法。适用于先导优化的亲和力排序与 SAR 验证。
+description_en: >-
+  Performs alchemical free-energy calculations including relative binding free energy (RBFE / FEP+) and absolute binding free energy (ABFE) via OpenFE, FEP+, GROMACS, AMBER pmemd, and OpenMM with explicit lambda scheduling, soft-core potentials, MBAR/BAR analysis, cycle-closure validation, and protocol-appropriate enhanced sampling. Compares ML alternatives (Boltz-2 affinity, DeepDock). Use when ranking analogs by binding affinity beyond docking accuracy, performing prospective lead optimization, or validating SAR predictions.
 tool_type: mixed
 primary_tool: OpenFE
 ---

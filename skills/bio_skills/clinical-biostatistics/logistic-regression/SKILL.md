@@ -1,6 +1,13 @@
 ---
 name: bio-clinical-biostatistics-logistic-regression
 description: Performs logistic regression for clinical trial outcomes (binary, ordinal, multinomial) with marginal-vs-conditional estimand reporting per FDA 2023 covariate adjustment guidance, g-computation/standardisation for marginal effects, modified Poisson for RR, Brant test for proportional odds, Firth penalty for separation, and Hauck-Donner detection. Use when modeling binary or ordinal endpoints in confirmatory or exploratory clinical trials.
+version: 1.0.0
+display_name: 临床试验 logistic 回归
+display_name_en: Logistic Regression for Clinical Trials
+description_zh: >-
+  对临床试验的二分类、有序及多分类结局拟合 logistic 回归，提供 g-computation 标准化边际效应、modified Poisson 估计 RR、Firth 惩罚与 Hauck-Donner 诊断。适用于确证性或探索性试验中二分类与有序终点的建模分析。
+description_en: >-
+  Performs logistic regression for clinical trial outcomes (binary, ordinal, multinomial) with marginal-vs-conditional estimand reporting per FDA 2023 covariate adjustment guidance, g-computation/standardisation for marginal effects, modified Poisson for RR, Brant test for proportional odds, Firth penalty for separation, and Hauck-Donner detection. Use when modeling binary or ordinal endpoints in confirmatory or exploratory clinical trials.
 tool_type: python
 primary_tool: statsmodels
 ---

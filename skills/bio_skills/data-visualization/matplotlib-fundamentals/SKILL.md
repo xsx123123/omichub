@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-matplotlib-fundamentals
 description: Build publication-quality figures with matplotlib using the object-oriented Figure/Axes API, constrained_layout, rcParams customization, TrueType (Type-42) font embedding for journal submission, and CVD-safe palettes. Covers seaborn integration, common chart types, axis formatting, and the small gotchas that distinguish reproducible matplotlib from notebook scratch. Use when producing publication figures in Python — RNA-seq scatter, single-cell embeddings, generic biological plotting.
+version: 1.0.0
+display_name: matplotlib 基础
+display_name_en: matplotlib Fundamentals
+description_zh: 使用面向对象的 Figure/Axes API、constrained_layout、rcParams 定制、期刊投稿用 TrueType（Type-42）字体嵌入及色盲友好配色，在 matplotlib 中绘制发表级图表。涵盖 seaborn 集成、常见图表类型、坐标轴格式化以及区分可复现 matplotlib 与 notebook 草稿的细节。适用于 Python 中的发表图制作——RNA-seq 散点图、单细胞嵌入及通用生物绘图。
+description_en: >-
+  Build publication-quality figures with matplotlib using the object-oriented Figure/Axes API, constrained_layout, rcParams customization, TrueType (Type-42) font embedding for journal submission, and CVD-safe palettes. Covers seaborn integration, common chart types, axis formatting, and the small gotchas that distinguish reproducible matplotlib from notebook scratch. Use when producing publication figures in Python — RNA-seq scatter, single-cell embeddings, generic biological plotting.
 tool_type: python
 primary_tool: matplotlib
 goal_approach_exempt: true

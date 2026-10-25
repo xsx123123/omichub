@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-volcano-and-ma-plots
 description: Build volcano and MA plots from differential-expression / association results with LFC shrinkage, FDR-adjusted thresholds, sensible label placement, and axis-truncation conventions. Covers EnhancedVolcano, ggplot2, matplotlib, and the apeglm/ashr/normal shrinkage decision. Use when visualizing differential-expression results (RNA-seq, ChIP-seq, ATAC-seq, proteomics) or any per-feature effect-size + p-value table.
+version: 1.0.0
+display_name: 火山图与 MA 图
+display_name_en: Volcano and MA Plots
+description_zh: 基于差异表达或关联分析结果绘制火山图与 MA 图，涵盖 LFC 收缩、FDR 校正阈值、标签布局与坐标轴截断约定，并比较 apeglm、ashr 与 normal 收缩方法。适用于 RNA-seq、ChIP-seq、ATAC-seq、蛋白质组学等逐特征效应量与 p 值表的可视化。
+description_en: >-
+  Build volcano and MA plots from differential-expression / association results with LFC shrinkage, FDR-adjusted thresholds, sensible label placement, and axis-truncation conventions. Covers EnhancedVolcano, ggplot2, matplotlib, and the apeglm/ashr/normal shrinkage decision. Use when visualizing differential-expression results (RNA-seq, ChIP-seq, ATAC-seq, proteomics) or any per-feature effect-size + p-value table.
 tool_type: mixed
 primary_tool: ggplot2
 ---

@@ -1,6 +1,13 @@
 ---
 name: bio-admet-prediction
 description: Predicts ADMET properties using ADMETlab 3.0 (119 platform features, including 77 prediction models with modeled-endpoint uncertainty), ADMET-AI, DeepChem MolNet, and chemprop D-MPNN with explicit handling of OECD QSAR principles, applicability domain assessment, calibration, hERG/CYP/AMES endpoints, and PAINS / Lipinski / Ro5 / Veber / BBB druglikeness filters. Use when filtering compounds for drug-likeness, prioritizing leads by predicted safety, or building an in-house ADMET QSAR model.
+version: 1.0.0
+display_name: ADMET 性质与成药性预测
+display_name_en: ADMET Property and Druglikeness Prediction
+description_zh: >-
+  使用 ADMETlab 3.0、ADMET-AI、DeepChem 与 chemprop 预测 ADMET 性质，涵盖 QSAR 原则、适用域、模型校准及 hERG/CYP/AMES 端点，并结合 PAINS、Lipinski 规则进行成药性过滤。适用于先导化合物安全性排序与 ADMET 模型构建。
+description_en: >-
+  Predicts ADMET properties using ADMETlab 3.0 (119 platform features, including 77 prediction models with modeled-endpoint uncertainty), ADMET-AI, DeepChem MolNet, and chemprop D-MPNN with explicit handling of OECD QSAR principles, applicability domain assessment, calibration, hERG/CYP/AMES endpoints, and PAINS / Lipinski / Ro5 / Veber / BBB druglikeness filters. Use when filtering compounds for drug-likeness, prioritizing leads by predicted safety, or building an in-house ADMET QSAR model.
 tool_type: python
 primary_tool: ADMETlab
 ---

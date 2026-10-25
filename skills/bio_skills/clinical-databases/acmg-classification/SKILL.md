@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-acmg-classification
 description: Applies ACMG/AMP 2015 framework with ClinGen SVI specifications, Tavtigian 2018/2020 Bayesian point system, Abou Tayoun 2018 PVS1 decision tree, Pejaver 2022 and Bergquist 2025 calibrated PP3/BP4 thresholds for REVEL/BayesDel/AlphaMissense, Brnich 2020 PS3/BS3 OddsPath, Walker 2023 SpliceAI splicing framework, and AMP/ASCO/CAP 2017 tumor tiers. Use when classifying germline variants P / LP / VUS / LB / B, applying VCEP-specific CSpec rules, computing Whiffin BS1, or assigning cancer Tier I-IV per Li 2017.
+version: 1.0.0
+display_name: ACMG 变异致病性分级
+display_name_en: ACMG Variant Classification
+description_zh: 依据 ACMG/AMP 2015 框架与 ClinGen SVI 规范，结合 Tavtigian 贝叶斯评分、PVS1 决策树及 Pejaver/Bergquist 校准的 PP3/BP4 阈值，对胚系变异进行 P/LP/VUS/LB/B 分级，并按 AMP/ASCO/CAP 2017 标准划分肿瘤 Tier I-IV。适用于临床变异解读、VCEP CSpec 规则应用与致病性证据整合。
+description_en: >-
+  Applies ACMG/AMP 2015 framework with ClinGen SVI specifications, Tavtigian 2018/2020 Bayesian point system, Abou Tayoun 2018 PVS1 decision tree, Pejaver 2022 and Bergquist 2025 calibrated PP3/BP4 thresholds for REVEL/BayesDel/AlphaMissense, Brnich 2020 PS3/BS3 OddsPath, Walker 2023 SpliceAI splicing framework, and AMP/ASCO/CAP 2017 tumor tiers. Use when classifying germline variants P / LP / VUS / LB / B, applying VCEP-specific CSpec rules, computing Whiffin BS1, or assigning cancer Tier I-IV per Li 2017.
 tool_type: python
 primary_tool: requests
 ---

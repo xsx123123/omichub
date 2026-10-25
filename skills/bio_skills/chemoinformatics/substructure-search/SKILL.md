@@ -1,6 +1,13 @@
 ---
 name: bio-substructure-search
 description: Searches molecular libraries for substructure matches using SMARTS patterns with explicit handling of recursive SMARTS, ring membership, aromaticity dialect, vector binding, atom map indices, and reactive/PAINS/REOS/Brenk filter catalogs. Use when filtering compounds by pharmacophore features, functional groups, scaffold matches, or screening for assay-interference / structural alerts.
+version: 1.0.0
+display_name: 子结构检索与结构警示
+display_name_en: Substructure Search and Structural Alerts
+description_zh: >-
+  使用 SMARTS 模式在分子库中检索子结构匹配，涵盖递归 SMARTS、环成员、芳香性方言、向量绑定、原子映射索引及 PAINS/REOS/Brenk 等活性/结构警示目录。适用于按药效团特征、官能团或骨架过滤化合物，以及检测分析干扰与结构警示。
+description_en: >-
+  Searches molecular libraries for substructure matches using SMARTS patterns with explicit handling of recursive SMARTS, ring membership, aromaticity dialect, vector binding, atom map indices, and reactive/PAINS/REOS/Brenk filter catalogs. Use when filtering compounds by pharmacophore features, functional groups, scaffold matches, or screening for assay-interference / structural alerts.
 tool_type: python
 primary_tool: RDKit
 ---

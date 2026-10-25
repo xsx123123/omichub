@@ -1,6 +1,13 @@
 ---
 name: bio-conformer-generation
 description: Generates 3D conformer ensembles using RDKit ETKDGv3 with knowledge-enhanced distance geometry, MMFF94/UFF force-field optimization, CREST + GFN2-xTB semi-empirical refinement, and macrocycle-aware torsion preferences. Provides explicit decision rules for single vs ensemble conformer use, RMSD pruning, energy windows, conformer count, and force-field choice. Use when preparing 3D ligands for docking, generating descriptor input for 3D QSAR, or sampling macrocycle/peptide conformational ensembles.
+version: 1.0.0
+display_name: 三维构象生成与优化
+display_name_en: 3D Conformer Generation and Optimization
+description_zh: >-
+  基于 RDKit ETKDGv3、MMFF94/UFF 力场优化与 CREST/GFN2-xTB 精修生成三维构象集合，涵盖大环扭转偏好、RMSD 剪枝、能量窗口与构象数选择规则。适用于对接配体准备、3D QSAR 描述符输入及大环/肽类构象采样。
+description_en: >-
+  Generates 3D conformer ensembles using RDKit ETKDGv3 with knowledge-enhanced distance geometry, MMFF94/UFF force-field optimization, CREST + GFN2-xTB semi-empirical refinement, and macrocycle-aware torsion preferences. Provides explicit decision rules for single vs ensemble conformer use, RMSD pruning, energy windows, conformer count, and force-field choice. Use when preparing 3D ligands for docking, generating descriptor input for 3D QSAR, or sampling macrocycle/peptide conformational ensembles.
 tool_type: mixed
 primary_tool: RDKit
 ---

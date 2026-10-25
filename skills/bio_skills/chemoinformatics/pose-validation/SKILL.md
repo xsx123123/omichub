@@ -1,6 +1,13 @@
 ---
 name: bio-pose-validation
 description: Validates docked / generated protein-ligand poses using PoseBusters physical-validity tests, strain energy quantification, geometric checks (planarity, vdW overlap, bond/angle distortion), and pose-energy reasonableness. Use when QC-ing docking results, comparing classical vs ML docking outputs, or filtering pose lists before SAR analysis.
+version: 1.0.0
+display_name: 蛋白配体构象验证
+display_name_en: Protein-Ligand Pose Validation
+description_zh: >-
+  使用 PoseBusters 物理有效性检验、应变能量化与几何检查（平面性、范德华重叠、键角畸变）验证对接或生成的蛋白-配体构象，并评估构象能量合理性。适用于对接结果质控、经典与机器学习对接比较及 SAR 分析前的构象列表过滤。
+description_en: >-
+  Validates docked / generated protein-ligand poses using PoseBusters physical-validity tests, strain energy quantification, geometric checks (planarity, vdW overlap, bond/angle distortion), and pose-energy reasonableness. Use when QC-ing docking results, comparing classical vs ML docking outputs, or filtering pose lists before SAR analysis.
 tool_type: python
 primary_tool: PoseBusters
 ---

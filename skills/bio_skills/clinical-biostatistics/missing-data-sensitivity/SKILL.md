@@ -1,6 +1,13 @@
 ---
 name: bio-clinical-biostatistics-missing-data
 description: Implements missing-data sensitivity analyses for confirmatory clinical trials including MMRM under MAR (with Kenward-Roger correction), reference-based multiple imputation (J2R, CR, CIR, LMCF per Carpenter-Roger 2013), Permutt delta-adjustment / tipping-point analysis, pattern-mixture identifying restrictions (CCMV, NCMV, ACMV), and the Cro vs Bartlett variance debate. Use when handling missing primary or secondary endpoint data in regulatory submissions following NRC 2010 and ICH E9(R1).
+version: 1.0.0
+display_name: 缺失数据敏感性分析
+display_name_en: Missing Data Sensitivity Analysis
+description_zh: >-
+  实现确证性试验的缺失数据敏感性分析，包括 MAR 下的 MMRM（Kenward-Roger 校正）、基于参照的多元插补（J2R、CR、CIR、LMCF）、delta 调整与 tipping-point 分析。适用于按 NRC 2010 与 ICH E9(R1) 处理主要或次要终点缺失数据。
+description_en: >-
+  Implements missing-data sensitivity analyses for confirmatory clinical trials including MMRM under MAR (with Kenward-Roger correction), reference-based multiple imputation (J2R, CR, CIR, LMCF per Carpenter-Roger 2013), Permutt delta-adjustment / tipping-point analysis, pattern-mixture identifying restrictions (CCMV, NCMV, ACMV), and the Cro vs Bartlett variance debate. Use when handling missing primary or secondary endpoint data in regulatory submissions following NRC 2010 and ICH E9(R1).
 tool_type: mixed
 primary_tool: rbmi
 ---

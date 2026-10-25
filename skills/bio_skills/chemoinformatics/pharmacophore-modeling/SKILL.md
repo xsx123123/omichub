@@ -1,6 +1,13 @@
 ---
 name: bio-pharmacophore-modeling
 description: Builds and applies 3D pharmacophore models using RDKit Pharm3D, the apo2ph4 receptor-based workflow (Heider et al. 2023), Pharmer / Pharmit for search, and PharmacoForge for protein-pocket-conditioned pharmacophore generation (Flynn et al. 2025), covering ligand-based pharmacophores from active-set alignment and receptor-based pharmacophores from binding-pocket geometry. Explicitly handles feature types, geometric tolerances, partial matching, and pharmacophore-based virtual screening. Use when identifying scaffold-hopping candidates, building shape-and-feature search queries, or transferring SAR across chemotypes.
+version: 1.0.0
+display_name: 三维药效团建模与搜索
+display_name_en: 3D Pharmacophore Modeling and Search
+description_zh: >-
+  使用 RDKit Pharm3D、apo2ph4、Pharmer/Pharmit 与 PharmacoForge 构建并应用三维药效团模型，支持基于活性集对齐的配体模型与结合口袋几何的受体模型，涵盖特征类型、几何容差与部分匹配。适用于骨架跃迁候选识别、形状-特征查询构建及跨化学型 SAR 迁移。
+description_en: >-
+  Builds and applies 3D pharmacophore models using RDKit Pharm3D, the apo2ph4 receptor-based workflow (Heider et al. 2023), Pharmer / Pharmit for search, and PharmacoForge for protein-pocket-conditioned pharmacophore generation (Flynn et al. 2025), covering ligand-based pharmacophores from active-set alignment and receptor-based pharmacophores from binding-pocket geometry. Explicitly handles feature types, geometric tolerances, partial matching, and pharmacophore-based virtual screening. Use when identifying scaffold-hopping candidates, building shape-and-feature search queries, or transferring SAR across chemotypes.
 tool_type: python
 primary_tool: RDKit
 ---

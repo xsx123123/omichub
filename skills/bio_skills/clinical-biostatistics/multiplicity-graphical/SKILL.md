@@ -1,6 +1,13 @@
 ---
 name: bio-clinical-biostatistics-multiplicity-graphical
 description: Implements multiplicity control for confirmatory clinical trials using graphical procedures (Bretz-Maurer-Hommel), gatekeeping (parallel, serial, mixed), Hochberg/Hommel/Holm with PRDS, and the closed-testing principle (Marcus-Peritz-Gabriel; Goeman 2021 admissibility). Covers FDA Multiple Endpoints Final Guidance (October 2022), graphical procedures via R gMCP, primary + key-secondary + subgroup hierarchies, and FWER vs FDR distinction. Use when designing the multiplicity strategy for confirmatory trials with multiple primary or key secondary endpoints.
+version: 1.0.0
+display_name: 多重性图形化控制
+display_name_en: Graphical Multiplicity Control
+description_zh: >-
+  采用 Bretz-Maurer-Hommel 图形法、gatekeeping 策略与闭检验原理控制确证性试验的多重性，支持 Hochberg/Hommel/Holm 及 PRDS 条件。适用于为主要终点、关键次要终点及亚组层级设计 FWER 控制策略。
+description_en: >-
+  Implements multiplicity control for confirmatory clinical trials using graphical procedures (Bretz-Maurer-Hommel), gatekeeping (parallel, serial, mixed), Hochberg/Hommel/Holm with PRDS, and the closed-testing principle (Marcus-Peritz-Gabriel; Goeman 2021 admissibility). Covers FDA Multiple Endpoints Final Guidance (October 2022), graphical procedures via R gMCP, primary + key-secondary + subgroup hierarchies, and FWER vs FDR distinction. Use when designing the multiplicity strategy for confirmatory trials with multiple primary or key secondary endpoints.
 tool_type: r
 primary_tool: gMCP
 goal_approach_exempt: true

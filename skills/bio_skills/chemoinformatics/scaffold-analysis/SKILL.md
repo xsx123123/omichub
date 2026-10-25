@@ -1,6 +1,13 @@
 ---
 name: bio-scaffold-analysis
 description: Analyzes chemical libraries by scaffold using Bemis-Murcko scaffolds, generic frameworks, cyclic skeletons, matched molecular pair (MMP) analysis via mmpdb, R-group decomposition, Free-Wilson analysis, scaffold hopping, and chemotype-aware ML train/test splits. Use when identifying chemotype clusters in a library, deriving SAR transformation rules, decomposing series into R-groups, performing scaffold-balanced QSAR splits, or planning analog campaigns.
+version: 1.0.0
+display_name: 分子骨架与骨架跃迁分析
+display_name_en: Scaffold and Scaffold-Hopping Analysis
+description_zh: >-
+  使用 Bemis-Murcko 骨架、通用框架与环状骨架分析化合物库，支持 mmpdb 匹配分子对分析、R 基分解、Free-Wilson 分析、骨架跃迁及化学型感知的训练/测试划分。适用于化合物库化学型聚类、SAR 转化规则推导、系列 R 基分解与骨架平衡 QSAR 划分。
+description_en: >-
+  Analyzes chemical libraries by scaffold using Bemis-Murcko scaffolds, generic frameworks, cyclic skeletons, matched molecular pair (MMP) analysis via mmpdb, R-group decomposition, Free-Wilson analysis, scaffold hopping, and chemotype-aware ML train/test splits. Use when identifying chemotype clusters in a library, deriving SAR transformation rules, decomposing series into R-groups, performing scaffold-balanced QSAR splits, or planning analog campaigns.
 tool_type: python
 primary_tool: RDKit
 ---

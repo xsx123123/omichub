@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-circos-plots
 description: Build circular genome visualizations using circlize (R), pyCirclize (Python), or Circos (Perl CLI) with ideogram tracks, multi-data tracks (scatter, histogram, heatmap), chord/link arcs for interactions, and explicit circos.clear() between plots. Covers when circular is appropriate vs when Cartesian wins (Cleveland-McGill 1984), karyograms, and chromosome adjacency in chord diagrams. Use when adjacency on the circle conveys meaning — chromosome-level overview, structural variants, Hi-C interactions, cross-genome comparisons.
+version: 1.0.0
+display_name: 环形基因组图
+display_name_en: Circos Plots
+description_zh: 使用 circlize（R）、pyCirclize（Python）或 Circos（Perl CLI）构建环形基因组可视化，包含染色体 ideogram、多数据轨道、交互和弦/连线，并强调图间需调用 circos.clear()。涵盖环形适用性判断（对照 Cleveland-McGill 1984）、核型图与弦图染色体邻接关系，适用于染色体级概览、结构变异、Hi-C 互作和跨基因组比较。
+description_en: >-
+  Build circular genome visualizations using circlize (R), pyCirclize (Python), or Circos (Perl CLI) with ideogram tracks, multi-data tracks (scatter, histogram, heatmap), chord/link arcs for interactions, and explicit circos.clear() between plots. Covers when circular is appropriate vs when Cartesian wins (Cleveland-McGill 1984), karyograms, and chromosome adjacency in chord diagrams. Use when adjacency on the circle conveys meaning — chromosome-level overview, structural variants, Hi-C interactions, cross-genome comparisons.
 tool_type: mixed
 primary_tool: circlize
 ---

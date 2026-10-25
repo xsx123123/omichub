@@ -1,6 +1,13 @@
 ---
 name: bio-generative-design
 description: Designs novel molecules using REINVENT 4 (de novo, scaffold decoration, linker design, R-group, molecular optimization), MolMIM, Diffusion-based generators (DiGress, DiffSMol), and JT-VAE with explicit handling of multi-parameter optimization (MPO), goal-directed scoring functions, transfer/reinforcement/curriculum learning, synthetic accessibility scoring, and chemical space exploration vs exploitation. Use when designing new chemical matter against a target, decorating a scaffold, linking fragments, or optimizing a hit for multiple ADMET / activity properties simultaneously.
+version: 1.0.0
+display_name: 生成式分子设计与优化
+display_name_en: Generative Molecular Design
+description_zh: >-
+  使用 REINVENT 4、MolMIM、DiGress/DiffSMol 扩散模型与 JT-VAE 生成新分子，支持骨架修饰、连接子设计、R 基替换与多参数优化，涵盖目标导向评分、强化学习、合成可及性及化学空间探索。适用于靶点新化学实体设计与先导多目标优化。
+description_en: >-
+  Designs novel molecules using REINVENT 4 (de novo, scaffold decoration, linker design, R-group, molecular optimization), MolMIM, Diffusion-based generators (DiGress, DiffSMol), and JT-VAE with explicit handling of multi-parameter optimization (MPO), goal-directed scoring functions, transfer/reinforcement/curriculum learning, synthetic accessibility scoring, and chemical space exploration vs exploitation. Use when designing new chemical matter against a target, decorating a scaffold, linking fragments, or optimizing a hit for multiple ADMET / activity properties simultaneously.
 tool_type: python
 primary_tool: REINVENT
 ---

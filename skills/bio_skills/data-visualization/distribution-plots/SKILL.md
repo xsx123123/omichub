@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-distribution-plots
 description: Plot per-group distributions of continuous data using boxplots, violins, beeswarms, quasirandom jitter, and raincloud plots with sample-size honesty (Weissgerber 2015), KDE-bandwidth awareness, and N-aware encoding choices. Use when comparing distributions across a small number of groups — expression per cluster, biomarker per arm, scores per condition — and the bar-of-mean default is misleading.
+version: 1.0.0
+display_name: 分布图
+display_name_en: Distribution Plots
+description_zh: 使用箱线图、小提琴图、蜂群图、准随机抖动和雨云图展示分组连续变量分布，强调样本量透明（Weissgerber 2015）、KDE 带宽意识与随样本量选择编码方式。适用于跨少量分组比较分布（如各簇表达量、各试验组生物标志物、各条件得分），避免仅画均值柱的误导性做法。
+description_en: >-
+  Plot per-group distributions of continuous data using boxplots, violins, beeswarms, quasirandom jitter, and raincloud plots with sample-size honesty (Weissgerber 2015), KDE-bandwidth awareness, and N-aware encoding choices. Use when comparing distributions across a small number of groups — expression per cluster, biomarker per arm, scores per condition — and the bar-of-mean default is misleading.
 tool_type: mixed
 primary_tool: ggplot2
 ---

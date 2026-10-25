@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-sequence-logos
 description: Build sequence logos from aligned DNA, RNA, or protein motifs using ggseqlogo (R), Logomaker (Python), or WebLogo with explicit bits vs probability encoding, background-frequency correction, custom alphabets, and multi-logo stacking. Use when visualizing motif PWMs (TF binding, splice sites, CRISPR spacers), aligned-position composition, or comparing two motif sets.
+version: 1.0.0
+display_name: 序列 Logo 图
+display_name_en: Sequence Logos
+description_zh: 使用 ggseqlogo（R）、Logomaker（Python）或 WebLogo 从比对后的 DNA、RNA 或蛋白基序构建序列 logo，明确 bits 与概率编码、背景频率校正、自定义字母表及多 logo 堆叠。适用于可视化基序 PWM（TF 结合、剪接位点、CRISPR spacer）、比对位置组成或比较两组基序。
+description_en: >-
+  Build sequence logos from aligned DNA, RNA, or protein motifs using ggseqlogo (R), Logomaker (Python), or WebLogo with explicit bits vs probability encoding, background-frequency correction, custom alphabets, and multi-logo stacking. Use when visualizing motif PWMs (TF binding, splice sites, CRISPR spacers), aligned-position composition, or comparing two motif sets.
 tool_type: mixed
 primary_tool: ggseqlogo
 ---

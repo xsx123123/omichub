@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-pharmacogenomics
 description: Queries PharmGKB / CPIC / DPWG for drug-gene interactions; calls CYP2D6/CYP2C9/CYP2C19/DPYD/TPMT/NUDT15/UGT1A1/SLCO1B1 star alleles and phenotype with PharmCAT, Cyrius (CYP2D6 structural variants), Aldy, Stargazer; applies Caudle 2020 activity-score translation. Use when implementing pharmacogenomic-guided prescribing, applying CPIC vs DPWG guidance, screening HLA risk alleles for ICI / antiepileptics / abacavir, or interpreting compound TPMT+NUDT15 thiopurine risk.
+version: 1.0.0
+display_name: 药物基因组学与 CPIC 解读
+display_name_en: Pharmacogenomics and CPIC Interpretation
+description_zh: 查询 PharmGKB、CPIC 与 DPWG 的药物-基因互作，并用 PharmCAT、Cyrius、Aldy、Stargazer 判定 CYP2D6、CYP2C9、CYP2C19、DPYD、TPMT、NUDT15 等基因的星号等位基因与代谢表型。适用于 PGx 指导用药、CPIC 与 DPWG 指南对比、HLA 风险等位基因筛查及硫嘌呤类药物风险评估。
+description_en: >-
+  Queries PharmGKB / CPIC / DPWG for drug-gene interactions; calls CYP2D6/CYP2C9/CYP2C19/DPYD/TPMT/NUDT15/UGT1A1/SLCO1B1 star alleles and phenotype with PharmCAT, Cyrius (CYP2D6 structural variants), Aldy, Stargazer; applies Caudle 2020 activity-score translation. Use when implementing pharmacogenomic-guided prescribing, applying CPIC vs DPWG guidance, screening HLA risk alleles for ICI / antiepileptics / abacavir, or interpreting compound TPMT+NUDT15 thiopurine risk.
 tool_type: mixed
 primary_tool: PharmCAT
 ---

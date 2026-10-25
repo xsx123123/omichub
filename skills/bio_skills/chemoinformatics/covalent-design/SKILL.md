@@ -1,6 +1,13 @@
 ---
 name: bio-covalent-design
 description: Designs covalent inhibitors and warheads targeting cysteine, lysine, serine, threonine, tyrosine, and aspartate residues, with explicit handling of warhead reactivity (acrylamide, chloroacetamide, vinyl sulfone, sulfonyl fluoride, fluorosulfate, aldehyde, boronate, nitrile), reversibility (kinact/Ki, t_residence), glutathione (GSH) stability, intrinsic reactivity assays, and covalent docking (DOCKovalent, GOLD, HCovDock). Use when designing covalent inhibitors for targeted covalent inhibition (TCI), KRAS G12C-style approaches, or rationalizing covalent SAR.
+version: 1.0.0
+display_name: 共价抑制剂与弹头设计
+display_name_en: Covalent Inhibitor and Warhead Design
+description_zh: >-
+  设计靶向半胱氨酸、赖氨酸、丝氨酸等残基的共价抑制剂与弹头，涵盖丙烯酰胺、氯乙酰胺、乙烯砜、磺酰氟等基团的反应性与 kinact/Ki 可逆性、GSH 稳定性及共价对接方法。适用于靶向共价抑制、KRAS G12C 类策略及共价 SAR 解析。
+description_en: >-
+  Designs covalent inhibitors and warheads targeting cysteine, lysine, serine, threonine, tyrosine, and aspartate residues, with explicit handling of warhead reactivity (acrylamide, chloroacetamide, vinyl sulfone, sulfonyl fluoride, fluorosulfate, aldehyde, boronate, nitrile), reversibility (kinact/Ki, t_residence), glutathione (GSH) stability, intrinsic reactivity assays, and covalent docking (DOCKovalent, GOLD, HCovDock). Use when designing covalent inhibitors for targeted covalent inhibition (TCI), KRAS G12C-style approaches, or rationalizing covalent SAR.
 tool_type: python
 primary_tool: RDKit
 ---

@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-network-visualization
 description: Visualize biological networks (PPI, gene-regulatory, co-expression, pathway) with layout algorithm choice (ForceAtlas2, Fruchterman-Reingold, Kamada-Kawai, hive plots), edge bundling, community-based coloring, and reproducible seeds using NetworkX, PyVis, igraph, and Cytoscape automation. Use when rendering biological networks for static publication, interactive HTML exploration, or Cytoscape-format export.
+version: 1.0.0
+display_name: 生物网络可视化
+display_name_en: Network Visualization
+description_zh: 使用 NetworkX、PyVis、igraph 与 Cytoscape 自动化可视化生物网络（PPI、基因调控、共表达、通路），涵盖布局算法选择（ForceAtlas2、Fruchterman-Reingold、Kamada-Kawai、蜂巢图）、边捆绑、基于社区着色及可复现随机种子。适用于静态发表、交互式 HTML 探索或 Cytoscape 格式导出的网络渲染。
+description_en: >-
+  Visualize biological networks (PPI, gene-regulatory, co-expression, pathway) with layout algorithm choice (ForceAtlas2, Fruchterman-Reingold, Kamada-Kawai, hive plots), edge bundling, community-based coloring, and reproducible seeds using NetworkX, PyVis, igraph, and Cytoscape automation. Use when rendering biological networks for static publication, interactive HTML exploration, or Cytoscape-format export.
 tool_type: python
 primary_tool: NetworkX
 ---

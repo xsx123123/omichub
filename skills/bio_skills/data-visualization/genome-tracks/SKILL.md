@@ -1,6 +1,12 @@
 ---
 name: bio-data-visualization-genome-tracks
 description: Build genome-browser-style multi-track figures with pyGenomeTracks (config-driven), Gviz (R), and IGV batch screenshotting. Covers BigWig coverage tracks, BED/peak overlays, gene-model rendering, Hi-C matrix tracks, BedPE link arcs, spike-in-aware normalization, and the bamCoverage --normalizeUsing trap. Use when producing publication figures of genomic loci with stacked aligned tracks (coverage, peaks, genes, interactions) for ChIP-seq, ATAC-seq, RNA-seq, Hi-C, or generic locus visualization.
+version: 1.0.0
+display_name: 基因组轨道图
+display_name_en: Genome Tracks
+description_zh: 使用 pyGenomeTracks（配置驱动）、Gviz（R）与 IGV 批量截图构建基因组浏览器式多轨道图，涵盖 BigWig 覆盖度轨道、BED/peak 叠加、基因模型、Hi-C 矩阵轨道、BedPE 连线、spike-in 感知归一化及 bamCoverage --normalizeUsing 陷阱。适用于 ChIP-seq、ATAC-seq、RNA-seq、Hi-C 等需要堆叠显示覆盖度、峰、基因与互作的位点级发表图。
+description_en: >-
+  Build genome-browser-style multi-track figures with pyGenomeTracks (config-driven), Gviz (R), and IGV batch screenshotting. Covers BigWig coverage tracks, BED/peak overlays, gene-model rendering, Hi-C matrix tracks, BedPE link arcs, spike-in-aware normalization, and the bamCoverage --normalizeUsing trap. Use when producing publication figures of genomic loci with stacked aligned tracks (coverage, peaks, genes, interactions) for ChIP-seq, ATAC-seq, RNA-seq, Hi-C, or generic locus visualization.
 tool_type: mixed
 primary_tool: pyGenomeTracks
 ---

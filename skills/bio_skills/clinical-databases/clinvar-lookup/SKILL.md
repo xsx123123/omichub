@@ -1,6 +1,12 @@
 ---
 name: bio-clinical-databases-clinvar-lookup
 description: Queries ClinVar for variant pathogenicity classifications, ClinGen VCEP curations, and somatic-vs-germline interpretations via REST API, weekly VCF, or bulk XML. Use when determining clinical significance, triangulating conflicting interpretations, or aggregating evidence against the ACMG/AMP framework with ClinGen SVI specifications.
+version: 1.0.0
+display_name: ClinVar 临床意义查询
+display_name_en: ClinVar Clinical Significance Lookup
+description_zh: 通过 REST API、每周 VCF 快照或批量 XML 查询 ClinVar 的变异致病性分类、ClinGen VCEP 审定结果以及体细胞与胚系解读，并梳理 VCV/SCV/RCV 标识层级与星级覆盖规则。适用于判定临床意义、协调冲突解读，并在 ACMG/AMP 与 ClinGen SVI 框架下汇总证据。
+description_en: >-
+  Queries ClinVar for variant pathogenicity classifications, ClinGen VCEP curations, and somatic-vs-germline interpretations via REST API, weekly VCF, or bulk XML. Use when determining clinical significance, triangulating conflicting interpretations, or aggregating evidence against the ACMG/AMP framework with ClinGen SVI specifications.
 tool_type: python
 primary_tool: requests
 ---

@@ -1,6 +1,13 @@
 ---
 name: bio-virtual-screening
 description: Performs structure-based virtual screening using AutoDock Vina, SMINA, GNINA (CNN scoring), and DiffDock-L hybrid workflows with explicit choice rules across rigid vs flexible docking, cross-docking vs self-docking, binding-site detection (P2Rank, fpocket), receptor preparation (PDB2PQR, PROPKA), ligand preparation (meeko, OpenBabel), and ultralarge-library screening (ZINC22, Enamine REAL). Use when screening chemical libraries against a protein target to find candidate binders, ranking docking poses, or selecting a docking workflow for a specific scenario.
+version: 1.0.0
+display_name: 基于结构的虚拟筛选
+display_name_en: Structure-Based Virtual Screening
+description_zh: >-
+  使用 AutoDock Vina、SMINA、GNINA 与 DiffDock-L 混合流程开展基于结构的虚拟筛选，涵盖刚性与柔性对接、结合位点检测（P2Rank、fpocket）、受体与配体准备及超大规模库筛选（ZINC22、Enamine REAL）。适用于蛋白靶点候选结合物筛选与流程选择。
+description_en: >-
+  Performs structure-based virtual screening using AutoDock Vina, SMINA, GNINA (CNN scoring), and DiffDock-L hybrid workflows with explicit choice rules across rigid vs flexible docking, cross-docking vs self-docking, binding-site detection (P2Rank, fpocket), receptor preparation (PDB2PQR, PROPKA), ligand preparation (meeko, OpenBabel), and ultralarge-library screening (ZINC22, Enamine REAL). Use when screening chemical libraries against a protein target to find candidate binders, ranking docking poses, or selecting a docking workflow for a specific scenario.
 tool_type: python
 primary_tool: AutoDock Vina
 ---

@@ -575,11 +575,9 @@ Sub-Agent Fan-out **当前处于真实开启状态**，双通道开关均为真�
    为真则向 tools 注入 `MULTI_AGENT_TOOL_NAMES`（`parallel_subagents` + `create_agentteams_case`）
    并追加 `MULTI_AGENT_SYSTEM_PROMPT_SUFFIX`；Legacy 与 LangGraph 双引擎共用这份 tools
    （`chat_service.py:4226`），无引擎分叉。
-   **已知缝隙**：`agent_service._filter_runtime_builtin_tools` 只按 Case 入口开关剥离
-   `create_agentteams_case`，不按 fanout 开关剥离 `parallel_subagents`——因此 YAML `tool_packs`
-   含 `subagents` 的 5 个 Agent（general/rnaseq/atacseq/code/cloud_ops）在开关关闭时仍向 LLM
-   暴露该工具，调用后吃到"未启用"错误信封（受控失败，但浪费一轮调用且与
-   `data/ai/prompts/general.md` 的可用性描述矛盾）。
+   ~~**已知缝隙**~~（已修复，见 §9.9）：`agent_service._filter_runtime_builtin_tools` 曾只按
+   Case 入口开关剥离 `create_agentteams_case`，不按 fanout 开关剥离 `parallel_subagents`；
+   现已增加 fanout 开关剥离，开关关闭时 5 个 Agent 不再向 LLM 暴露该工具。
 2. **执行闸门**：`ParallelSubAgentService.run` 入口校验
    `runtime_authorized or env SUBAGENT_FANOUT_ENABLED or DB site_settings.subagent_fanout_enabled`
    任一为真（`parallel_subagent_service.py:243`）。
@@ -618,23 +616,23 @@ C1–C7 全部保留（独占 AsyncSession、剥离递归/会话控制/记忆写
 `subagent_max_concurrent`（3）；父单轮 fan-out 限 1 次；单任务重试（`retry.max_attempts` ≤5，
 指数退避）仅对超时/5xx 类瞬断生效。
 
-### 9.5 配置漂移
+### 9.5 配置漂移（已修复，见 §9.9）
 
-| 参数 | `config.py` 默认值 | `.env.example` | 线上 env 实测 |
+| 参数 | `config.py` 默认值（修复后） | `.env.example` | 线上 env 实测 |
 | --- | --- | --- | --- |
-| `SUBAGENT_CHILD_TIMEOUT_SECONDS` | 180 | 1200 | 1200 |
-| `SUBAGENT_MAX_ROUNDS_PER_CHILD` | 6 | 24 | 24 |
+| `SUBAGENT_CHILD_TIMEOUT_SECONDS` | 1200（原 180） | 1200 | 1200 |
+| `SUBAGENT_MAX_ROUNDS_PER_CHILD` | 24（原 6） | 24 | 24 |
 
-代码默认值与示例/线上差一个量级：无 env 覆写的本地开发会拿到很小的子任务预算（3 分钟/6 轮），
-与文档预期不符。另 `config.py:329` 注释称"按 Agent 白名单灰度"，代码中并无白名单实现
-（实际为全局开关 + 用户标记兜底），注释待修正。
+代码默认值已与示例/线上对齐；`config.py` 原"按 Agent 白名单灰度"的失实注释已修正为
+"管理员后台可灰度开启"（实际为全局开关 + 用户标记兜底，无白名单实现）。
+另：`tool_configs/tools_schema.yaml` 的 `maxItems` 与双引擎提示词上限已统一为 4
+（对齐 `subagent_max_parallel` 默认值，并新增契约守卫单测防再漂移）。
 
 ### 9.6 已知问题与偏差（按严重度）
 
-1. **门禁内红测试**：`tests/unit/test_parallel_subagent_service.py::test_fanout_merges_token_usage_across_rounds_and_children`
-   未隔离且失败——`merge_token_usage` 新增 `cached_tokens` 字段后测试断言未同步
-   （`openai_compatible.py:205`）。会卡住全量门禁（`pytest tests/unit -m "not quarantine"`）与 CI，提交前必须先修。
-2. **工具暴露缝隙**（§9.2-1）：fanout 开关关闭不隐藏工具，仅执行期报错。
+1. ~~**门禁内红测试**~~（已修复，见 §9.9）：`test_fanout_merges_token_usage_across_rounds_and_children`
+   断言已补 `cached_tokens` 字段，与 `merge_token_usage` 现行契约同步。
+2. ~~**工具暴露缝隙**（§9.2-1）~~（已修复，见 §9.9）：fanout 开关关闭时工具即从 LLM 视野剥离。
 3. **超频前后台闸门不一致**：前台超频 Wave/交叉复核经受约束的工具薄壳（开关关闭则全部
    Worker 报"未启用"降级），后台 Celery 超频以 `runtime_authorized=True` 绕过——同一功能的
    两种开关语义，关闭开关会造成行为分裂。
@@ -648,8 +646,8 @@ C1–C7 全部保留（独占 AsyncSession、剥离递归/会话控制/记忆写
 6. **子任务超时与 web 约定冲突**：1200s 单任务墙钟远超"web 进程 >600s 走 Celery"的平台约定；
    极端情况（4 任务 × 信号量 3）一次 fan-out 可让 SSE 请求挂约 20 分钟，且子任务执行长工具
    （如 sandbox_execute）期间无心跳事件。
-7. **小瑕疵**：`parallel_subagent_service.py:979` duplicate guard 条件重复书写
-   （`len >= N and len >= N`，冗余无害）。
+7. ~~**小瑕疵**：`parallel_subagent_service.py:979` duplicate guard 条件重复书写~~
+   （已修复，见 §9.9）。
 
 ### 9.7 本次调查验证记录
 
@@ -668,3 +666,95 @@ C1–C7 全部保留（独占 AsyncSession、剥离递归/会话控制/记忆写
 子 Agent 无 shell、无流程 YAML/DB 写权限、不可递归派生（深度恒 1）、不可切换会话/建 Case、
 不写长期记忆；确认类工具一律升级为审批请求由人类裁决；`workspace_access` 沙盒挂载遵循
 uid 10001 + cap_drop=ALL 基线。与平台保护边界一致。
+
+### 9.9 收口修复实施记录（2026-10-26）
+
+针对 §9.2/§9.5/§9.6 列出的已修复项，实施要点如下。
+
+#### 服务层：prepare/execute 拆分与错误码
+
+- `ParallelSubAgentService.run()` 拆为 **`prepare()`**（纯校验 + 预组装，返回
+  `FanoutPrepared` 或拒绝信封 dict，零副作用：不占配额、不建 run、不发事件）与
+  **`execute(prepared, ...)`**（唯一产生执行副作用的入口）。校验先于配额占用从结构上成立。
+- 拒绝信封带稳定 `code`：`SUBAGENT_DISABLED` / `SUBAGENT_MAX_PARALLEL` / `SUBAGENT_INVALID_TASKS`
+  / `SUBAGENT_AGENT_UNKNOWN` / `SUBAGENT_NOT_SPAWNABLE` / `SUBAGENT_EXECUTION_ERROR`。
+- 新增 `subagent_child_event_metadata()`：worker_started/retrying/finished 映射为
+  `child_started` / `child_retrying` / `child_done`（heartbeat 等内部事件返回 None 丢弃），
+  供 chat 层逐子任务透出 SSE。
+- §9.6-7 小瑕疵（duplicate guard 条件重复书写）一并修正。
+
+#### 准入协调器 FanoutAdmission
+
+- 新建 `application/services/chat/fanout_admission.py`：纯同步、无 IO，Legacy 与 LangGraph
+  共用同一份语义。`check_preexecuted`（路由预执行占位）→ `begin_validation`（校验尝试
+  预算，默认 2 次，防止模型同轮无限修正重试）→ `try_commit`（占 accepted 配额，默认 1）。
+  校验拒绝（`mark_rejected`）不占 accepted 配额。
+- 统一意图路由预执行 fan-out 后写 `tool_context.extra["fanout_preexecuted"] = True`，
+  模型同轮再次调用 `parallel_subagents` 一律拒绝，杜绝同轮双派。
+
+#### 双引擎对齐（Legacy `chat_service.py` / LangGraph `langgraph_runtime.py`）
+
+两条路径逐点同构：
+
+1. prepare → 拒绝则发 `subagents` chunk `{phase: "rejected", tool_call_id, code, reason}`
+   （不占额度，前端呈现"未启动"而非幽灵卡片）；
+2. commit 成功才发 `{phase: "started", tasks: [{index, agent_id, name, task}]}`；
+3. `execute()` 经 `on_event` 回调逐条透出 `{phase: child_started/child_retrying/child_done,
+   tool_call_id, index, agent_id, name, ...}`；
+4. 收尾发 `{phase: "aggregated", tool_call_id, run_id, success, summary, progress}`。
+
+#### 暴露闸门补缝
+
+- `agent_service._filter_runtime_builtin_tools` 新增 `subagent_fanout_enabled` 参数：
+  开关关闭时从工具列表剥离 `parallel_subagents`，5 个 YAML `tool_packs` 含 `subagents`
+  的 Agent 不再向 LLM 暴露该工具（§9.2-1 缝隙消除，与 `general.md` 提示词描述一致）。
+
+#### 配置与契约统一
+
+- `core/config.py` 默认值对齐 `.env.example` 与线上：`SUBAGENT_CHILD_TIMEOUT_SECONDS`
+  180→1200、`SUBAGENT_MAX_ROUNDS_PER_CHILD` 6→24；失实的"按 Agent 白名单灰度"注释修正。
+- `tool_configs/tools_schema.yaml` `maxItems` 5→4、双引擎提示词上限"2–5 个"→"2–4 个"，
+  对齐 `subagent_max_parallel=4`；新增契约守卫单测断言 schema maxItems 与 Settings
+  默认值一致，防再漂移。
+
+#### 前端：fan-out 卡片从超频泳道解耦
+
+- `useAgentChatStream.ts`：`subagents` 解析器重写，覆盖 rejected/started/child_started/
+  child_retrying/child_done/aggregated 全相位（未知相位回落 started 保兼容）。
+- 新增纯归约器 `components/ai-chat/fanoutProgress.ts` 的 `applySubagentFanoutEvent()`：
+  aggregated 推导终态（全 succeeded→succeeded；0 成功且无中断→failed；否则 partial；
+  **success=false 绝不显示完成态**）；`agentHub.ts` 的 `onSubagentFanout` 瘦身为调用纯函数。
+- 新增 `FanoutProgressCard.vue`：眉标"◉ 并行协作"、状态点着色、拒绝态"未启动 · reason"+code、
+  进度条 completed/total，复用 `--chat-*` CSS token；`KimiMessageItem.vue` 渲染接线，
+  `KimiMessageList.vue` fingerprint 与 `overdriveUi.ts` 过滤同步。
+
+#### 测试
+
+- 修红：`test_fanout_merges_token_usage_across_rounds_and_children` 断言补 `cached_tokens`
+  （§9.6-1）。
+- 新增：`tests/unit/chat/test_fanout_admission.py`（准入协调器全语义）；
+  `test_parallel_subagent_service.py` 补 prepare 拒绝零副作用、schema maxItems 契约守卫、
+  child 事件映射 3 条；`test_agentteams_case_tool_service.py` 补"开关关闭即隐藏工具" 1 条。
+- 对齐新契约重写：`test_langgraph_runtime.py` 的 `per_round_guard` 与
+  `emits_started_and_aggregated`（fake 目标从旧薄壳 `ParallelSubAgentToolService` 改为
+  `ParallelSubAgentService` prepare/execute；断言 name 字段、run_id、child_* 透出）；
+  `_CaptureRuntime` 替身补 `last_finalize` 属性（消除存量噪音：真实 runtime 有该属性，
+  替身缺失导致的 AttributeError 此前被外层宽 except 吞成日志噪音）；
+  `test_langgraph_chat_runtime.py` 两处 `tool_context` 替身补 `extra={}`。
+- 前端新增 `subagent-fanout-channel.test.ts`（SSE 契约 5 条）与
+  `fanout-progress.test.ts`（归约器 + jsdom 渲染 9 条）。
+
+#### 门禁结果
+
+- ruff（改动文件）：全绿（仓库级 267 个为存量，HEAD 对比确认）。
+- mypy `src/cygnusx/`：改动文件 0 错误（全树 1007 个为存量，CI 不跑 mypy）。
+- `pytest tests/unit -m "not quarantine"`：本域 61 + 35 条全绿；全量 4137 过，
+  其余 30 条失败均为存量（lifecycle/report 域 fixture 与在途重构失配、studio 接口演进、
+  research pack 数量漂移、Redis 环境依赖），与本次改动零交集。
+- 前端：`vitest run` 726 全绿；`npm run build`（含 vue-tsc -b）通过。
+
+#### 遗留观察项（本次未动）
+
+§9.6-3（超频前后台闸门语义不一致）、§9.6-4（quarantine 欠账 7 条）、
+§9.6-5（用户侧 `multi_agent` 无 UI 入口）、§9.6-6（子任务 1200s 墙钟与 web >600s
+约定的张力）保留为后续议题。

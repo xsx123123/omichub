@@ -28,6 +28,7 @@ import AskUserCard from './AskUserCard.vue'
 import PlanConfirmationCard from './PlanConfirmationCard.vue'
 import OverdriveApprovalCard from './OverdriveApprovalCard.vue'
 import OverdriveProgressCard from './OverdriveProgressCard.vue'
+import FanoutProgressCard from './FanoutProgressCard.vue'
 import SuggestionChips from './SuggestionChips.vue'
 import ToolCallEntry from './ToolCallEntry.vue'
 import SkillInvocationCardView from './SkillInvocationCard.vue'
@@ -1329,7 +1330,8 @@ function handleEdit() {
     </template>
 
     <template v-else-if="message.role === 'system'">
-      <OverdriveProgressCard v-if="message.overdriveProgress" :progress="message.overdriveProgress" />
+      <FanoutProgressCard v-if="message.fanoutProgress" :progress="message.fanoutProgress" />
+      <OverdriveProgressCard v-else-if="message.overdriveProgress" :progress="message.overdriveProgress" />
       <PlanConfirmationCard
         v-else-if="message.askRequest?.kind === 'plan_confirmation' && message.askRequest.planConfirmation"
         :plan="message.askRequest.planConfirmation"

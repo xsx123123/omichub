@@ -1,7 +1,7 @@
 import type { ChatMessage, OverdriveProgress } from './types'
 
 export function conversationMessagesWithoutProgress(messages: ChatMessage[]): ChatMessage[] {
-  return messages.filter((item) => !item.overdriveProgress)
+  return messages.filter((item) => !item.overdriveProgress && !item.fanoutProgress)
 }
 
 export function activeOverdriveProgress(messages: ChatMessage[]): OverdriveProgress | null {

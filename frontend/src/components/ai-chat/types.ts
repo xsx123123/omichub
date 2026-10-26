@@ -123,6 +123,39 @@ export interface OverdriveProgress {
   readonly?: boolean
 }
 
+/** 对话内并行子 Agent fan-out 的独立进度结构（与超频泳道 OverdriveProgress 解耦）。 */
+export interface FanoutProgress {
+  runId?: string
+  /**
+   * rejected=准入校验拒绝（未启动，不占配额）；
+   * running=已接受并执行中；succeeded/partial/failed=终态。
+   */
+  phase: 'rejected' | 'running' | 'succeeded' | 'partial' | 'failed'
+  label: string
+  /** 已进入终态的子任务数 */
+  completed: number
+  /** 已接受的子任务总数 */
+  total: number
+  succeeded: number
+  failed: number
+  /** rejected 携带：拒绝码与原因 */
+  code?: string
+  reason?: string
+  /** aggregated 携带的后端汇总文案（如 "2/4 个子任务成功，总墙钟 12s"） */
+  summary?: string
+  tasks: Array<{
+    index: number
+    agentId: string
+    name?: string
+    task?: string
+    /** queued/running/retrying 为进行态；succeeded/failed/timeout/partial/awaiting_input/approval_pending 为终态 */
+    status: string
+    elapsedS?: number
+    error?: string
+    attempt?: number
+  }>
+}
+
 export interface OverdriveApproval {
   approvalId: string
   runId?: string
@@ -180,6 +213,8 @@ export interface ChatMessage {
   agentTeamsCases?: AgentTeamsCaseCardPayload[]
   /** 超频协作生命周期：Manager/专家/工具的实时进度卡片。 */
   overdriveProgress?: OverdriveProgress
+  /** 对话内并行子 Agent fan-out 的实时进度卡片（独立于超频泳道）。 */
+  fanoutProgress?: FanoutProgress
   /** 普通超频聊天的持久化工具审批记录。 */
   overdriveApproval?: OverdriveApproval
   overdriveSummary?: string

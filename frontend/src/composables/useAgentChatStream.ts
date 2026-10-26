@@ -266,14 +266,36 @@ export interface OverdriveApprovalEvent {
 
 /**
  * 对话内并行子 Agent(fan-out)事件。后端 `type="subagents"` 发送：
- * - started:   { phase, tool_call_id, tasks:[{index, agent_id, task}] }
- * - aggregated:{ phase, tool_call_id, success, summary, progress:[{index, agent_id, status, elapsed_s}] }
- * 复用超频群聊的多 Agent 泳道展示（OverdriveProgress.tasks）。
+ * - rejected:      { phase, tool_call_id, code, reason }（准入校验拒绝，未启动）
+ * - started:       { phase, tool_call_id, tasks:[{index, agent_id, name, task}] }
+ * - child_started: { phase, tool_call_id, index, agent_id, name }
+ * - child_retrying:{ phase, tool_call_id, index, agent_id, name, attempt }
+ * - child_done:    { phase, tool_call_id, index, agent_id, name, status, elapsed_s, error }
+ * - aggregated:    { phase, tool_call_id, run_id, success, summary,
+ *                    progress:[{index, agent_id, status, elapsed_s}] }
+ * 由独立的 FanoutProgress 卡片渲染（不再复用超频泳道 OverdriveProgress）。
  */
+export interface SubagentFanoutTask {
+  index: number
+  agentId: string
+  /** 目标 Agent 显示名；旧事件缺省时回落 agentId */
+  name?: string
+  task: string
+  status: string
+  elapsedS?: number
+  error?: string
+  attempt?: number
+}
+
 export interface SubagentFanoutEvent {
-  phase: 'started' | 'aggregated'
+  phase: 'rejected' | 'started' | 'child_started' | 'child_retrying' | 'child_done' | 'aggregated'
   toolCallId: string
-  tasks: Array<{ index: number; agentId: string; task: string; status: string }>
+  /** 后端 fan-out run_id（aggregated 携带） */
+  runId?: string
+  /** rejected 携带：准入拒绝码与原因 */
+  code?: string
+  reason?: string
+  tasks: SubagentFanoutTask[]
   success?: boolean
   summary?: string
   /** 卡片标题（如 "Skill 路由审查"）；缺省回落到"并行专家协作" */
@@ -863,35 +885,55 @@ export function useAgentChatStream() {
         break
       }
       case 'subagents': {
-        const phase = data.phase === 'aggregated' ? 'aggregated' : 'started'
-        const rawTasks = Array.isArray(data.tasks) ? data.tasks : []
-        const rawProgress = Array.isArray(data.progress) ? data.progress : []
-        // started 带 tasks[{index,agent_id,task}]；aggregated 带 progress[{index,agent_id,status,elapsed_s}]
-        const tasks =
-          phase === 'aggregated'
-            ? rawProgress.map((raw) => {
-                const item = asRecord(raw) || {}
-                return {
-                  index: Number(item.index || 0),
-                  agentId: String(item.agent_id || ''),
-                  task: '',
-                  status: String(item.status || 'completed') === 'ok'
-                    ? 'succeeded'
-                    : String(item.status || 'completed'),
-                }
-              })
-            : rawTasks.map((raw) => {
-                const item = asRecord(raw) || {}
-                return {
-                  index: Number(item.index || 0),
-                  agentId: String(item.agent_id || ''),
-                  task: String(item.task || ''),
-                  status: 'running',
-                }
-              })
+        const rawPhase = String(data.phase || 'started')
+        const knownPhases = [
+          'rejected',
+          'started',
+          'child_started',
+          'child_retrying',
+          'child_done',
+          'aggregated',
+        ]
+        const phase = (
+          knownPhases.includes(rawPhase) ? rawPhase : 'started'
+        ) as SubagentFanoutEvent['phase']
+        const asTask = (raw: unknown, withText: boolean): SubagentFanoutTask => {
+          const item = asRecord(raw) || {}
+          const status = String(item.status || '')
+          return {
+            index: Number(item.index || 0),
+            agentId: String(item.agent_id || ''),
+            name: typeof item.name === 'string' && item.name ? item.name : undefined,
+            task: withText ? String(item.task || '') : '',
+            status: status === 'ok' ? 'succeeded' : status || 'completed',
+            elapsedS: typeof item.elapsed_s === 'number' ? item.elapsed_s : undefined,
+            error: typeof item.error === 'string' && item.error ? item.error : undefined,
+            attempt: typeof item.attempt === 'number' ? item.attempt : undefined,
+          }
+        }
+        let tasks: SubagentFanoutTask[] = []
+        if (phase === 'started') {
+          // started 仅表示已接受分派，子任务尚未开跑：初态 queued 而非 running
+          tasks = (Array.isArray(data.tasks) ? data.tasks : []).map((raw) => ({
+            ...asTask(raw, true),
+            status: 'queued',
+          }))
+        } else if (phase === 'aggregated') {
+          tasks = (Array.isArray(data.progress) ? data.progress : []).map((raw) =>
+            asTask(raw, false),
+          )
+        } else if (phase.startsWith('child_')) {
+          const child = asTask(data, false)
+          if (phase === 'child_started') child.status = 'running'
+          if (phase === 'child_retrying') child.status = 'retrying'
+          tasks = [child]
+        }
         cb.onSubagentFanout?.({
           phase,
           toolCallId: String(data.tool_call_id || ''),
+          runId: typeof data.run_id === 'string' && data.run_id ? data.run_id : undefined,
+          code: typeof data.code === 'string' && data.code ? data.code : undefined,
+          reason: typeof data.reason === 'string' && data.reason ? data.reason : undefined,
           tasks,
           success: phase === 'aggregated' ? Boolean(data.success) : undefined,
           summary: phase === 'aggregated' ? String(data.summary || '') : undefined,

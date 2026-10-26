@@ -275,6 +275,9 @@ const layoutFingerprint = computed(() => props.messages.map((message) => {
     message.askRequest?.answered === false ? 'ask-pending' : '',
     message.overdriveApproval?.status || '',
     message.overdriveProgress?.phase || '',
+    message.fanoutProgress
+      ? `${message.fanoutProgress.phase}:${message.fanoutProgress.completed}/${message.fanoutProgress.total}`
+      : '',
   ].join('~')
 }).join('\n'))
 

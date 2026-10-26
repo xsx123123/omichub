@@ -1044,6 +1044,7 @@ class AgentService:
             builtin_tools = self._filter_runtime_builtin_tools(
                 builtin_tools,
                 agentteams_chat_entry_enabled=await self._agentteams_chat_entry_enabled(),
+                subagent_fanout_enabled=await self._subagent_fanout_enabled(),
             )
             selection_config = schema_loader.get_config().tool_selection
             if str(selection_config.get("mode", "full")).lower() == "retrieval" and tool_query:
@@ -1275,16 +1276,31 @@ class AgentService:
             or await SiteSettingsService(self._db).is_agentteams_chat_entry_enabled()
         )
 
+    async def _subagent_fanout_enabled(self) -> bool:
+        settings = get_settings()
+        return (
+            settings.subagent_fanout_enabled
+            or await SiteSettingsService(self._db).is_subagent_fanout_enabled()
+        )
+
     @staticmethod
     def _filter_runtime_builtin_tools(
-        tools: list[dict[str, Any]], *, agentteams_chat_entry_enabled: bool
+        tools: list[dict[str, Any]],
+        *,
+        agentteams_chat_entry_enabled: bool,
+        subagent_fanout_enabled: bool = True,
     ) -> list[dict[str, Any]]:
-        if agentteams_chat_entry_enabled:
+        blocked: set[str] = set()
+        if not agentteams_chat_entry_enabled:
+            blocked.add("create_agentteams_case")
+        if not subagent_fanout_enabled:
+            blocked.add("parallel_subagents")
+        if not blocked:
             return tools
         return [
             tool
             for tool in tools
-            if tool.get("function", {}).get("name") != "create_agentteams_case"
+            if tool.get("function", {}).get("name") not in blocked
         ]
 
     @staticmethod

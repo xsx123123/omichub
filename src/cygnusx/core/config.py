@@ -325,7 +325,7 @@ class Settings(BaseSettings):
     orchestrator_engine: Literal["legacy", "langgraph"] = "legacy"
     # 统一协作意图路由：关闭时保持既有 Router 行为，用于灰度与一键回退。
     unified_intent_router_enabled: bool = False
-    # ===== 对话内子 Agent 并行 fan-out（默认关闭，按 Agent 白名单灰度）=====
+    # ===== 对话内子 Agent 并行 fan-out（默认关闭，管理员后台可灰度开启）=====
     # 设计见 ARCHITECTURE_DESIGN/CygnusX_multi_agent_fanout.md §4
     subagent_fanout_enabled: bool = False
     agentteams_chat_entry_enabled: bool = False
@@ -340,10 +340,10 @@ class Settings(BaseSettings):
     # Cursor migration follows dual-write -> verified new-store reads -> legacy rollback.
     agentteams_case_cursor_migration_mode: Literal["dual_write", "new_only", "legacy_only"] = "dual_write"
     agentteams_integration_token: str = ""
-    subagent_max_parallel: int = 4  # 单次 fan-out 最大子任务数
+    subagent_max_parallel: int = 4  # 单次 fan-out 最大子任务数（与 tools_schema.yaml maxItems 一致）
     subagent_max_concurrent: int = 3  # 实际并发信号量（给主链路 LLM 调用留余量）
-    subagent_child_timeout_seconds: int = 180  # 单个子任务墙钟上限
-    subagent_max_rounds_per_child: int = 6  # 子循环工具轮数上限
+    subagent_child_timeout_seconds: int = 1200  # 单个子任务墙钟上限
+    subagent_max_rounds_per_child: int = 24  # 子循环工具轮数上限
     # 超频专家做多步工具任务的子循环轮数上限（普通聊天 fan-out 仍用上面的默认值）
     # 依据: 待测（经验初值）— 25 轮为长链工具调用的经验上限；验证: 统计超频任务真实轮数分布的 P95
     overdrive_subagent_max_rounds: int = 25
@@ -566,15 +566,27 @@ class Settings(BaseSettings):
     deg_data_mount: str = ""
     deg_exec_timeout: int = 7200  # 单次 DEG 分析超时（秒）；0 回退 YAML execution.timeout
 
-    # ===== 管理员欢迎彩蛋（预生成 + 顺序轮询）=====
-    # 启动时若 welcome.yaml 条数 < threshold，调用默认 AI provider 补齐到 threshold 条；
-    # 运行时登录仅读盘 + 游标前进，零延迟、不调 AI。两文件均缺失时回退内置兜底文案。
-    # 注意：必须放在可写目录。data/ 目录在容器中为只读挂载（docker-compose :ro），
-    # 故改用 storage_path（容器与宿主共享且可写）下的 cygnusx_data/welcome/
-    # 子目录，避免与任务数据混放。空值时派生（见 model_validator）。
+    # ===== Welcome content pool =====
+    # Legacy YAML settings remain for archival exports; runtime never reads/writes them.
     welcome_yaml: str = ""  # 预生成欢迎词（纯字符串数组）
     welcome_state_yaml: str = ""  # 轮询游标
     welcome_seed_threshold: int = 20  # 启动补齐目标条数
+    # DB welcome pool; old YAML settings above are archival only.
+    welcome_enabled: bool = True
+    welcome_general_enabled: bool = False
+    welcome_general_allowlist: list[str] = Field(default_factory=list)
+    welcome_timezone: str = "Asia/Shanghai"
+    welcome_target_count: int = Field(default=24, ge=18, le=48)
+    welcome_min_valid_count: int = Field(default=18, ge=18, le=48)
+    welcome_max_retries: int = Field(default=2, ge=0, le=2)
+    welcome_timeout_seconds: int = Field(default=180, ge=10, le=300)
+    welcome_max_output_tokens: int = Field(default=4096, ge=256, le=4096)
+    welcome_generation_hour: int = Field(default=3, ge=0, le=23)
+    welcome_generation_minute: int = Field(default=0, ge=0, le=59)
+    welcome_previous_pool_age_days: int = Field(default=7, ge=0, le=7)
+    welcome_reservation_seconds: int = Field(default=300, ge=60, le=600)
+    welcome_auto_publish: bool = True
+
 
     # ===== 代码执行沙盒 =====
     sandbox_enabled: bool = True
@@ -872,6 +884,14 @@ class Settings(BaseSettings):
             or normalized.startswith("replace-")
             or normalized.startswith("change-me")
         )
+
+    @model_validator(mode="after")
+    def validate_welcome_settings(self) -> "Settings":
+        from zoneinfo import ZoneInfo
+        ZoneInfo(self.welcome_timezone)
+        if self.welcome_min_valid_count > self.welcome_target_count:
+            raise ValueError("welcome_min_valid_count must not exceed target count")
+        return self
 
     @property
     def redis_url(self) -> str:

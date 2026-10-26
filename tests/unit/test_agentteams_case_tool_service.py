@@ -91,6 +91,27 @@ def test_chat_entry_switch_hides_case_tool_from_model() -> None:
     assert [tool["function"]["name"] for tool in filtered] == ["workspace_read"]
 
 
+def test_fanout_switch_hides_parallel_subagents_tool_from_model() -> None:
+    tools = [
+        {"function": {"name": "workspace_read"}},
+        {"function": {"name": "parallel_subagents"}},
+    ]
+
+    filtered = AgentService._filter_runtime_builtin_tools(
+        tools, agentteams_chat_entry_enabled=True, subagent_fanout_enabled=False
+    )
+
+    assert [tool["function"]["name"] for tool in filtered] == ["workspace_read"]
+
+    unchanged = AgentService._filter_runtime_builtin_tools(
+        tools, agentteams_chat_entry_enabled=True, subagent_fanout_enabled=True
+    )
+    assert [tool["function"]["name"] for tool in unchanged] == [
+        "workspace_read",
+        "parallel_subagents",
+    ]
+
+
 def test_case_tool_system_prompt_suffix_is_only_added_when_available() -> None:
     tools = [{"function": {"name": "create_agentteams_case"}}]
 

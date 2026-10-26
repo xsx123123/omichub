@@ -381,19 +381,21 @@ onMounted(async () => {
   margin-bottom: 16px;
   padding: 40px 32px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #165DFF 0%, #6B8DD6 50%, #8E54E9 100%);
+  /* 统一品牌渐变：与功能通知横幅（AnnouncementBanner）同源，禁止回退到深蓝紫 */
+  background: var(--cygnus-brand-gradient);
   color: #fff;
 }
 
 .hero :deep(.omic-canvas) { opacity: 0.4; }
 
-/* 压暗画布与渐变，保证白色玻璃卡上的副文字也有足够对比度。 */
+/* 轻量压暗画布与渐变，保证白色文字与玻璃卡的对比度；
+   明亮品牌渐变下仅保留局部叠层，不做大面积深色遮罩。 */
 .hero::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: rgba(8, 11, 18, 0.48);
+  background: rgba(8, 11, 18, 0.2);
   pointer-events: none;
 }
 
@@ -479,13 +481,13 @@ onMounted(async () => {
 .n-button.hero-btn-primary {
   border: 0;
   background-color: rgba(255, 255, 255, 0.96);
-  color: #4f46e5;
+  color: var(--cygnus-brand-violet);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
 }
 .n-button.hero-btn-primary:hover,
 .n-button.hero-btn-primary:focus-visible {
   background-color: #fff;
-  color: #4f46e5;
+  color: var(--cygnus-brand-violet);
   transform: translateY(-1px);
   box-shadow: 0 7px 22px rgba(0, 0, 0, 0.22);
 }
@@ -507,7 +509,7 @@ onMounted(async () => {
 .n-button.hero-btn-secondary :deep(.n-button__border),
 .n-button.hero-btn-secondary :deep(.n-button__state-border) { display: none; }
 .hero-actions :deep(.n-button__icon) { margin-right: 7px; }
-.n-button.hero-btn-primary :deep(.n-button__icon) { color: #4f46e5; }
+.n-button.hero-btn-primary :deep(.n-button__icon) { color: var(--cygnus-brand-violet); }
 .n-button.hero-btn-secondary :deep(.n-button__icon) { color: #fff; }
 
 .hero-lifecycle {

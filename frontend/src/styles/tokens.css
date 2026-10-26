@@ -12,8 +12,15 @@
   --brand-primary-hover: #6381FF;
   --brand-primary-active: #3D5DE6;
   --brand-primary-light: #EEF1FF;
-  --brand-gradient: linear-gradient(135deg, #4C6FFF 0%, #7C5CE7 55%, #8B5CF6 100%);
-  --brand-gradient-soft: linear-gradient(135deg, rgba(76, 111, 255, 0.12), rgba(139, 92, 246, 0.1));
+  /* CygnusX 统一品牌渐变：亮蓝 → 紫罗兰 → 亮紫。
+     首页 Hero、功能通知横幅（AnnouncementBanner）、管理端 CTA 等强品牌
+     识别区域一律消费此变量，禁止再单独硬编码另一套蓝紫渐变。 */
+  --cygnus-brand-blue: #4F6BFF;
+  --cygnus-brand-violet: #7557F4;
+  --cygnus-brand-purple: #8D55F6;
+  --cygnus-brand-gradient: linear-gradient(110deg, #4F6BFF 0%, #7557F4 55%, #8D55F6 100%);
+  --brand-gradient: var(--cygnus-brand-gradient);
+  --brand-gradient-soft: linear-gradient(135deg, rgba(79, 107, 255, 0.12), rgba(141, 85, 246, 0.1));
   /* 星尘AI Agent 高亮区渐变（首页 Agent 卡、AgentSandbox hero 同源） */
   --agent-hero-gradient: linear-gradient(120deg, #1E6FFF 0%, #4F6DF5 45%, #8B5CF6 100%);
   /* 系统管理入口渐变（蓝→青，与 Agent 蓝紫区分） */

@@ -1,6 +1,8 @@
 # CygnusX 多 Agent 并行协作：现状调查与对话内 Fan-out 设计
 
 > **时点说明**：本文件为 2026-07-29 时点的调查/设计快照，所述调查结论与设计已执行或已演进，部分引用（路径、行号、测试文件）已失效；请勿按本文档再次执行，当前实现以代码为准。
+>
+> **2026-10-26 补充**：§9 为本域最新 as-built 全面调查（线上启用状态、三层闸门、全部调用方矩阵、子循环运行时演进、配置漂移与已知问题清单）；§0–§8 保留为历史设计依据与首版实施记录。
 
 > 依据仓库当前实现整理，更新于 2026-07-29。本文先记录**已经运行的能力**（含 A2A 使用现状调查），
 > 再给出**待实现设计**：一个 Agent 在对话中途临时拆出多个 LLM Agent 并行干活并汇总。
@@ -546,3 +548,123 @@ RNAFlow 之类长管道，子 Agent 应在结果中建议父 Agent 走 MAS 计�
 
 **Phase 3（未做）**：前端 agent-workspace 并行泳道卡片；当前前端已能收到
 `type="subagents"` 的 started / aggregated SSE chunk，渲染待迭代。
+
+---
+
+## 9. as-built 现状（2026-10-26 全面调查）
+
+> 本节为代码 + 线上环境实测得出的当前实现基线，取代 §4/§8 中与现状冲突的描述。
+> 调查方法：全链路代码实勘 + 单测执行 + 运行中容器 env/DB 核查。
+
+### 9.1 线上启用状态（实测）
+
+Sub-Agent Fan-out **当前处于真实开启状态**，双通道开关均为真：
+
+| 检查项 | 实测值 |
+| --- | --- |
+| web 容器 env | `SUBAGENT_FANOUT_ENABLED=true`；另覆写 `SUBAGENT_MAX_ROUNDS_PER_CHILD=24`、`SUBAGENT_CHILD_TIMEOUT_SECONDS=1200` |
+| DB `site_settings` | `subagent_fanout_enabled=true`；协作 preset = `full`（统一意图路由 / 多专家会诊 / Case 入口同步开启） |
+| 可派生 Agent（DB `agent_templates`） | 13 个 `subagents_spawnable: true`（general/rnaseq/atacseq/scrna/scrna_upstream/scrna_integration/scrna_advanced/code/data/qc/delivery/cloud_ops/viz）；`explorer`、`agentteams-manager` 显式 false；`router`/`shania`/`mcp_builder`/`skill_builder` 未标记（缺省不可派生） |
+| 前端消费 | `frontend/src/composables/useAgentChatStream.ts` `case 'subagents'` 已落地（started/aggregated 双相位，复用超频多 Agent 泳道 UI）——§8 末尾"渲染待迭代"已完成 |
+| 生产运行记录 | 当前容器日志暂无真实 fan-out（栈于调查当日重启），待实测触发 |
+
+### 9.2 三层闸门（工具可见 → 可调 → 可派生）
+
+1. **暴露闸门（LLM 是否看到工具）**：`chat_service.py` 计算
+   `effective_multi_agent = (用户 multi_agent 标记 or 管理端/env 开关) and 会话未绑定 AgentTeams Case`，
+   为真则向 tools 注入 `MULTI_AGENT_TOOL_NAMES`（`parallel_subagents` + `create_agentteams_case`）
+   并追加 `MULTI_AGENT_SYSTEM_PROMPT_SUFFIX`；Legacy 与 LangGraph 双引擎共用这份 tools
+   （`chat_service.py:4226`），无引擎分叉。
+   **已知缝隙**：`agent_service._filter_runtime_builtin_tools` 只按 Case 入口开关剥离
+   `create_agentteams_case`，不按 fanout 开关剥离 `parallel_subagents`——因此 YAML `tool_packs`
+   含 `subagents` 的 5 个 Agent（general/rnaseq/atacseq/code/cloud_ops）在开关关闭时仍向 LLM
+   暴露该工具，调用后吃到"未启用"错误信封（受控失败，但浪费一轮调用且与
+   `data/ai/prompts/general.md` 的可用性描述矛盾）。
+2. **执行闸门**：`ParallelSubAgentService.run` 入口校验
+   `runtime_authorized or env SUBAGENT_FANOUT_ENABLED or DB site_settings.subagent_fanout_enabled`
+   任一为真（`parallel_subagent_service.py:243`）。
+3. **派生授权**：目标 Agent 必须 `features.subagents_spawnable: true`；唯一豁免是
+   AgentTeams 会诊的 `allow_non_spawnable_target`（仅 `safe_only` 且单任务时生效）。
+
+### 9.3 全部调用方与执行路径
+
+| 调用方 | 位置 | 受 fanout 开关约束 | 说明 |
+| --- | --- | --- | --- |
+| 普通聊天 Legacy 循环 | `chat_service.py:4471-4640` | 是 | 特判直调（§8 偏差 1）；单轮 1 次护栏（`subagent_max_children_per_message`）；Case 绑定会话拒绝并提示走 Work Item |
+| 普通聊天 LangGraph | `chat/runtimes/langgraph_runtime.py:586-680` | 是 | 与 Legacy 逐点对齐；Goal 会话改走 `GoalFanoutAdapter` |
+| 统一意图路由 fanout | `chat_service.py:4086` | 是 | `unified_intent_router` 判定 `intent=fanout` 且 ≥2 任务时预执行 fan-out，结果注入 system prompt 让主 Agent 汇总 |
+| 超频前台 Wave / 交叉复核 | `chat_service.py:1996` / `:2471` | 是（经工具薄壳，无 `runtime_authorized`） | 与后台路径闸门不一致，见 §9.6-3 |
+| 超频后台 Celery worker | `infrastructure/celery_app/tasks/overdrive.py:1135` | 否（`runtime_authorized=True`） | `max_rounds=overdrive_subagent_max_rounds`（25）；超频专家一律授予工作台工具 |
+| AgentTeams 会诊 | `agent_consultation_service.py:427` | 否（`runtime_authorized=True`） | `safe_only` 只读模式；`allow_non_spawnable_target` 豁免 |
+| Skill 路由审查（scout） | `skill_route_tool_service.py:180` | 否（`runtime_authorized=True`） | `safe_only`，单任务派 agent-general 做全文适配审查 |
+| Goal fan-out | `goal_adapters/fanout_adapter.py` | 是（经工具薄壳）+ `GOAL_FANOUT_ENABLED` 暴露闸门（当前未开） | 父/子任务持久化为 Goal Work Unit，幂等键防重 |
+
+### 9.4 子循环运行时演进（相对 §4.4 C1–C7 的新增护栏）
+
+C1–C7 全部保留（独占 AsyncSession、剥离递归/会话控制/记忆写工具、确认类工具升级为
+`approval_pending`、结果截断、隔离 workdir、父循环只计一次 tool_call）。此后新增：
+
+- **空响应重试**：模型连续空正文（仅 reasoning）最多追问 2 次，兜底显式失败（`_MAX_EMPTY_RESPONSE_RETRIES`）；
+- **长度截断续写**：`finish_reason=length` 最多续写 2 段，识别未闭合的 ` ```json ` 代码围栏并切换为"只续写 JSON 残片"提示（`_has_unfinished_json_fence`）；
+- **双运行 Guard**：同一（工具+参数）签名连续 100 次 → `duplicate_tool_call` guarded；工具结果连续 2 次完全相同 → `no_progress`，以 `partial: true` 阶段性结论返回，不伪装完成；
+- **结构化中断升级**：子任务 `ask_user` → `awaiting_input` packet（含 questions），确认类工具 → `approval_pending` packet（含 approval_requests），统一经 `_collaboration_packet` 契约回传 Manager/父 Agent；
+- **检索证据协议**：子循环默认注入 `knowledge_search` + `web_search`（Agent `features.web_search` 可关），系统提示附"先知识库后联网、不虚构来源"后缀；
+- **safe_only 只读模式**：仅放行 `ask_user`/`knowledge_search`/`web_search`/Skill 工具 + 声明 `readOnlyHint` 的 MCP 工具 + Manager 本人的记忆写白名单；
+- **超频工作台授权**：`workspace_access=true` 时补授沙盒/工作区 9 工具（`_OVERDRIVE_WORKSPACE_TOOL_NAMES`），并在首次 `ensure_running` 前 `register_workdir_mount` 把宿主 workdir 挂进容器 `/workspace/workdir`（Gap 3 挂载断裂修复）；
+- **交付协议**：答案上限 100K 字符，正式结论末尾必须带 `## 执行摘要`（≤1500 字）供下游折叠卡片读取；
+- **审计**：每轮子调用经 `AgentTeamsTurnRecorder` 落 MinIO/PG，失败不影响模型路径；token usage 经 `merge_token_usage` 跨轮跨子任务合并回传父信封。
+
+并发与配额现状：单批 ≤ `subagent_max_parallel`（4）任务；`asyncio.Semaphore` 实际并发
+`subagent_max_concurrent`（3）；父单轮 fan-out 限 1 次；单任务重试（`retry.max_attempts` ≤5，
+指数退避）仅对超时/5xx 类瞬断生效。
+
+### 9.5 配置漂移
+
+| 参数 | `config.py` 默认值 | `.env.example` | 线上 env 实测 |
+| --- | --- | --- | --- |
+| `SUBAGENT_CHILD_TIMEOUT_SECONDS` | 180 | 1200 | 1200 |
+| `SUBAGENT_MAX_ROUNDS_PER_CHILD` | 6 | 24 | 24 |
+
+代码默认值与示例/线上差一个量级：无 env 覆写的本地开发会拿到很小的子任务预算（3 分钟/6 轮），
+与文档预期不符。另 `config.py:329` 注释称"按 Agent 白名单灰度"，代码中并无白名单实现
+（实际为全局开关 + 用户标记兜底），注释待修正。
+
+### 9.6 已知问题与偏差（按严重度）
+
+1. **门禁内红测试**：`tests/unit/test_parallel_subagent_service.py::test_fanout_merges_token_usage_across_rounds_and_children`
+   未隔离且失败——`merge_token_usage` 新增 `cached_tokens` 字段后测试断言未同步
+   （`openai_compatible.py:205`）。会卡住全量门禁（`pytest tests/unit -m "not quarantine"`）与 CI，提交前必须先修。
+2. **工具暴露缝隙**（§9.2-1）：fanout 开关关闭不隐藏工具，仅执行期报错。
+3. **超频前后台闸门不一致**：前台超频 Wave/交叉复核经受约束的工具薄壳（开关关闭则全部
+   Worker 报"未启用"降级），后台 Celery 超频以 `runtime_authorized=True` 绕过——同一功能的
+   两种开关语义，关闭开关会造成行为分裂。
+4. **quarantine 欠账**（隔离绕过门禁，会掩盖回归）：
+   - `test_agent_consultation_service.py` 3 条——测试替身未 await `project_event` 协程导致断言失败
+     （生产 `_emit_event` 正确 await，属测试替身问题，非生产 bug）；
+   - `test_site_settings_collaboration.py` 4 条——fixture 缺新字段 `agent_memory_enabled`，
+     触发 `SiteSettingsDTO` 校验失败。
+5. **用户侧 `multi_agent` 实为死参数**：前端无任何 UI 设置入口（仅 `agentHub.ts` 透传），
+   实际激活只靠管理端开关；API 表面易误导。
+6. **子任务超时与 web 约定冲突**：1200s 单任务墙钟远超"web 进程 >600s 走 Celery"的平台约定；
+   极端情况（4 任务 × 信号量 3）一次 fan-out 可让 SSE 请求挂约 20 分钟，且子任务执行长工具
+   （如 sandbox_execute）期间无心跳事件。
+7. **小瑕疵**：`parallel_subagent_service.py:979` duplicate guard 条件重复书写
+   （`len >= N and len >= N`，冗余无害）。
+
+### 9.7 本次调查验证记录
+
+- 单测：`test_parallel_subagent_service.py` + `chat/test_runtime_feature_gates.py`
+  35 条中 34 过 1 红（§9.6-1）；`test_langgraph_runtime.py` / `test_goal_runtime.py` /
+  `test_agentteams_case_tool_service.py` / `test_mas_worker_policy.py` 73 条全绿；
+  `test_overdrive_chat.py` 等 81 过（7 条失败均为 §9.6-4 的 quarantine 项）；
+- 线上核查：`docker exec cygnusx-web printenv` + `site_settings`/`agent_templates` 表直查
+  （结果见 §9.1）；`deploy/` 各 compose 无 SUBAGENT 注入，配置全部来自根 `.env`；
+- 未覆盖：生产真实 fan-out 端到端（待实测，建议路径：通用助手发可拆子任务需求观察
+  `subagents` SSE 与泳道卡片；超频开关验证 Wave 编排；临时关后台开关做负面对照可复现
+  §9.6-2/3）。
+
+### 9.8 安全边界核对（无红线问题）
+
+子 Agent 无 shell、无流程 YAML/DB 写权限、不可递归派生（深度恒 1）、不可切换会话/建 Case、
+不写长期记忆；确认类工具一律升级为审批请求由人类裁决；`workspace_access` 沙盒挂载遵循
+uid 10001 + cap_drop=ALL 基线。与平台保护边界一致。

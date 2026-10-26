@@ -163,8 +163,8 @@ Chat Runtime 重构的实施记录：HTTP → ChatService/AgentRuntimeGateway �
 ### `CygnusX_mas_a2a_plan.md` — MAS/A2A 实施方案（提案评审稿，2026-07-18，Phase 0–4 核心链路已落地）
 把"单 Agent + MCP 工具闭环"升级为可审计多智能体系统的蓝图：MAS 控制面（Intent Router → Orchestrator → DAG Scheduler → HITL Gate + State/Artifact Registry + A2A Outbox）；数据模型 `MASRun/MASPlan/MASNode/MASArtifact/A2AEvent/MASApproval/MASRetry` 与 `mas_*` 迁移表、Run/Node 状态机（乐观锁）；A2A 事件协议（Redis Stream + Transactional Outbox、`dedupe_key` 幂等、`node.rework_requested` 修复指纹限环）；共享工作区 `/data/cygnusx/runs/<run_id>` 与内容寻址缓存、Context Packager；首批 MCP 工具与容器隔离约束；端到端场景、错误重试/HITL、Phase 0–5 实施、测试矩阵与灰度回滚。与根目录通用 `plan-ai.md` 不是同一文件。
 
-### `CygnusX_multi_agent_fanout.md` — 多 Agent 现状调查 + Sub-Agent Fan-out 设计（调查+设计，2026-07-29，Phase 1+2 已落地）
-§1 三层协作机制现状（MAS DAG 固定管道执行、多专家会诊 `asyncio.gather` ≤3 LLM 无工具、Handoff 串行接力；父循环对 tool_calls 串行 await）；§2 A2A 定性：自研内部事件协议而非业界标准 A2A；§4 Sub-Agent Fan-out 设计：`parallel_subagents` 工具请求内并行迷你 ReAct 子循环、`ParallelSubAgentService`/`SubAgentRunner`、七条正确性约束（独占 AsyncSession、剥离递归工具、隔离子目录）、六个灰度开关、`subagents` SSE chunk；§8 as-built 实施偏差记录。与 CygnusX_mas_a2a_plan.md 互补共存（分钟级编排 vs 秒级请求内并行）。
+### `CygnusX_multi_agent_fanout.md` — 多 Agent 现状调查 + Sub-Agent Fan-out 设计（调查+设计+as-built，2026-07-29 初版 / §9 2026-10-26 全面调查）
+§1 三层协作机制现状（MAS DAG 固定管道执行、多专家会诊 `asyncio.gather` ≤3 LLM 无工具、Handoff 串行接力；父循环对 tool_calls 串行 await）；§2 A2A 定性：自研内部事件协议而非业界标准 A2A；§4 Sub-Agent Fan-out 设计：`parallel_subagents` 工具请求内并行迷你 ReAct 子循环、`ParallelSubAgentService`/`SubAgentRunner`、七条正确性约束（独占 AsyncSession、剥离递归工具、隔离子目录）、六个灰度开关、`subagents` SSE chunk；§8 首版实施偏差记录；**§9 as-built 全面调查（2026-10-26，当前实现基线）**：线上双通道开关实测开启、三层闸门（暴露/执行/派生授权）与暴露缝隙、8 个调用方矩阵（含超频前后台闸门不一致）、子循环新增护栏（空响应重试/截断续写/双 Guard/审批与澄清 packet 升级/检索证据协议/超频工作台挂载）、配置漂移表、已知问题清单（含门禁内红测试）与安全边界核对。与 CygnusX_mas_a2a_plan.md 互补共存（分钟级编排 vs 秒级请求内并行）。
 
 ### `CygnusX_domain_prompt_sedimentation.md` — 领域知识渐进沉淀设计（提案草案 v1，2026-08-06，未实施）
 注意：主题是"提示词/领域资产沉淀"而非 agent 并行。四环闭环：感知层 `DomainMissEvent`（`domain_miss_events` 表、脱敏）→ 候选聚合（指纹聚类、`domain_candidates`、浮现阈值）→ 沉淀层（轻=知识库条目/中=skill/重=Domain Pack，LLM 起草+人审+回放测试）→ 生效层（`data/ai/domains/<domain>.yaml` 热重载、灰度、回滚）。依赖 Domain Pack 设计，V0–V3 分阶段，附四条反模式红线。

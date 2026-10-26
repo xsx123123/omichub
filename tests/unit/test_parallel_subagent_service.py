@@ -555,11 +555,12 @@ async def test_fanout_merges_token_usage_across_rounds_and_children(env, monkeyp
         db=SimpleNamespace(),
     )
 
-    # agent-a 两轮 140+210，agent-b 一轮 210，合计 350/260/90
+    # agent-a 两轮 140+210，agent-b 一轮 210，合计 350/260/90；merged usage 恒带 cached_tokens
     assert result["usage"] == {
         "prompt_tokens": 260 + 160,
         "completion_tokens": 90 + 50,
         "total_tokens": 350 + 210,
+        "cached_tokens": 0,
     }
 
 
@@ -1151,6 +1152,77 @@ async def test_fanout_validation_rules(env, monkeypatch) -> None:
         tasks=[{"agent_id": "a", "task": "x"}, {"agent_id": "", "task": "y"}], **kwargs
     )
     assert missing["success"] is False and "缺少" in missing["llm_payload"]["error"]
+
+
+@pytest.mark.asyncio
+async def test_prepare_rejects_without_side_effects(env, monkeypatch) -> None:
+    """prepare 拒绝路径：纯信封返回（无 run_id）、不实例化 AgentService、无可执行计划。"""
+    service_calls: list[str] = []
+
+    class GuardedAgentService:
+        def __init__(self, db):
+            service_calls.append("init")
+
+    monkeypatch.setattr(pss, "AgentService", GuardedAgentService)
+    service = pss.ParallelSubAgentService()
+
+    too_many = await service.prepare(
+        user_id="user-1",
+        context_summary="",
+        tasks=[{"agent_id": "a", "task": f"t{i}"} for i in range(5)],
+        db=SimpleNamespace(),
+    )
+    assert isinstance(too_many, dict)
+    assert too_many["success"] is False
+    assert too_many["llm_payload"]["code"] == "SUBAGENT_MAX_PARALLEL"
+    assert not hasattr(too_many, "run_id")
+    assert service_calls == []  # 校验先于任何预组装
+
+    monkeypatch.setattr(env.settings, "subagent_fanout_enabled", False)
+    disabled = await service.prepare(
+        user_id="user-1",
+        context_summary="",
+        tasks=[{"agent_id": "a", "task": "x"}],
+        db=SimpleNamespace(),
+    )
+    assert isinstance(disabled, dict)
+    assert disabled["llm_payload"]["code"] == "SUBAGENT_DISABLED"
+    assert service_calls == []
+
+
+def test_parallel_subagents_schema_max_items_matches_settings_default() -> None:
+    """契约守卫：LLM 工具 schema 的 maxItems 必须与 settings.subagent_max_parallel 默认值一致。"""
+    from cygnusx.core.config import Settings
+    from cygnusx.tools.schema_loader import schema_loader
+
+    tool = schema_loader.get_tool("parallel_subagents")
+    assert tool is not None
+    max_items = tool.input_schema["properties"]["tasks"]["maxItems"]
+    assert max_items == Settings.model_fields["subagent_max_parallel"].default
+
+
+def test_subagent_child_event_metadata_maps_ui_phases() -> None:
+    meta = pss.subagent_child_event_metadata(
+        {"type": "worker_started", "index": 2, "agent_id": "agent-a", "agent_name": "A 专家"}
+    )
+    assert meta == {"phase": "child_started", "index": 2, "agent_id": "agent-a", "name": "A 专家"}
+
+    done = pss.subagent_child_event_metadata(
+        {
+            "type": "worker_finished",
+            "index": 1,
+            "agent_id": "agent-b",
+            "status": "failed",
+            "elapsed_s": 3.5,
+            "error": "boom",
+        }
+    )
+    assert done is not None
+    assert done["phase"] == "child_done" and done["status"] == "failed"
+    assert done["elapsed_s"] == 3.5 and done["error"] == "boom"
+
+    # heartbeat 等内部事件不透出
+    assert pss.subagent_child_event_metadata({"type": "worker_heartbeat", "index": 1}) is None
 
 
 def test_has_unfinished_json_fence_detects_truncated_envelope() -> None:

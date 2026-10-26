@@ -480,6 +480,7 @@ class _CaptureRuntime:
         self.last_usage = None
         self.last_handoff = None
         self.last_ask_request = None
+        self.last_finalize = None
         self.rounds_exhausted = False
         self.error = None
         self.emitted: list[ChatChunk] = []
@@ -532,7 +533,12 @@ async def _capture_tool_executor(
             deep_thinking=False,
             active_mcp_servers=[],
             mcp_client=SimpleNamespace(),
-            tool_context=SimpleNamespace(agent_id="agent-1", extra=extra or {}),
+            tool_context=SimpleNamespace(
+                agent_id="agent-1",
+                session_id="session-1",
+                db=AsyncMock(),
+                extra=extra or {},
+            ),
         )
     ]
     assert len(_CaptureRuntime.instances) == 1
@@ -602,23 +608,33 @@ async def test_tool_executor_parallel_subagents_per_round_guard(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """每轮次数护栏：settings.subagent_max_children_per_message 默认 1，
-    同一轮第二次 fanout 被拒（对齐 legacy chat_service.py:4423-4436）。"""
-    from cygnusx.application.services import parallel_subagent_tool_service
+    同一轮第二次 fanout 在校验通过后的 commit 阶段被拒（FanoutAdmission，
+    对齐 legacy chat_service 分支；护栏拒绝不消耗真实执行）。"""
+    from cygnusx.application.services.chat.runtimes import langgraph_runtime
 
-    run_calls: list[tuple[str, list]] = []
+    execute_calls: list[Any] = []
 
-    class _FakeService:
-        async def run_parallel_subagents(
-            self, *, context_summary: str, tasks: list, context: Any
-        ) -> dict:
-            run_calls.append((context_summary, tasks))
+    class _FakeParallelService:
+        async def prepare(self, **kwargs: Any) -> Any:
+            return SimpleNamespace(
+                children=[
+                    SimpleNamespace(
+                        item=item,
+                        ctx=SimpleNamespace(agent=SimpleNamespace(name=item["agent_id"])),
+                    )
+                    for item in kwargs["tasks"]
+                ]
+            )
+
+        async def execute(self, prepared: Any, **kwargs: Any) -> dict:
+            execute_calls.append(prepared)
             return {
                 "success": True,
                 "llm_payload": {"summary": "全部完成"},
-                "ui_payload": {"progress": []},
+                "ui_payload": {"progress": [], "fanout_run_id": "run-1"},
             }
 
-    monkeypatch.setattr(parallel_subagent_tool_service, "ParallelSubAgentToolService", _FakeService)
+    monkeypatch.setattr(langgraph_runtime, "ParallelSubAgentService", _FakeParallelService)
     executor, _ = await _capture_tool_executor(monkeypatch)
 
     first = await executor(
@@ -627,7 +643,7 @@ async def test_tool_executor_parallel_subagents_per_round_guard(
         "call_p1",
     )
     assert first["success"] is True
-    assert len(run_calls) == 1
+    assert len(execute_calls) == 1
 
     second = await executor(
         PARALLEL_SUBAGENTS_TOOL_NAME,
@@ -637,28 +653,63 @@ async def test_tool_executor_parallel_subagents_per_round_guard(
     assert second["success"] is False
     assert "本轮已执行过子 Agent 并行分派" in second["result"]["llm_payload"]["error"]
     assert second["result"]["ui_payload"]["error"] == second["result"]["llm_payload"]["error"]
-    # 护栏拒绝不消耗执行次数，也不触发实际 fanout
-    assert len(run_calls) == 1
+    # 护栏拒绝不消耗执行次数，也不触发真实 fanout
+    assert len(execute_calls) == 1
 
 
 async def test_tool_executor_parallel_subagents_emits_started_and_aggregated(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """正常路径：started/aggregated 事件经 emit 发出，双通道信封封装正确
-    （对齐 legacy chat_service.py:4442-4501）。"""
-    from cygnusx.application.services import parallel_subagent_tool_service
+    """正常路径：started/child_*/aggregated 事件经 emit 发出，双通道信封封装正确
+    （对齐 legacy chat_service fan-out 分支的 SSE 透出契约）。"""
+    from cygnusx.application.services.chat.runtimes import langgraph_runtime
 
-    class _FakeService:
-        async def run_parallel_subagents(
-            self, *, context_summary: str, tasks: list, context: Any
-        ) -> dict:
+    class _FakeParallelService:
+        async def prepare(self, **kwargs: Any) -> Any:
+            names = {"agent-a": "研究员A"}
+            return SimpleNamespace(
+                children=[
+                    SimpleNamespace(
+                        item=item,
+                        ctx=SimpleNamespace(
+                            agent=SimpleNamespace(name=names.get(item["agent_id"], ""))
+                        ),
+                    )
+                    for item in kwargs["tasks"]
+                ]
+            )
+
+        async def execute(self, prepared: Any, **kwargs: Any) -> dict:
+            on_event = kwargs.get("on_event")
+            if on_event is not None:
+                await on_event(
+                    {
+                        "type": "worker_started",
+                        "index": 1,
+                        "agent_id": "agent-a",
+                        "agent_name": "研究员A",
+                    }
+                )
+                await on_event(
+                    {
+                        "type": "worker_finished",
+                        "index": 1,
+                        "agent_id": "agent-a",
+                        "agent_name": "研究员A",
+                        "status": "ok",
+                        "elapsed_s": 1.5,
+                    }
+                )
             return {
                 "success": True,
                 "llm_payload": {"summary": "两个子任务均完成"},
-                "ui_payload": {"progress": [{"agent_id": "agent-a", "status": "done"}]},
+                "ui_payload": {
+                    "progress": [{"agent_id": "agent-a", "status": "ok"}],
+                    "fanout_run_id": "run-1",
+                },
             }
 
-    monkeypatch.setattr(parallel_subagent_tool_service, "ParallelSubAgentToolService", _FakeService)
+    monkeypatch.setattr(langgraph_runtime, "ParallelSubAgentService", _FakeParallelService)
     executor, emitted = await _capture_tool_executor(monkeypatch)
 
     envelope = await executor(
@@ -675,24 +726,51 @@ async def test_tool_executor_parallel_subagents_emits_started_and_aggregated(
     )
 
     sub_chunks = [chunk for chunk in emitted if chunk.type == "subagents"]
-    assert [chunk.metadata["phase"] for chunk in sub_chunks] == ["started", "aggregated"]
+    assert [chunk.metadata["phase"] for chunk in sub_chunks] == [
+        "started",
+        "child_started",
+        "child_done",
+        "aggregated",
+    ]
     started = sub_chunks[0].metadata
     assert started["tool_call_id"] == "call_p1"
-    # tasks 截断 120 字、index 从 1 开始、非 dict 项被过滤、非标量转 str
+    # tasks 截断 120 字、index 从 1 开始、非 dict 项被过滤、非标量转 str、带 Agent 显示名
     assert started["tasks"] == [
-        {"index": 1, "agent_id": "agent-a", "task": "x" * 120},
-        {"index": 2, "agent_id": "", "task": "123"},
+        {"index": 1, "agent_id": "agent-a", "name": "研究员A", "task": "x" * 120},
+        {"index": 2, "agent_id": "", "name": "", "task": "123"},
     ]
-    aggregated = sub_chunks[1].metadata
+    # 子任务级事件逐条透出（带 tool_call_id 归属）
+    assert sub_chunks[1].metadata == {
+        "phase": "child_started",
+        "tool_call_id": "call_p1",
+        "index": 1,
+        "agent_id": "agent-a",
+        "name": "研究员A",
+    }
+    assert sub_chunks[2].metadata == {
+        "phase": "child_done",
+        "tool_call_id": "call_p1",
+        "index": 1,
+        "agent_id": "agent-a",
+        "name": "研究员A",
+        "status": "ok",
+        "elapsed_s": 1.5,
+        "error": "",
+    }
+    aggregated = sub_chunks[3].metadata
     assert aggregated["tool_call_id"] == "call_p1"
+    assert aggregated["run_id"] == "run-1"
     assert aggregated["success"] is True
     assert aggregated["summary"] == "两个子任务均完成"
-    assert aggregated["progress"] == [{"agent_id": "agent-a", "status": "done"}]
+    assert aggregated["progress"] == [{"agent_id": "agent-a", "status": "ok"}]
     assert envelope == {
         "success": True,
         "result": {
             "llm_payload": {"summary": "两个子任务均完成"},
-            "ui_payload": {"progress": [{"agent_id": "agent-a", "status": "done"}]},
+            "ui_payload": {
+                "progress": [{"agent_id": "agent-a", "status": "ok"}],
+                "fanout_run_id": "run-1",
+            },
         },
     }
 

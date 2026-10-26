@@ -23,6 +23,7 @@ import json
 import logging
 import time
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -199,6 +200,33 @@ def _collaboration_packet(*, answer: str | None, error: str | None, status: str)
     }
 
 
+def subagent_child_event_metadata(event: dict[str, Any]) -> dict[str, Any] | None:
+    """把子循环 worker 事件映射为 chat SSE `subagents` chunk 的 metadata。
+
+    仅透出有 UI 语义的相位（started/retrying/finished）；heartbeat 等高频或
+    内部事件返回 None，由调用方丢弃。
+    """
+    event_type = str(event.get("type") or "")
+    base: dict[str, Any] = {
+        "index": int(event.get("index") or 0),
+        "agent_id": str(event.get("agent_id") or ""),
+        "name": str(event.get("agent_name") or event.get("agent_id") or ""),
+    }
+    if event_type == "worker_started":
+        return {"phase": "child_started", **base}
+    if event_type == "worker_retrying":
+        return {"phase": "child_retrying", **base, "attempt": int(event.get("attempt") or 0)}
+    if event_type == "worker_finished":
+        return {
+            "phase": "child_done",
+            **base,
+            "status": str(event.get("status") or ""),
+            "elapsed_s": float(event.get("elapsed_s") or 0.0),
+            "error": str(event.get("error") or "")[:200],
+        }
+    return None
+
+
 SUBAGENT_SYSTEM_SUFFIX = (
     "\n\n## 子任务模式\n"
     "你正在执行由上级 Agent 并行分派的子任务。约束：\n"
@@ -213,28 +241,49 @@ SUBAGENT_SYSTEM_SUFFIX = (
 )
 
 
+@dataclass
+class FanoutPreparedChild:
+    """单个子任务的预组装结果（校验通过、尚未执行）。"""
+
+    item: dict[str, Any]
+    ctx: Any
+    child_tools: list[dict[str, Any]]
+
+
+@dataclass
+class FanoutPrepared:
+    """prepare() 通过的 fan-out 执行计划。
+
+    prepare 阶段只读库与校验，不创建子运行、不占用配额、不发 started 事件；
+    只有调用方确认接受（execute）后才产生执行副作用。
+    """
+
+    run_id: str
+    workdir_root: Path
+    context_summary: str
+    children: list[FanoutPreparedChild]
+
+
 class ParallelSubAgentService:
     """将独立子任务列表 fan-out 给已注册 Agent 并行执行，失败隔离并汇总。"""
 
-    async def run(
+    async def prepare(
         self,
         *,
         user_id: str,
-        parent_agent_id: str,
-        parent_session_id: str,
         context_summary: str,
         tasks: list[dict[str, Any]],
         db: AsyncSession,
-        on_event: Callable[[dict[str, Any]], Awaitable[None] | None] | None = None,
         safe_only: bool = False,
         runtime_authorized: bool = False,
         allow_non_spawnable_target: bool = False,
         workdir_root: Path | None = None,
-        approved_tool_calls: list[dict[str, Any]] | None = None,
-        control_check: Callable[[], Awaitable[str | None] | str | None] | None = None,
-        max_rounds: int | None = None,
-    ) -> dict[str, Any]:
-        """执行 fan-out，返回统一信封 {success, llm_payload, ui_payload}。"""
+    ) -> FanoutPrepared | dict[str, Any]:
+        """仅做准入校验与预组装，不产生任何执行副作用（validate 先于 reserve）。
+
+        返回 FanoutPrepared 表示校验通过可进入 execute()；返回 dict 即为拒绝信封
+        （含 code/reason），调用方不得据此占用任何配额或发出 started 事件。
+        """
         settings = get_settings()
         # env 开关与管理端平台设置（DB）任一为真即启用；管理端为运行时主开关
         from cygnusx.application.services.site_settings_service import SiteSettingsService
@@ -243,7 +292,8 @@ class ParallelSubAgentService:
         if not (runtime_authorized or settings.subagent_fanout_enabled or db_enabled):
             return self._error(
                 "子 Agent 并行分派未启用（管理端「设置 → 平台设置」开关"
-                "或环境变量 SUBAGENT_FANOUT_ENABLED=true 任一启用即可）"
+                "或环境变量 SUBAGENT_FANOUT_ENABLED=true 任一启用即可）",
+                code="SUBAGENT_DISABLED",
             )
 
         normalized = self._validate_tasks(tasks, settings.subagent_max_parallel)
@@ -253,7 +303,7 @@ class ParallelSubAgentService:
 
         # 顺序预组装：单线程复用父 session 读库，满足 C1（并发阶段不再碰父 session）
         agent_service = AgentService(db)
-        prepared: list[tuple[dict[str, Any], Any, list[dict[str, Any]]]] = []
+        prepared: list[FanoutPreparedChild] = []
         for index, item in enumerate(normalized, start=1):
             assemble = agent_service.assemble_context
             parameters = inspect.signature(assemble).parameters
@@ -265,20 +315,22 @@ class ParallelSubAgentService:
             ctx = await assemble(item["agent_id"], **assemble_kwargs)
             if ctx is None or ctx.model_config is None:
                 return self._error(
-                    f"子任务 #{index} 的目标 Agent {item['agent_id']} 不存在或未绑定可用模型"
+                    f"子任务 #{index} 的目标 Agent {item['agent_id']} 不存在或未绑定可用模型",
+                    code="SUBAGENT_AGENT_UNKNOWN",
                 )
             if not bool((ctx.features or {}).get("subagents_spawnable")) and not (
                 allow_non_spawnable_target and safe_only and len(normalized) == 1
             ):
                 return self._error(
                     f"Agent {item['agent_id']} 未标记为可派生子 Agent"
-                    "（需在 Agent YAML 的 features 增加 subagents_spawnable: true）"
+                    "（需在 Agent YAML 的 features 增加 subagents_spawnable: true）",
+                    code="SUBAGENT_NOT_SPAWNABLE",
                 )
             prepared.append(
-                (
-                    item,
-                    ctx,
-                    self._prepare_child_tools(
+                FanoutPreparedChild(
+                    item=item,
+                    ctx=ctx,
+                    child_tools=self._prepare_child_tools(
                         ctx,
                         workspace_access=bool(item.get("workspace_access")) and not safe_only,
                         safe_only=safe_only,
@@ -287,7 +339,30 @@ class ParallelSubAgentService:
             )
 
         run_id = uuid4().hex[:12]
-        workdir_root = workdir_root or Path(get_settings().storage_path) / "subagents" / run_id
+        return FanoutPrepared(
+            run_id=run_id,
+            workdir_root=workdir_root or Path(get_settings().storage_path) / "subagents" / run_id,
+            context_summary=context_summary,
+            children=prepared,
+        )
+
+    async def execute(
+        self,
+        prepared: FanoutPrepared,
+        *,
+        user_id: str,
+        parent_agent_id: str,
+        parent_session_id: str,
+        on_event: Callable[[dict[str, Any]], Awaitable[None] | None] | None = None,
+        approved_tool_calls: list[dict[str, Any]] | None = None,
+        control_check: Callable[[], Awaitable[str | None] | str | None] | None = None,
+        max_rounds: int | None = None,
+    ) -> dict[str, Any]:
+        """执行已通过 prepare() 校验的 fan-out，返回统一信封 {success, llm_payload, ui_payload}。"""
+        settings = get_settings()
+        run_id = prepared.run_id
+        workdir_root = prepared.workdir_root
+        children = prepared.children
         semaphore = asyncio.Semaphore(max(1, settings.subagent_max_concurrent))
         started = time.monotonic()
         logger.info(
@@ -295,43 +370,43 @@ class ParallelSubAgentService:
             run_id,
             parent_agent_id,
             parent_session_id,
-            len(prepared),
+            len(children),
         )
         gathered = await asyncio.gather(
             *(
                 self._run_child(
                     index=index,
-                    task_id=str(item.get("task_id") or ""),
-                    agent_id=item["agent_id"],
-                    task=item["task"],
-                    context_summary=context_summary,
-                    ctx=ctx,
-                    child_tools=child_tools,
-                    workspace_access=bool(item.get("workspace_access")),
+                    task_id=str(child.item.get("task_id") or ""),
+                    agent_id=child.item["agent_id"],
+                    task=child.item["task"],
+                    context_summary=prepared.context_summary,
+                    ctx=child.ctx,
+                    child_tools=child.child_tools,
+                    workspace_access=bool(child.item.get("workspace_access")),
                     user_id=user_id,
                     parent_session_id=parent_session_id,
                     run_id=run_id,
-                    workdir=workdir_root if len(prepared) == 1 else workdir_root / str(index),
+                    workdir=workdir_root if len(children) == 1 else workdir_root / str(index),
                     timeout_seconds=int(
-                        item.get("timeout_seconds") or settings.subagent_child_timeout_seconds
+                        child.item.get("timeout_seconds") or settings.subagent_child_timeout_seconds
                     ),
-                    retry=item.get("retry") or {},
+                    retry=child.item.get("retry") or {},
                     # 缺省保持普通聊天 fan-out 的轮数上限；超频专家经 max_rounds 显式放宽
                     max_rounds=max_rounds or settings.subagent_max_rounds_per_child,
-                    deep_thinking=bool(item.get("deep_thinking")),
+                    deep_thinking=bool(child.item.get("deep_thinking")),
                     semaphore=semaphore,
                     on_event=on_event,
                     approved_tool_calls=approved_tool_calls or [],
                     control_check=control_check,
                 )
-                for index, (item, ctx, child_tools) in enumerate(prepared, start=1)
+                for index, child in enumerate(children, start=1)
             ),
             return_exceptions=True,
         )
         results: list[dict[str, Any]] = []
         for index, item in enumerate(gathered, start=1):
             if isinstance(item, BaseException):
-                prepared_item = normalized[index - 1]
+                prepared_item = children[index - 1].item
                 results.append(
                     {
                         "index": index,
@@ -387,27 +462,77 @@ class ParallelSubAgentService:
             },
         }
 
+    async def run(
+        self,
+        *,
+        user_id: str,
+        parent_agent_id: str,
+        parent_session_id: str,
+        context_summary: str,
+        tasks: list[dict[str, Any]],
+        db: AsyncSession,
+        on_event: Callable[[dict[str, Any]], Awaitable[None] | None] | None = None,
+        safe_only: bool = False,
+        runtime_authorized: bool = False,
+        allow_non_spawnable_target: bool = False,
+        workdir_root: Path | None = None,
+        approved_tool_calls: list[dict[str, Any]] | None = None,
+        control_check: Callable[[], Awaitable[str | None] | str | None] | None = None,
+        max_rounds: int | None = None,
+    ) -> dict[str, Any]:
+        """prepare + execute 的组合便捷入口（供超频/会诊/scout/Goal 等既有调用方使用）。"""
+        prepared = await self.prepare(
+            user_id=user_id,
+            context_summary=context_summary,
+            tasks=tasks,
+            db=db,
+            safe_only=safe_only,
+            runtime_authorized=runtime_authorized,
+            allow_non_spawnable_target=allow_non_spawnable_target,
+            workdir_root=workdir_root,
+        )
+        if isinstance(prepared, dict):  # 校验拒绝信封
+            return prepared
+        return await self.execute(
+            prepared,
+            user_id=user_id,
+            parent_agent_id=parent_agent_id,
+            parent_session_id=parent_session_id,
+            on_event=on_event,
+            approved_tool_calls=approved_tool_calls,
+            control_check=control_check,
+            max_rounds=max_rounds,
+        )
+
     # --- 校验 ---
 
     @staticmethod
     def _validate_tasks(tasks: Any, max_parallel: int) -> list[dict[str, Any]] | dict[str, Any]:
         if not isinstance(tasks, list) or not tasks:
-            return ParallelSubAgentService._error("tasks 必须为非空列表")
+            return ParallelSubAgentService._error(
+                "tasks 必须为非空列表", code="SUBAGENT_INVALID_TASKS"
+            )
         if len(tasks) > max_parallel:
             return ParallelSubAgentService._error(
-                f"单次 fan-out 最多 {max_parallel} 个子任务（SUBAGENT_MAX_PARALLEL）"
+                f"单次 fan-out 最多 {max_parallel} 个子任务（SUBAGENT_MAX_PARALLEL）",
+                code="SUBAGENT_MAX_PARALLEL",
             )
         normalized: list[dict[str, Any]] = []
         for index, item in enumerate(tasks, start=1):
             if not isinstance(item, dict):
-                return ParallelSubAgentService._error(f"子任务 #{index} 必须是对象")
+                return ParallelSubAgentService._error(
+                    f"子任务 #{index} 必须是对象", code="SUBAGENT_INVALID_TASKS"
+                )
             agent_id = str(item.get("agent_id") or "").strip()
             task = str(item.get("task") or "").strip()
             if not agent_id or not task:
-                return ParallelSubAgentService._error(f"子任务 #{index} 缺少 agent_id 或 task")
+                return ParallelSubAgentService._error(
+                    f"子任务 #{index} 缺少 agent_id 或 task", code="SUBAGENT_INVALID_TASKS"
+                )
             if len(task) > _TASK_INSTRUCTION_MAX_CHARS:
                 return ParallelSubAgentService._error(
-                    f"子任务 #{index} 的指令超过 {_TASK_INSTRUCTION_MAX_CHARS} 字"
+                    f"子任务 #{index} 的指令超过 {_TASK_INSTRUCTION_MAX_CHARS} 字",
+                    code="SUBAGENT_INVALID_TASKS",
                 )
             normalized_item: dict[str, Any] = {"agent_id": agent_id, "task": task}
             if item.get("model_id"):
@@ -976,9 +1101,7 @@ class ParallelSubAgentService:
                     default=str,
                 )
                 tool_call_signatures.append(tool_signature)
-                if len(tool_call_signatures) >= _MAX_DUPLICATE_TOOL_CALLS and len(
-                    tool_call_signatures
-                ) >= _MAX_DUPLICATE_TOOL_CALLS and all(
+                if len(tool_call_signatures) >= _MAX_DUPLICATE_TOOL_CALLS and all(
                     signature == tool_call_signatures[-1]
                     for signature in tool_call_signatures[-_MAX_DUPLICATE_TOOL_CALLS :]
                 ):
@@ -1519,9 +1642,9 @@ class ParallelSubAgentService:
         return view
 
     @staticmethod
-    def _error(message: str) -> dict[str, Any]:
+    def _error(message: str, *, code: str = "SUBAGENT_ERROR") -> dict[str, Any]:
         return {
             "success": False,
-            "llm_payload": {"success": False, "error": message},
-            "ui_payload": {"error": message},
+            "llm_payload": {"success": False, "error": message, "code": code},
+            "ui_payload": {"error": message, "code": code},
         }

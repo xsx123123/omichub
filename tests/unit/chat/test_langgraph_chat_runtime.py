@@ -55,7 +55,7 @@ async def _stream_chunks(
         "deep_thinking": False,
         "active_mcp_servers": [],
         "mcp_client": SimpleNamespace(),
-        "tool_context": SimpleNamespace(agent_id="agent-1"),
+        "tool_context": SimpleNamespace(agent_id="agent-1", extra={}),
     }
     defaults.update(overrides)
     return [
@@ -111,7 +111,7 @@ async def test_langgraph_runtime_error_stream_emits_failed_terminal_and_done(
             deep_thinking=False,
             active_mcp_servers=[],
             mcp_client=SimpleNamespace(),
-            tool_context=SimpleNamespace(agent_id="agent-1"),
+            tool_context=SimpleNamespace(agent_id="agent-1", extra={}),
         ),
     )
 

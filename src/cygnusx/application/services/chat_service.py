@@ -59,6 +59,7 @@ from cygnusx.application.services.chat.configuration import (
 )
 from cygnusx.application.services.chat.direct_chat_entrypoint import DirectChatEntrypoint
 from cygnusx.application.services.chat.dto_support import ChatDtoSupport
+from cygnusx.application.services.chat.fanout_admission import FanoutAdmission
 from cygnusx.application.services.chat.next_step_suggestions import suggestions_metadata
 from cygnusx.application.services.chat.overdrive_control import (
     OVERDRIVE_SUMMARY_SYSTEM_PROMPT,
@@ -333,7 +334,7 @@ USER_FACING_CHINESE_PROMPT_SUFFIX = """## 面向用户的语言
 
 MULTI_AGENT_SYSTEM_PROMPT_SUFFIX = """## Multi-agent 协作模式
 
-当前会话已开启 multi-agent 协作。对于可拆成 2–5 个彼此独立的专业子任务，应优先调用
+当前会话已开启 multi-agent 协作。对于可拆成 2–4 个彼此独立的专业子任务，应优先调用
 `parallel_subagents` 并行分派、等待汇总后给出统一结论；不要为了简单问答而无意义拆分。
 
 当用户明确要求跨角色协作、人工审批、长耗时流程执行或可审计交付，且项目、流程与交付物
@@ -375,7 +376,7 @@ ROUTER_SYSTEM_PROMPT = """你是星尘 AI，平台唯一的任务分派入口。
 2. 禁止输出思考过程、复述用户消息、候选清单、寒暄、emoji 或面向用户的解释；第一个字符必须是 {{。
 3. agent_id 必须来自运行时候选目录；reason 用一句中文简述分派理由。
 4. 当用户请求明显横跨两个以上专业阶段时，选择第一阶段最合适的专家，并将 expect_handoff 设为 true；它仅供审计，不改变本次分派。
-5. 出现 2–5 个相互独立的任务（同时、分别、并行、一起检查）→ fanout，并给出可执行的 fanout_tasks；需要多角度评估“合理吗/怎么解读/设计行不行”→ consult；正式执行、审批、交付、归档、给客户→ case；运行分钟到小时级管道→ dag；点名其他专家或当前领域不匹配→ transfer。
+5. 出现 2–4 个相互独立的任务（同时、分别、并行、一起检查）→ fanout，并给出可执行的 fanout_tasks；需要多角度评估“合理吗/怎么解读/设计行不行”→ consult；正式执行、审批、交付、归档、给客户→ case；运行分钟到小时级管道→ dag；点名其他专家或当前领域不匹配→ transfer。
 6. `case` 或 `dag` 必须要求用户明确表达真实执行、提交、运行、交付或归档意图；仅仅出现“单细胞、转录组、差异基因、样本、数据、流程”等领域词，不能判为 `case` 或 `dag`。
 7. “我想了解方案”“我想找出差异”“这个结果怎么解释”“帮我设计分析”这类需求，默认是 `chat` 或 `consult`；先由专家完成 intake 和方案沟通，不代表已经授权真实计算。
 8. 领域词只用于选择合适的专家，不用于直接决定协作模式。比如“我有 6 个样本的小鼠单细胞数据，想比较两个 group 的细胞类型和差异基因”应优先路由到单细胞/通用专家，但 collaboration_intent 应为 `chat` 或 `consult`，不能仅因“单细胞”创建流程型 Case。
@@ -4100,6 +4101,9 @@ class ChatService(
                         f"{system_prompt}\n\n## 已完成的并行子任务结果\n{fanout_payload}\n"
                         "请基于这些结果给出统一、可核验的结论，不要重复执行同一批子任务。"
                     ).strip()
+                    # 硬护栏：路由预执行占用本轮 fan-out 额度，模型侧再次调用将被准入拒绝，
+                    # 不再仅靠提示词约束（防同轮双派）。
+                    tool_context.extra["fanout_preexecuted"] = True
                     yield ChatChunk(
                         type="collaboration_fanout",
                         metadata={
@@ -4295,8 +4299,13 @@ class ChatService(
                 round_reasoning = ""
                 round_tool_calls: list[dict[str, Any]] = []
                 round_checkpoint_requested = False
-                # 父单轮工具回合内 fan-out 调用计数（subagent_max_children_per_message 护栏）
-                subagent_calls_this_round = 0
+                # 父单轮工具回合内 fan-out 准入（validate 先于 reserve：
+                # 校验拒绝不占配额；统一路由预执行已占用本轮额度）
+                fanout_admission = FanoutAdmission(
+                    max_accepted_per_round=get_settings().subagent_max_children_per_message
+                )
+                if tool_context.extra.get("fanout_preexecuted"):
+                    fanout_admission.mark_preexecuted()
 
                 llm_messages, context_compressed, tokens_before = await self._compress_context_if_needed(
                     llm_messages,
@@ -4552,7 +4561,9 @@ class ChatService(
                         }
                     elif is_subagent_tool:
                         # 并行子 Agent fan-out：mas_plan_preview 同款特判直调，不经
-                        # ToolBridge._package（其 llm_payload 3KB 上限会截断汇总结果）
+                        # ToolBridge._package（其 llm_payload 3KB 上限会截断汇总结果）。
+                        # 准入顺序：校验（prepare）先于配额占用（try_commit）与 started 事件，
+                        # 校验拒绝不消耗单轮额度、不向前端发出"执行中"卡片。
                         if tool_context.extra.get("agentteams_case_id"):
                             limit_error = (
                                 "当前会话已绑定 AgentTeams Case；复杂协作由 Case Work Item 编排，"
@@ -4565,95 +4576,221 @@ class ChatService(
                                     "ui_payload": {"error": limit_error},
                                 },
                             }
-                        elif (
-                            subagent_calls_this_round
-                            >= get_settings().subagent_max_children_per_message
-                        ):
-                            limit_error = (
-                                "本轮已执行过子 Agent 并行分派，请先消化汇总结果再决定下一步"
-                            )
-                            result = {
-                                "success": False,
-                                "result": {
-                                    "llm_payload": {"success": False, "error": limit_error},
-                                    "ui_payload": {"error": limit_error},
-                                },
-                            }
                         else:
-                            subagent_calls_this_round += 1
                             fanout_tasks = [
                                 item for item in (args.get("tasks") or []) if isinstance(item, dict)
                             ]
-                            yield ChatChunk(
-                                type="subagents",
-                                metadata={
-                                    "phase": "started",
-                                    "tool_call_id": tc.get("id", ""),
-                                    "tasks": [
-                                        {
-                                            "index": fanout_index,
-                                            "agent_id": str(item.get("agent_id") or ""),
-                                            "task": str(item.get("task") or "")[:120],
-                                        }
-                                        for fanout_index, item in enumerate(fanout_tasks, start=1)
-                                    ],
-                                },
-                            )
-                            if tool_context.extra.get("goal_id"):
-                                from cygnusx.application.services.goal_adapters.fanout_adapter import (
-                                    GoalFanoutAdapter,
-                                )
+                            policy_reason = fanout_admission.check_preexecuted()
+                            if policy_reason is None:
+                                policy_reason = fanout_admission.begin_validation()
+                            fanout_envelope: dict[str, Any] | None = None
+                            if policy_reason is not None:
+                                result = {
+                                    "success": False,
+                                    "result": {
+                                        "llm_payload": {"success": False, "error": policy_reason},
+                                        "ui_payload": {"error": policy_reason},
+                                    },
+                                }
+                            elif tool_context.extra.get("goal_id"):
+                                # Goal 会话：适配器自带持久化幂等，校验在其内部完成
+                                commit_reason = fanout_admission.try_commit()
+                                if commit_reason is not None:
+                                    result = {
+                                        "success": False,
+                                        "result": {
+                                            "llm_payload": {
+                                                "success": False,
+                                                "error": commit_reason,
+                                            },
+                                            "ui_payload": {"error": commit_reason},
+                                        },
+                                    }
+                                else:
+                                    from cygnusx.application.services.goal_adapters.fanout_adapter import (
+                                        GoalFanoutAdapter,
+                                    )
 
-                                fanout_envelope = await GoalFanoutAdapter().execute(
-                                    context_summary=str(args.get("context_summary") or ""),
-                                    tasks=fanout_tasks,
-                                    context=tool_context,
-                                )
-                            else:
-                                from cygnusx.application.services.parallel_subagent_tool_service import (
-                                    ParallelSubAgentToolService,
-                                )
-
-                                fanout_envelope = (
-                                    await ParallelSubAgentToolService().run_parallel_subagents(
+                                    yield ChatChunk(
+                                        type="subagents",
+                                        metadata={
+                                            "phase": "started",
+                                            "tool_call_id": tc.get("id", ""),
+                                            "tasks": [
+                                                {
+                                                    "index": fanout_index,
+                                                    "agent_id": str(item.get("agent_id") or ""),
+                                                    "task": str(item.get("task") or "")[:120],
+                                                }
+                                                for fanout_index, item in enumerate(
+                                                    fanout_tasks, start=1
+                                                )
+                                            ],
+                                        },
+                                    )
+                                    fanout_envelope = await GoalFanoutAdapter().execute(
                                         context_summary=str(args.get("context_summary") or ""),
                                         tasks=fanout_tasks,
                                         context=tool_context,
                                     )
+                            else:
+                                from cygnusx.application.services.parallel_subagent_service import (
+                                    ParallelSubAgentService,
+                                    subagent_child_event_metadata,
                                 )
-                            result = {
-                                "success": bool(fanout_envelope.get("success")),
-                                "result": {
-                                    "llm_payload": fanout_envelope.get("llm_payload"),
-                                    "ui_payload": fanout_envelope.get("ui_payload"),
-                                },
-                            }
-                            yield ChatChunk(
-                                type="subagents",
-                                metadata={
-                                    "phase": "aggregated",
-                                    "tool_call_id": tc.get("id", ""),
-                                    "success": bool(fanout_envelope.get("success")),
-                                    "summary": str(
-                                        (fanout_envelope.get("llm_payload") or {}).get("summary")
-                                        or ""
-                                    ),
-                                    "progress": (fanout_envelope.get("ui_payload") or {}).get(
-                                        "progress"
+
+                                prepared_fanout = await ParallelSubAgentService().prepare(
+                                    user_id=user_id,
+                                    context_summary=str(args.get("context_summary") or ""),
+                                    tasks=fanout_tasks,
+                                    db=self._db,
+                                    safe_only=bool(tool_context.extra.get("goal_safe_only")),
+                                )
+                                if isinstance(prepared_fanout, dict):
+                                    # 校验拒绝：不占配额，通知前端呈现"未启动"而非幽灵卡片
+                                    fanout_admission.mark_rejected()
+                                    rejection_payload = prepared_fanout.get("ui_payload") or {}
+                                    yield ChatChunk(
+                                        type="subagents",
+                                        metadata={
+                                            "phase": "rejected",
+                                            "tool_call_id": tc.get("id", ""),
+                                            "code": str(rejection_payload.get("code") or ""),
+                                            "reason": str(rejection_payload.get("error") or ""),
+                                        },
                                     )
-                                    or [],
-                                },
-                            )
-                            fanout_ask = _fanout_ask_request(fanout_envelope)
-                            if fanout_ask is not None:
-                                stop_after_tools = True
+                                    result = {"success": False, "result": prepared_fanout}
+                                else:
+                                    commit_reason = fanout_admission.try_commit()
+                                    if commit_reason is not None:
+                                        result = {
+                                            "success": False,
+                                            "result": {
+                                                "llm_payload": {
+                                                    "success": False,
+                                                    "error": commit_reason,
+                                                },
+                                                "ui_payload": {"error": commit_reason},
+                                            },
+                                        }
+                                    else:
+                                        yield ChatChunk(
+                                            type="subagents",
+                                            metadata={
+                                                "phase": "started",
+                                                "tool_call_id": tc.get("id", ""),
+                                                "tasks": [
+                                                    {
+                                                        "index": fanout_index,
+                                                        "agent_id": child.item["agent_id"],
+                                                        "name": str(
+                                                            getattr(
+                                                                getattr(child.ctx, "agent", None),
+                                                                "name",
+                                                                "",
+                                                            )
+                                                            or child.item["agent_id"]
+                                                        ),
+                                                        "task": str(child.item.get("task") or "")[
+                                                            :120
+                                                        ],
+                                                    }
+                                                    for fanout_index, child in enumerate(
+                                                        prepared_fanout.children, start=1
+                                                    )
+                                                ],
+                                            },
+                                        )
+                                        # 逐子任务事件：子循环 worker_started/finished 等
+                                        # 经队列透出为 subagents child_* chunk（仿超频
+                                        # event_queue 模式的精简版，无停滞检测与控制指令）
+                                        child_event_queue: asyncio.Queue[dict[str, Any]] = (
+                                            asyncio.Queue()
+                                        )
+
+                                        async def _on_fanout_child_event(
+                                            event: dict[str, Any],
+                                            _queue: asyncio.Queue[dict[str, Any]] = child_event_queue,
+                                        ) -> None:
+                                            await _queue.put(event)
+
+                                        execute_task = asyncio.create_task(
+                                            ParallelSubAgentService().execute(
+                                                prepared_fanout,
+                                                user_id=user_id,
+                                                parent_agent_id=str(ctx.agent.agent_id),
+                                                parent_session_id=current_session_id,
+                                                on_event=_on_fanout_child_event,
+                                            )
+                                        )
+                                        while (
+                                            not execute_task.done()
+                                            or not child_event_queue.empty()
+                                        ):
+                                            try:
+                                                child_event = await asyncio.wait_for(
+                                                    child_event_queue.get(), timeout=0.1
+                                                )
+                                            except TimeoutError:
+                                                continue
+                                            child_metadata = subagent_child_event_metadata(
+                                                child_event
+                                            )
+                                            if child_metadata is not None:
+                                                yield ChatChunk(
+                                                    type="subagents",
+                                                    metadata={
+                                                        "tool_call_id": tc.get("id", ""),
+                                                        **child_metadata,
+                                                    },
+                                                )
+                                        try:
+                                            fanout_envelope = await execute_task
+                                        except Exception as exc:  # noqa: BLE001 - 失败隔离
+                                            logger.warning("fan-out 执行异常: %s", exc)
+                                            fanout_envelope = ParallelSubAgentService._error(
+                                                f"并行子 Agent 执行失败：{exc}",
+                                                code="SUBAGENT_EXECUTION_ERROR",
+                                            )
+                            if fanout_envelope is not None:
+                                result = {
+                                    "success": bool(fanout_envelope.get("success")),
+                                    "result": {
+                                        "llm_payload": fanout_envelope.get("llm_payload"),
+                                        "ui_payload": fanout_envelope.get("ui_payload"),
+                                    },
+                                }
                                 yield ChatChunk(
-                                    type="ask_request",
+                                    type="subagents",
                                     metadata={
+                                        "phase": "aggregated",
                                         "tool_call_id": tc.get("id", ""),
-                                        **fanout_ask,
+                                        "run_id": (fanout_envelope.get("ui_payload") or {}).get(
+                                            "fanout_run_id"
+                                        ),
+                                        "success": bool(fanout_envelope.get("success")),
+                                        "summary": str(
+                                            (fanout_envelope.get("llm_payload") or {}).get(
+                                                "summary"
+                                            )
+                                            or ""
+                                        ),
+                                        "progress": (
+                                            fanout_envelope.get("ui_payload") or {}
+                                        ).get("progress")
+                                        or [],
                                     },
                                 )
+                                fanout_ask = _fanout_ask_request(fanout_envelope)
+                                if fanout_ask is not None:
+                                    stop_after_tools = True
+                                    yield ChatChunk(
+                                        type="ask_request",
+                                        metadata={
+                                            "tool_call_id": tc.get("id", ""),
+                                            **fanout_ask,
+                                        },
+                                    )
                     elif is_agentteams_case_tool:
                         from cygnusx.application.services.agentteams_case_tool_service import (
                             AgentTeamsCaseToolService,

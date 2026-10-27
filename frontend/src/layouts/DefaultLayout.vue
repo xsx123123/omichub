@@ -16,6 +16,7 @@ import {
   WarningOutline, BriefcaseOutline, ServerOutline, ArchiveOutline,
 } from '@vicons/ionicons5'
 import CookieBalanceBadge from '@/components/CookieBalanceBadge.vue'
+import PlatformBrandLogo from '@/components/brand/PlatformBrandLogo.vue'
 import NotAuthorized from '@/components/NotAuthorized.vue'
 import NotificationDrawer from '@/components/NotificationDrawer.vue'
 import OnboardingPopup from '@/components/OnboardingPopup.vue'
@@ -463,10 +464,7 @@ const UserAvatar = () => {
           </NIcon>
         </NButton>
         <div class="logo-block">
-          <div class="logo-icon">
-            <img class="logo-image" src="/cygnusx-logo.png" width="40" height="40" alt="" aria-hidden="true" />
-          </div>
-          <span class="logo-text">CygnusX</span>
+          <PlatformBrandLogo />
         </div>
         <div class="top-nav-divider" />
         <nav class="top-nav-menu">
@@ -850,8 +848,7 @@ const UserAvatar = () => {
         <NDrawerContent body-content-style="padding: 0">
           <div class="mobile-sider">
             <div class="mobile-logo">
-              <img class="mobile-logo-icon" src="/cygnusx-logo.png" width="40" height="40" alt="" aria-hidden="true" />
-              <span class="mobile-logo-text">CygnusX</span>
+              <PlatformBrandLogo />
             </div>
             <nav class="mobile-nav-group">
               <RouterLink
@@ -1048,28 +1045,6 @@ const UserAvatar = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logo-image {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.logo-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--neutral-text-1);
 }
 
 .top-nav-divider {
@@ -1720,20 +1695,6 @@ const UserAvatar = () => {
   align-items: center;
   gap: 10px;
   margin-bottom: 20px;
-}
-
-.mobile-logo-icon {
-  display: block;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  object-fit: contain;
-}
-
-.mobile-logo-text {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--neutral-text-1);
 }
 
 .mobile-nav-group {

@@ -32,11 +32,17 @@
 - 改法：编排/规划轮走 deepseek-v4-flash 等快模型，最终汇总才上大模型；多 API key 按 weight 并行均衡；收紧 max_tokens
 - 预期：p95 16s → <8s
 
-### 4. DeepSeek context caching 前缀稳定化【配合 #2】
+### 4. DeepSeek context caching 前缀稳定化【配合 #2】✅ 2026-10-28 `7c62016c`（验证面）+ 构造审查
 - 现状：DeepSeek API 自动磁盘缓存要求前缀 byte 稳定；agent_context_reinjected 反复重注入可能破坏前缀命中
 - 改法：system prompt + tools 定义顺序固定，可变内容（对话历史）置后；可通过 ai_provider_configs.extra_params
   透传参数，用响应头 cache hit 字段验证命中率
 - 预期：prefill 命中后单轮快 2~5 倍
+- 构造审查结论：Legacy 循环 system_prompt/tools 每条消息装配一次、轮间不变，messages 仅尾部追加，
+  前缀天然稳定；`_compress_context_if_needed` 压缩轮会重写早期历史（预期内失效）；重注入只追加尾部
+- 已落地（命中率验证面）：`ai_call_metrics` 新增 cached_tokens 列（迁移 z5a6b7c8d9e0），
+  record_ai_call 落库，daily_trend/model_breakdown 聚合 cache_hit_ratio——
+  管理端 `/admin/ai-metrics/trend?model=deepseek` 可直接观察命中率，验证前缀稳定化收益
+- 待做：线上观测命中率；若长期 <30% 再排查 tools 顺序/元数据抖动
 
 ### 5. bridge work-items 403 鉴权修复【1 天】◐ 2026-10-28 防御侧已落地 `db43d5fe`
 - 现状：agentteams professional-pool worker 轮询 `GET /v1/work-items/assigned` 持续 403

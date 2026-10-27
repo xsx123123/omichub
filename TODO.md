@@ -38,20 +38,29 @@
   透传参数，用响应头 cache hit 字段验证命中率
 - 预期：prefill 命中后单轮快 2~5 倍
 
-### 5. bridge work-items 403 鉴权修复【1 天】
+### 5. bridge work-items 403 鉴权修复【1 天】◐ 2026-10-28 防御侧已落地 `db43d5fe`
 - 现状：agentteams professional-pool worker 轮询 `GET /v1/work-items/assigned` 持续 403
   （30 分钟 9,460 次，约 5 次/秒），工作项未被正常认领，4 路 fanout 实际走降级路径
 - 改法：修复 worker 鉴权，或 403 时指数退避；或 fanout 改 in-process asyncio.gather
   （参考 chat_service.py:2011 fanout_task）
 - 预期：4 路子 agent 真正并行执行，并行测试可测出真实加速比
+- 已落地（防御侧）：`production_runner.main()` 对 403 指数退避（5s 起步倍增至
+  `AGENTTEAMS_WORKER_AUTH_FAILURE_BACKOFF_MAX_SECONDS`，默认 300s），成功一轮即恢复；
+  403 风暴（5/s）在鉴权修好前被压制
+- 待做（根因侧）：worker 身份/token 与 Bridge 侧 `worker.env` 配置不一致的排查修复；
+  修复后 4 路 fanout 真实并行验收
 
-### 6. uvicorn workers 2→4 + uvloop 确认【运维】
+### 6. uvicorn workers 2→4 + uvloop 确认【运维】✅ 2026-10-28 `aff39e32`
 - 现状：deploy/docker/docker-compose.yml:115 `--workers 2`，SSE 长连接占满 worker，并发上限低
 - 改法：chat 为 IO 密集型，workers 提到 4；确认 uvloop 已启用
+- 落地：dev compose workers 2→4（与 prod/cross-web 既有 4 对齐）+ 显式 `--loop uvloop`
+  （uvloop 0.22.1 本就在锁文件，auto 探测会选用，显式声明防漂移）
 
-### 7. swap + 磁盘治理【运维】
+### 7. swap + 磁盘治理【运维】◐ 2026-10-28 已排查（`aff39e32` 记录）
 - 现状：swap 8G 已用 7.9G（历史内存压力痕迹）；磁盘 92%（148G 剩余）
-- 改法：找出 swap 占用的进程（大概率是某容器）并处理；清理磁盘
+- 排查结论：swap 7.8G 为**历史残留**——全部存活进程 VmSwap 合计 <40MB（仅 zsh 零碎），
+  内存 93G/空闲 70G，无活跃压力；可回收方式：swapoff && swapon（需 root，短暂抖动）
+- 待做：磁盘清理（146G 可用，维持原建议找大文件）
 
 ### 8. AgentContextBuilder 装配并行化【中等改动】◐ 2026-10-28 `01ef80b3`（会诊路径）
 - 现状：记忆检索、知识检索、工具 schema、site_settings/agent_templates/ai_provider_configs 查询

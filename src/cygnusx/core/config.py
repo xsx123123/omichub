@@ -206,6 +206,9 @@ class Settings(BaseSettings):
     # 共享 LLM 出站 httpx client 的连接池上限（shared_http.py）；keep-alive 复用避免每轮重握手。
     llm_http_max_connections: int = 100
     llm_http_max_keepalive_connections: int = 20
+    # 流式生成期间 chat_messages 落库节流间隔（秒）：SSE 仍逐 token 出站，
+    # 写库按时间窗口合并，避免高频全量重写整条 content（Session 加速优化）。
+    chat_streaming_write_interval_seconds: float = 0.4
     # ===== 联网检索优化 =====
     web_search_refinement_cache_ttl_seconds: int = 86400
     web_search_semantic_rerank_enabled: bool = True

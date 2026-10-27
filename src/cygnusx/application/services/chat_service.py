@@ -4042,7 +4042,11 @@ class ChatService(
 
         full_content = ""
         web_sources: list[dict[str, Any]] = list(presearch_sources)
-        update_counter = 0
+        # 写库按时间窗口节流（SSE 出站不变），避免高频全量重写整条 content。
+        streaming_write_interval = max(
+            0.0, get_settings().chat_streaming_write_interval_seconds
+        )
+        last_stream_write_at = time.monotonic()
         first_chunk_sent = False
         # 默认 100 轮；用户在弹窗中确认继续后前端传 extend_max_rounds=True 扩展到 1000 轮
         max_rounds = 1000 if extend_max_rounds else 100
@@ -4351,8 +4355,9 @@ class ChatService(
                             continue
                         round_text += chunk.content
                         full_content += chunk.content
-                        update_counter += 1
-                        if update_counter % 5 == 0:
+                        now = time.monotonic()
+                        if now - last_stream_write_at >= streaming_write_interval:
+                            last_stream_write_at = now
                             await self.update_message_content(
                                 ai_message.message_id, full_content, "streaming"
                             )
@@ -5827,6 +5832,19 @@ class ChatService(
                         agent_id=execution_agent_id,
                         round_number=round_number,
                         execution_path=execution_path,
+                        tool_call_count=len(round_tool_calls),
+                    )
+                    # 与 langgraph_nodes 轮级回灌对齐：reinjected 后必须紧接
+                    # agent_turn_continued，否则下一轮首个 text chunk 起每个事件
+                    # 都会被事件序列校验判违规（会话卡顿排查中 760 条/分钟警告风暴）。
+                    yield execution_chunk(
+                        "agent_turn_continued",
+                        session_id=current_session_id,
+                        run_id=execution_run_id,
+                        agent_id=execution_agent_id,
+                        round_number=round_number + 1,
+                        execution_path=execution_path,
+                        reason="tool_results_reinjected",
                         tool_call_count=len(round_tool_calls),
                     )
 

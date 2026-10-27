@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 
@@ -883,7 +884,11 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
             )
 
         full_content = ""
-        update_counter = 0
+        # 写库按时间窗口节流（SSE 出站不变），避免高频全量重写整条 content。
+        streaming_write_interval = max(
+            0.0, get_settings().chat_streaming_write_interval_seconds
+        )
+        last_stream_write_at = time.monotonic()
         first_chunk_sent = False
         accumulated_usage: dict[str, Any] | None = None
         # 轮次上限与手写循环对齐：默认 100 轮；前端弹窗确认继续后传
@@ -1076,8 +1081,9 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                             continue
                         full_content += chunk.content
                         timeline_text_buffer += chunk.content
-                        update_counter += 1
-                        if update_counter % 5 == 0:
+                        now = time.monotonic()
+                        if now - last_stream_write_at >= streaming_write_interval:
+                            last_stream_write_at = now
                             await self._service.update_message_content(
                                 ai_message_id, full_content, "streaming"
                             )

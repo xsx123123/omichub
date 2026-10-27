@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field, replace
 
 from loguru import logger
@@ -13,6 +14,10 @@ from cygnusx.application.services.execution_events import (
 from cygnusx.core.config import Settings, get_settings
 from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
 
+# 同类违规警告的合并窗口（秒）：窗口内重复警告合并计数，窗口过期再输出一条汇总，
+# 避免已知问题刷爆日志（历史上 reinjected 序列缺陷曾达 760 条/分钟）。
+_VIOLATION_LOG_WINDOW_SECONDS = 60.0
+
 
 @dataclass
 class ChatEventService:
@@ -21,6 +26,7 @@ class ChatEventService:
     enforcement: str
     _events: list[ChatChunk] = field(default_factory=list)
     _download_call_ids: set[str] = field(default_factory=set)
+    _violation_log_state: dict[tuple[str, str], tuple[float, int]] = field(default_factory=dict)
 
     @classmethod
     def from_settings(cls, settings: Settings | None = None) -> ChatEventService:
@@ -72,4 +78,22 @@ class ChatEventService:
         if self.enforcement == "raise":
             raise exc
         if self.enforcement == "warn":
-            logger.warning("event_sequence_violation event_type={} reason={}", event_type, exc)
+            key = (event_type, str(exc))
+            now = time.monotonic()
+            state = self._violation_log_state.get(key)
+            if state is None:
+                self._violation_log_state[key] = (now, 0)
+                logger.warning("event_sequence_violation event_type={} reason={}", event_type, exc)
+                return
+            last_at, suppressed = state
+            if now - last_at >= _VIOLATION_LOG_WINDOW_SECONDS:
+                merged = f"（窗口期内抑制 {suppressed} 条同类警告）" if suppressed else ""
+                self._violation_log_state[key] = (now, 0)
+                logger.warning(
+                    "event_sequence_violation{} event_type={} reason={}",
+                    merged,
+                    event_type,
+                    exc,
+                )
+            else:
+                self._violation_log_state[key] = (last_at, suppressed + 1)

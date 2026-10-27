@@ -476,3 +476,61 @@ def test_production_worker_records_profile_failure_before_claim(monkeypatch) -> 
     assert not heartbeats
     assert failures and failures[0]["error"] == "malformed profile"
     assert claim_calls == [True]
+
+
+def test_production_worker_main_backs_off_exponential_on_403(monkeypatch) -> None:
+    """回归：Bridge 持续 403（鉴权被拒）时 main 循环指数退避至上限并在恢复后重置，
+    避免全速重试刷爆鉴权日志（实测 30 分钟 9,460 次 403）。"""
+    from types import SimpleNamespace
+    from urllib.error import HTTPError
+
+    import pytest
+
+    calls: list[int] = []
+    sleeps: list[float] = []
+
+    def fake_run_pool_once(_config):
+        calls.append(1)
+        round_number = len(calls)
+        if round_number <= 4:
+            raise HTTPError("http://bridge/v1/work-items/assigned", 403, "Forbidden", None, None)
+        if round_number == 5:
+            return [{"action": "idle", "identity": "agent-code"}]  # 成功 → 重置退避
+        if round_number == 6:
+            raise HTTPError("http://bridge/v1/work-items/assigned", 403, "Forbidden", None, None)
+        raise KeyboardInterrupt  # 终止无限循环
+
+    monkeypatch.setenv("AGENTTEAMS_BRIDGE_BASE_URL", "http://bridge:8080/v1")
+    monkeypatch.setenv("AGENTTEAMS_WORKER_IDENTITIES", "agent-code")
+    monkeypatch.setenv("AGENTTEAMS_AGENT_CODE_TOKEN", "code-token")
+    monkeypatch.setattr(production_runner, "run_pool_once", fake_run_pool_once)
+    monkeypatch.setattr(
+        production_runner, "time", SimpleNamespace(sleep=lambda seconds: sleeps.append(float(seconds)))
+    )
+
+    with pytest.raises(KeyboardInterrupt):
+        production_runner.main()
+
+    # 403 轮：5→10→20→40 倍增；第 5 轮成功后有一次常规轮询 sleep(5)；
+    # 第 6 轮再次 403 时退避已重置回 5（而非 80），证明重置生效。
+    assert sleeps == [5.0, 10.0, 20.0, 40.0, 5.0, 5.0]
+
+
+def test_production_worker_pool_config_loads_auth_failure_backoff() -> None:
+    config = production_runner.load_pool_config(
+        {
+            "AGENTTEAMS_BRIDGE_BASE_URL": "http://bridge:8080/v1",
+            "AGENTTEAMS_WORKER_IDENTITIES": "agent-code",
+            "AGENTTEAMS_AGENT_CODE_TOKEN": "code-token",
+            "AGENTTEAMS_WORKER_AUTH_FAILURE_BACKOFF_MAX_SECONDS": "30",
+        }
+    )
+    # 下限不低于 poll_seconds（默认 5）
+    assert config.auth_failure_backoff_max_seconds == 30.0
+    assert production_runner.load_pool_config(
+        {
+            "AGENTTEAMS_BRIDGE_BASE_URL": "http://bridge:8080/v1",
+            "AGENTTEAMS_WORKER_IDENTITIES": "agent-code",
+            "AGENTTEAMS_AGENT_CODE_TOKEN": "code-token",
+        }
+    ).auth_failure_backoff_max_seconds == 300.0

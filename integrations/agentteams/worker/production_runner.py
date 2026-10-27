@@ -49,6 +49,8 @@ class ProductionWorkerPoolConfig:
     workers: tuple[ProductionWorkerConfig, ...]
     poll_seconds: float
     max_concurrent: int = 4
+    # 403（凭据被 Bridge 拒绝）时的指数退避上限秒数；修复鉴权前避免全速重试刷爆日志。
+    auth_failure_backoff_max_seconds: float = 300.0
 
 
 def _identity_token(identity: str, identities: str) -> str:
@@ -129,6 +131,12 @@ def load_pool_config(environ: dict[str, str] | None = None) -> ProductionWorkerP
         poll_seconds=poll_seconds,
         max_concurrent=max(
             1, min(int(values.get("AGENTTEAMS_WORKER_MAX_CONCURRENT", "4")), 32)
+        ),
+        auth_failure_backoff_max_seconds=max(
+            poll_seconds,
+            float(
+                values.get("AGENTTEAMS_WORKER_AUTH_FAILURE_BACKOFF_MAX_SECONDS", "300")
+            ),
         ),
     )
 
@@ -346,12 +354,29 @@ def main() -> int:
     except (TypeError, ValueError) as exc:
         print(f"production worker configuration failed: {exc}", flush=True)
         return 2
+    # 鉴权被 Bridge 持续拒绝时指数退避（poll_seconds 起步倍增至上限），
+    # 避免 5/s 全速重试刷爆 Bridge 鉴权日志（实测 30 分钟 9,460 次 403）；
+    # 任一轮成功即恢复全速。
+    backoff_seconds = float(config.poll_seconds)
     while True:
         try:
             print(
                 json.dumps(run_pool_once(config), ensure_ascii=False, separators=(",", ":")), flush=True
             )
-        except (HTTPError, URLError, RuntimeError, json.JSONDecodeError) as exc:
+            backoff_seconds = float(config.poll_seconds)
+        except HTTPError as exc:
+            if exc.code == 403:
+                print(
+                    f"production worker auth rejected (403), backing off {backoff_seconds:.0f}s: {exc}",
+                    flush=True,
+                )
+                time.sleep(backoff_seconds)
+                backoff_seconds = min(
+                    backoff_seconds * 2, float(config.auth_failure_backoff_max_seconds)
+                )
+                continue
+            print(f"production worker execution failed: {exc}", flush=True)
+        except (URLError, RuntimeError, json.JSONDecodeError) as exc:
             print(f"production worker execution failed: {exc}", flush=True)
         time.sleep(config.poll_seconds)
 

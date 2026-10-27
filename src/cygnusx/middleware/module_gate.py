@@ -12,10 +12,16 @@
 from __future__ import annotations
 
 from loguru import logger
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
+from cygnusx.application.services.request_identity import (
+    load_request_identity,
+)
+from cygnusx.application.services.request_identity import (
+    request_identity_scope as request_identity_scope,
+)
 from cygnusx.infrastructure.config.module_registry import ModuleEntry, get_module_registry
 
 # 命中被禁模块时的统一响应（与前端约定的错误契约）
@@ -38,7 +44,11 @@ def match_module_by_path(path: str, modules: list[ModuleEntry]) -> ModuleEntry |
 class ModuleGateMiddleware(BaseHTTPMiddleware):
     """模块权限拦截中间件 — 受管控模块 API 的按用户授权守卫"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        with request_identity_scope():
+            return await self._dispatch(request, call_next)
+
+    async def _dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # WebSocket 由端点自行鉴权，放行
         if request.scope["type"] == "websocket":
             return await call_next(request)
@@ -74,18 +84,18 @@ class ModuleGateMiddleware(BaseHTTPMiddleware):
         """返回 True 表示拦截。任何异常降级放行并记日志（不阻断正常业务）。"""
         from uuid import UUID
 
-        from cygnusx.infrastructure.database.models.user import UserModel
         from cygnusx.infrastructure.database.session import get_session_factory
 
         try:
             factory = get_session_factory()
-            async with factory() as session:
-                user = await session.get(UserModel, UUID(user_id))
-                if user is None:
-                    return False
-                if user.role == "admin":
-                    return False
-                return module_key in (user.disabled_modules or [])
+            user = await load_request_identity(UUID(user_id), factory)
+            if user is None:
+                return False
+            if user.role == "admin":
+                return False
+            return module_key in user.disabled_modules
         except Exception as exc:
-            logger.warning(f"模块权限校验异常，降级放行 (user={user_id}, module={module_key}): {exc}")
+            logger.warning(
+                f"模块权限校验异常，降级放行 (user={user_id}, module={module_key}): {exc}"
+            )
             return False

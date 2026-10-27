@@ -7,9 +7,10 @@
 
 from __future__ import annotations
 
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.types import Receive, Scope, Send
 
 from cygnusx.core.config import get_settings
 
@@ -20,7 +21,17 @@ CONSUMING_ROUTES: tuple[tuple[str, str], ...] = (("POST", "/api/v1/tasks"),)
 class CookieRequiredMiddleware(BaseHTTPMiddleware):
     """饼干消费拦截中间件 — 消费类请求的账户状态守卫"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if (
+            scope["type"] != "http"
+            or not get_settings().enable_cookie_system
+            or not self._is_consuming_route(scope["method"], scope["path"])
+        ):
+            await self.app(scope, receive, send)
+            return
+        await super().__call__(scope, receive, send)
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         settings = get_settings()
         if not settings.enable_cookie_system:
             return await call_next(request)

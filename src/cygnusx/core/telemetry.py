@@ -242,6 +242,13 @@ def instrument_app(app: Any) -> None:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
         FastAPIInstrumentor.instrument_app(app)
+        from cygnusx.core.telemetry_routes import install_static_route_span_cache
+
+        install_static_route_span_cache(
+            app,
+            max_entries=settings.telemetry_route_cache_size,
+            max_key_chars=settings.telemetry_route_cache_max_key_chars,
+        )
     except Exception as exc:  # noqa: BLE001
         logger.warning(f"FastAPI 自动埋点失败: {exc}")
     global _httpx_instrumented

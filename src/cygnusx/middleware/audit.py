@@ -15,9 +15,10 @@ import re
 import uuid
 
 from loguru import logger
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.types import Receive, Scope, Send
 
 _WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
@@ -47,7 +48,15 @@ def _parse_resource(path: str) -> tuple[str | None, str | None]:
 class AuditMiddleware(BaseHTTPMiddleware):
     """写操作审计日志记录。"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        # Inactive paths do not need BaseHTTPMiddleware's task group and body relay.
+        # Keep the existing dispatch path for every operation that must be audited.
+        if scope["type"] != "http" or scope["method"] not in _WRITE_METHODS:
+            await self.app(scope, receive, send)
+            return
+        await super().__call__(scope, receive, send)
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # 仅审计写操作；非写直接放行，不增加开销
         if request.method not in _WRITE_METHODS:
             return await call_next(request)

@@ -660,6 +660,9 @@ class Settings(BaseSettings):
     # ===== 可观测性（OpenTelemetry：Trace / Log 关联 / Metrics）=====
     # 总开关；关闭后所有埋点退化为 noop，不产生任何导出开销。
     telemetry_enabled: bool = True
+    # Static OTel route labels only; zero disables caching. No responses or identities.
+    telemetry_route_cache_size: int = Field(default=1024, ge=0, le=16384)
+    telemetry_route_cache_max_key_chars: int = Field(default=2048, ge=64, le=8192)
     # OTLP gRPC 导出端点（如 http://otel-collector:4317）。为空时 traces 不导出
     # （debug 下打印到控制台），metrics 仍经 Prometheus /metrics 暴露。
     otel_exporter_endpoint: str = ""

@@ -155,7 +155,9 @@ async def test_dispatch_passes_anonymous(
 # _is_module_blocked：admin 跳过 / 命中禁用 / 异常降级
 # ------------------------------------------------------------------
 def _fake_user(role: str = "user", disabled: list[str] | None = None):
-    return SimpleNamespace(role=role, disabled_modules=disabled or [])
+    return SimpleNamespace(
+        role=role, disabled_modules=disabled or [], status="active", token_version=0
+    )
 
 
 class _FakeSession:

@@ -127,6 +127,17 @@ sequenceDiagram
 
 - **Log↔Trace 关联**：`core/logging.py` 的 `_telemetry_patch` 向每条日志注入 `trace_id`、`span_id`（取自当前 OpenTelemetry span）、`request_id`、`session_id`（取自 trace_context 的 ContextVar）；遥测缺失时仅写入空值，不影响日志本身。
 
+- **静态路由标签复用**：`core/telemetry.py` 保留官方 FastAPI instrumentation 创建的
+  中间件栈，`core/telemetry_routes.py` 为其默认 span 标签解析回调增加每应用、有限容量的
+  LRU。仅保存标准静态路由的 span 名与 `http.route`，每次请求仍执行路由、认证、业务、
+  span 创建和指标记录；响应与用户信息不在此缓存中。路由版本变化后清空；动态路径、
+  未知 URL、自定义匹配器或无法读取路由版本时调用原解析器。
+  `TELEMETRY_ROUTE_CACHE_SIZE` 默认 1024，设为 0 关闭；
+  `TELEMETRY_ROUTE_CACHE_MAX_KEY_CHARS` 默认 2048，超长键不缓存。
+  FastAPI 路由版本能力以运行时探测为准，不支持时保持原路径；升级框架/OTel 后需重跑
+  `tests/unit/core/test_telemetry_routes.py`。该候选代码已隔离实测，未重启生产服务发布；
+  容量与验证边界见 [Web 监控容量快照](CygnusX_web_telemetry_capacity.md)。
+
 - **Sink**：
   1. `sys.stdout`：带颜色可读格式，便于开发和容器日志查看。
   2. `/app/logs/cygnusx.log`：文本主日志，默认 50 MB 轮转、30 天保留、zip 压缩。

@@ -9,6 +9,7 @@ from fastapi import Depends, Header, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cygnusx.application.services.request_identity import load_request_identity
 from cygnusx.application.services.totp_service import MfaService
 from cygnusx.core.exceptions import AuthenticationError, AuthorizationError
 from cygnusx.core.security import decode_token
@@ -102,12 +103,11 @@ async def _authenticate_jwt(token: str) -> str:
     except ValueError as exc:
         raise AuthenticationError("令牌中用户信息无效") from exc
     factory = get_session_factory()
-    async with factory() as db:
-        user = await db.get(UserModel, uuid_val)
-        if user is None or user.status != "active":
-            raise AuthenticationError("用户不存在或已被禁用")
-        if payload.get("token_version") != user.token_version:
-            raise AuthenticationError("令牌已失效，请重新登录")
+    user = await load_request_identity(uuid_val, factory)
+    if user is None or user.status != "active":
+        raise AuthenticationError("用户不存在或已被禁用")
+    if payload.get("token_version") != user.token_version:
+        raise AuthenticationError("令牌已失效，请重新登录")
 
     return str(user_id)
 

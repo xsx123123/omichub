@@ -11,6 +11,16 @@
 
 用户有三种来源：自助注册（默认 `pending`，需管理员审批）、管理员直接创建（直接 `active`）、系统初始化创建首个管理员。平台没有邮件验证、密码找回、服务端登出与会话表；令牌吊销依赖 `users.token_version` 自增。
 
+HTTP 中间件在非活跃路径直接传递 ASGI：Audit 对非写方法、CookieRequired 对非消费
+请求/关闭计费功能时不建立 BaseHTTPMiddleware 响应体流转包装。写操作审计与真实消费
+守卫仍使用原 dispatch，不改变权限或计费语义。工作区改动、回归与隔离容量验证见
+[Web 容量优化快照](CygnusX_web_capacity_optimization.md)；现有运行 Web 尚未重启发布。
+
+模块门禁与 JWT 依赖另通过 `request_identity.py` 复用同请求、同事件循环、同会话工厂内的用户快照。
+每个请求仍读取已提交的数据库身份，JWT 类型/版本检查保留；门禁返回响应头后清空并
+失效上下文，延后子任务和其他事件循环重新查询。没有跨请求身份 TTL 缓存。
+候选代码边界、撤销验证和同机容量结果见[第三轮快照](CygnusX_web_request_identity_capacity.md)。
+
 ## 1. 总体架构
 
 ```mermaid

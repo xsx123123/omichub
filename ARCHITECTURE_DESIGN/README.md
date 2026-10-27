@@ -20,6 +20,16 @@
 
 ## 0. 这个架构文档目录如何发挥作用
 
+> Web / Celery 容量实测：[CygnusX_web_capacity_assessment.md](CygnusX_web_capacity_assessment.md)
+> （2026-10-27 运行快照：10/20/50/100 用户、入口限流、固定 100 RPS、Celery 对照；
+> 多 Web 与 10000+ RPS 为待实施/待验收目标，不是已达到的容量）。
+> 后续对照与同机多进程扩展：[CygnusX_web_capacity_optimization.md](CygnusX_web_capacity_optimization.md)
+> （中间件非活跃路径优化、1/2/4 进程实测、固定 500 RPS 短时通过；万级目标尚未通过）。
+> 请求内身份复用与 4/8/16 进程：[CygnusX_web_request_identity_capacity.md](CygnusX_web_request_identity_capacity.md)
+> （身份查询减少约 25%，固定 1000 RPS 短时通过；2000 与万级目标尚未通过）。
+> 静态路由监控标签优化：[CygnusX_web_telemetry_capacity.md](CygnusX_web_telemetry_capacity.md)
+> （同配置吞吐约增 8%，固定 1250 RPS 短时通过；1500/2000 与万级目标尚未通过）。
+
 `ARCHITECTURE_DESIGN` 是代码现状、修改规范和历史方案的文档索引层。开发者先依据本 README 按领域定位文档，再阅读对应的 as-built 基线或规范；修改代码时以代码、配置和迁移为事实来源，用架构文档解释模块边界、数据流、权限和验证门禁。`as-built` 文档描述当前实现，规范文档约束应该如何修改，提案/快照记录目标态或某一时点，`deprecated/` 只保留历史参考，不能覆盖活动基线。
 
 目录中的文档不是运行时注册表，也不会被 Agent 自动加载执行。它们通过索引、交叉引用和每份文档开头的模块作用说明帮助开发者从请求入口追到应用服务、领域逻辑、基础设施、数据库、队列和前端投影；每份文档的架构图展示组件关系，实现图展示一次请求或任务的时序。修改涉及多个边界时，先读总览和对应专项文档，再按文档内验证矩阵执行测试、迁移、镜像或前端门禁，并把新的事实回写到活动文档。

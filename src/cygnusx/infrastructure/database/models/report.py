@@ -74,6 +74,21 @@ class ReportModel(Base, TimestampMixin):
     report_kind: Mapped[str] = mapped_column(
         String(32), default="scientific", server_default="scientific", nullable=False
     )
+    # BioReport paths.json is the metadata and artifact index for native reports.
+    # user_id above is also the required owner binding represented by project.user_id.
+    report_schema_version: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    report_paths_json_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    project_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    project_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    project_client: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    project_species: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    genome_version: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    pipeline_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    analysis_date: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    stats: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    enrichment_summary: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    files_index: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    metadata_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     snapshot_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("report_snapshots.id", ondelete="RESTRICT"), nullable=True
     )

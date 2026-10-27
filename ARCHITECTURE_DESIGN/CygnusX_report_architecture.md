@@ -31,7 +31,7 @@ flowchart LR
 | 报告登记、版本、预览、下载 | `application/services/report_service.py`、`infrastructure/database/repositories/report_repository.py` |
 | ORM、迁移 | `infrastructure/database/models/report.py`、`alembic/versions/reportauditphase1_add_reproducible_report_tables.py` |
 | 异步、锁、恢复扫描 | `infrastructure/celery_app/tasks/reports.py`、`celery_app/celery.py` |
-| UI、轮询、鉴权下载 | `TaskDetailView.vue`、`ReportsView.vue`、`ReportPreviewModal.vue`、`useReproducibleReport.ts`、`api/report.ts` |
+| UI、轮询、鉴权下载 | `TaskDetailView.vue`、`ReportsView.vue`、`ReportViewerView.vue`、`useReproducibleReport.ts`、`api/report.ts`；旧 `ReportPreviewModal.vue` 保留静态隔离组件 |
 | BioReport 受控渲染 | `application/services/bioreport_adapter.py`；HTML 可复用，科学 PDF 使用固定 CLI 合约，AI 明确关闭 |
 | 审计 PDF | `application/services/report_audit_pdf_renderer.py`；冻结审计 HTML 经 Pandoc/Typst 转换，按 SHA-256 登记为第二个 ReportFile |
 | 科研交付包 | `application/schemas/report_delivery.py`、`research_delivery_service.py`、`ReportService.build_delivery_package` |
@@ -99,9 +99,31 @@ Phase 2 交付构建复核科学报告和执行证据文件，生成 `Scientific
 
 ## 前端和 HTML 安全
 
-TaskDetailView 一次请求后按阶段轮询；请求结束后直接导航到指定 Report ID，打开 ReportsView 的现有预览。轮询使用递归 setTimeout，避免重叠；暂时查询失败自动重试，权限拒绝停止，离页/切换 Task 使旧回调失效，sessionStorage 保存 Job ID 便于刷新后恢复。生成失败显示固定原因，可重试失败按钮复用原 Job。后台 Job 不依赖页面存活。
+TaskDetailView 一次请求后按阶段轮询；请求结束后导航到指定 Report ID，ReportsView 的旧 `?reportId=` 链接通过详情校验后进入 `/reports/:reportId/view`。轮询使用递归 setTimeout，避免重叠；暂时查询失败自动重试，权限拒绝停止，离页/切换 Task 使旧回调失效，sessionStorage 保存 Job ID 便于刷新后恢复。生成失败显示固定原因，可重试失败按钮复用原 Job。后台 Job 不依赖页面存活。
 
-ReportsView 和卡片展示执行证据类型、报告版本、模板、证据缺口；可按 Task ID 筛选。下载使用统一 axios Bearer 鉴权。预览 iframe sandbox 为空，禁止脚本和同源权限；新窗口执行 HTML 的入口移除，保留安全预览、全屏和下载。关闭/切换报告不会展示旧请求返回的 HTML。科学报告脚本交互在平台预览中被禁用，这是明确的安全收紧；下载文件的本地浏览仍由用户自行决定。
+ReportsView 和卡片展示执行证据类型、报告版本、模板、证据缺口；可按 Task ID 筛选。下载使用统一 axios Bearer 鉴权。P1 新查看页挂 DefaultLayout，保留顶栏/侧栏、标题、流程、状态、生成时间、收藏、下载及打开同一平台查看路由的新窗口操作；列表拦截过期/未完成报告，直达页再次校验。交付 ZIP 保持下载语义。旧 `/{id}/preview` 文本 API 与空 sandbox 的 ReportPreviewModal 组件保留兼容；列表新入口改走以下受控预览链。
+
+### 报告查看页 P1（代码及隔离验证，真实报告人工验收待完成）
+
+`GET /api/v1/reports/{id}/preview-url` 只接受已登录的活跃 JWT 用户，通过 `ReportService.preview_html(strict=True)` 校验报告状态、归属、文件存在/完整性与大小后签发短时 report-only URL。短时效为 `REPORT_PREVIEW_TTL_SECONDS`（默认 300，30–900 秒），同时不得超过原 access token 的有效期。访问 URL 不是公开分享能力。
+
+客户端用 `utils/reportPreviewSession.ts` 创建 256-bit 随机登录上下文 nonce（SameSite=Strict、HTTPS 下 Secure、Path=/）；签发端设置单独的 HttpOnly 预览会话 cookie（Path=/api/v1/reports，同样 Strict/Secure）。URL 和会话是不同 type 的签名，绑定 user_id/token_version/nonce 摘要，URL 另绑定 report_id 与随机加载通道。nonce 单独不是凭证；URL、HttpOnly 会话、nonce 必须同时匹配。新登录、退出及自动认证清理同步删除 nonce；旧会话 cookie 即使尚未过期，也不能单独继续访问。普通 Bearer/API Key 认证没有改为通用 cookie 认证。
+
+AuthMiddleware 仅对 GET + 精确 UUID `/{id}/preview-content` 校验这些凭证并在 ModuleGate 前注入身份；其他路径不接受预览凭证。HTML 端点再次校验凭证、数据库中 active/token_version、动态模块注册表权限和 ReportService 的 owner/可选科研 scope。更改 ID、只复制 URL、删除/过期、禁用用户或撤销版本均拒绝。响应为 no-store/no-referrer/nosniff，且有响应级 CSP sandbox，不提供裸静态目录。
+
+预览响应由 `report_preview_renderer.py` 生成受控外壳，原报告只进入嵌套 srcdoc iframe，不改写归档 HTML/SHA 或冻结快照。外壳及科学报告均没有 allow-same-origin/顶层导航/弹窗权限；CSP 禁止网络请求、远程资源、表单和对象。科学报告的内层只允许脚本，执行证据报告内层仍为空 sandbox；后者只有可信外壳的加载桥执行，不开放报告自身脚本。
+
+ReportViewerView 只在收到当前外层 iframe、opaque origin、report ID 和随机通道均匹配的加载消息后退出加载态；onload 本身不证明成功。错误响应可发送有界 HTTP 状态，失联/鉴权拦截有 30 秒超时、重试和鉴权下载兜底。切换路由或退出使迟到请求/消息失效。新窗口只打开平台路由，不直接打开 HTML/Blob URL。
+
+strict 读取复用无链接跟随的归档 FD 读法，并保留登记的词法路径以拒绝文件/父目录软链替换；`REPORT_PREVIEW_MAX_BYTES` 默认 32MiB（上限 128MiB），有 stat 检查及实际有界读取，超限提示下载。原预览 API 的兼容行为不改变。
+
+新增 ASGI 验证使用真实 SQLite、合成文件、真实 AuthMiddleware/JWT 和报告服务；Chromium 验证使用实际 Vue 外壳、隔离 API 及合成可交互 HTML。已证明合成页签可切换、父页面读取/出网被阻断、URL 单独复制和退出失效；未证明真实三类 BioReport、生产代理/HTTPS、S3 或人工阶段验收。全仓后端门禁尚有其他域失败，不标为全绿。完整命令/结果见 [P1 施工记录](../docs/implementation/cygnusx-report-viewer-p1.md)。
+
+### 报告 Copilot P2（代码及隔离验证，真实工作流人工验收待完成）
+
+报告查看页接入可收起、可调宽的 Copilot 侧栏，按 report ID 保存普通 Chat 会话历史。专用会话创建只接受当前用户已完成的非交付报告，绑定关系存于 ChatSession `sandbox_meta.report_copilot`；每次流请求和工具执行均重新校验用户、活跃会话、报告归属及 Task 归属。普通聊天运行时对该绑定会话强制覆盖为三项只读工具 `read_report_section`、`list_artifacts`、`query_project_results`，关闭联网、MCP、代码执行、多 Agent 与其他能力。结果查询仅接受该 Task 已登记的 CSV/TSV，限制文件大小、行数、过滤列和字段长度；项目 ID 只从服务端已核验的数据集关联派生，无关联时降级到报告 Task scope。章节跳转通过查看页预览副本中的双层 `postMessage` 桥，不修改报告归档字节。
+
+报告元数据以 `report.paths.json` 为源：平台注册阶段读取 2.0/2.1 sidecar，将新报告绑定到 Report/Task/owner 并升级为 schema 2.1；数据库保存身份、项目、统计、富集摘要及文件索引。Copilot 创建快照时校验 2.1 sidecar 与登记记录，旧 2.0 报告使用持久化 Task/文件索引并标记 `legacy_degraded`。`query_project_results` 和 `list_artifacts` 只查询登记文件及 role 索引，不在请求时遍历目录。存量盘点/回填由 `scripts/backfill_report_paths_registry.py` 输出 success/failed/manual 清单；当前仅实现脚本，未对真实报告目录或数据库执行。前端报告路由已无 mock 数据源引用。SQLite 合成隔离测试通过不代表真实 LLM 工具循环、三类生产报告数据正确性或人工验收已完成。P3 沙箱执行未接入。实现边界与验证记录见 [报告路径索引 2.1 实施记录](../docs/implementation/cygnusx-report-paths-schema-2.1.md) 和 [P2 施工与验证记录](../docs/implementation/cygnusx-report-copilot-p2.md)。
 
 HTML M1 概要、M2 输入环境、M3 时间线、M4 工具调用、M5 QC、M6 产物、M7 来源关系、M8 限制均由冻结快照渲染，有导航、响应式布局、明确状态、转义和 CSP，没有外部资源或脚本。未记录的输入指纹、QC 测量解释/阈值/豁免、工具调用均不补造；复现验证恒为 not_run。
 

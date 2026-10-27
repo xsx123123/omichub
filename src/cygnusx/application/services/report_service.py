@@ -402,25 +402,59 @@ class ReportService:
             items=[_model_to_response(item) for item in family],
         )
 
-    async def preview_html(self, report_id: UUID, user_id: str) -> str:
+    async def preview_html(self, report_id: UUID, user_id: str, *, strict: bool = False) -> str:
         """获取报告 HTML 预览内容"""
         model = await self._repo.get_by_id(report_id)
         if model is None or str(model.user_id) != user_id:
             raise NotFoundError("报告不存在")
         await self._require_research_scope(model)
 
+        if strict and model.status != "completed":
+            if model.status == "expired":
+                raise ConflictError("报告已过期，请重新生成", code="REPORT_EXPIRED")
+            raise ConflictError("报告尚未完成，暂时无法预览", code="REPORT_NOT_READY")
+
         primary = next((f for f in model.files if f.is_primary and f.type == "html"), None)
         if primary is None:
             primary = next((f for f in model.files if f.type == "html"), None)
         if primary is None:
+            if strict:
+                raise NotFoundError("未找到可预览的 HTML 报告", code="REPORT_HTML_MISSING")
             return "<p>未找到可预览的 HTML 报告</p>"
 
         target = self._authorized_file_path(model, primary.path)
         rel_path = self._rel_path(target)
+        if strict and self._backend.name == "local":
+            # Preserve the registered lexical path for the no-follow FD reader.
+            # Resolving a symlink first would hide a substituted file/parent.
+            registered = Path(primary.path)
+            try:
+                if ".." in registered.parts:
+                    raise ValueError("parent traversal")
+                rel_path = registered.relative_to(self._factory.data_root.absolute()).as_posix()
+            except ValueError as exc:
+                raise AuthorizationError("非法报告路径：路径越权") from exc
         if not await self._backend.exists(rel_path):
-            if model.report_kind in {"reproducibility", "delivery"}:
+            if strict or model.report_kind in {"reproducibility", "delivery"}:
                 raise NotFoundError("报告文件已不可用，请联系管理员")
             return "<p>报告文件已丢失，请尝试下载</p>"
+        if strict:
+            maximum = self._settings.report_preview_max_bytes
+            info = await self._backend.stat(rel_path)
+            if info and int(info.get("size") or 0) > maximum:
+                raise ValidationError("报告超过在线预览大小限制，请下载查看", code="REPORT_TOO_LARGE")
+            try:
+                content = await read_archive(
+                    self._backend, self._factory, rel_path, limit=maximum + 1
+                )
+            except (OSError, NotFoundError) as exc:
+                raise NotFoundError("报告文件当前无法读取") from exc
+            if not content:
+                raise NotFoundError("报告文件为空，请重新生成", code="REPORT_HTML_EMPTY")
+            if len(content) > maximum:
+                raise ValidationError("报告超过在线预览大小限制，请下载查看", code="REPORT_TOO_LARGE")
+            self._verify_report_bytes(primary.sha256, primary.size, content)
+            return content.decode("utf-8", errors="replace")
         try:
             content = (
                 await read_archive(self._backend, self._factory, rel_path)
@@ -525,10 +559,13 @@ class ReportService:
         # 尝试从 project_summary.json 读取更丰富的元信息
         summary_path = work_path / "report_data" / "project_summary.json"
         summary_rel = self._rel_path(summary_path)
+        legacy_summary: dict[str, Any] = {}
         if await self._backend.exists(summary_rel):
             try:
                 summary_bytes = await self._backend.read(summary_rel)
                 summary = json.loads(summary_bytes.decode("utf-8"))
+                if isinstance(summary, dict):
+                    legacy_summary = summary
                 project_meta = summary.get("project_meta", {})
                 stats = summary.get("stats", {})
                 if project_meta.get("client"):
@@ -610,6 +647,20 @@ class ReportService:
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("报告文件注册到 file_records 失败（非阻塞）: {}", exc)
+
+            task_model = await self._db.get(TaskModel, UUID(task_id))
+            if task_model is not None:
+                from cygnusx.application.services.report_paths_registry import (
+                    ReportPathsRegistryService,
+                )
+
+                await ReportPathsRegistryService(self._db).register(
+                    report,
+                    task_model,
+                    manifest_root,
+                    legacy_summary=legacy_summary,
+                    manifest=manifest,
+                )
 
             await self._db.refresh(report)
 

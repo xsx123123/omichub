@@ -111,8 +111,10 @@ services:
     # 启动入口：先跑 alembic upgrade head（保证 schema 与代码同步），再启动 uvicorn。
     # 历史教训：曾因迁移未进容器 + create_all 不补字段，导致 users.storage_quota 缺列引发 500。
     entrypoint: ["/bin/sh", "/app/entrypoint.sh"]
-    # 生产模式启动：多 worker + 关闭热重载（避免 watchdog 扫描 src 的首次加载开销）
-    command: ["uvicorn", "cygnusx.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    # 生产模式启动：多 worker + 关闭热重载（避免 watchdog 扫描 src 的首次加载开销）。
+    # workers 2→4：SSE 长连接占满 worker 时并发上限过低（Session 加速优化 TODO #6）；
+    # 显式 --loop uvloop：锁定已装依赖，防 auto 探测随依赖漂移回退 asyncio。
+    command: ["uvicorn", "cygnusx.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop"]
     ports:
       # 仅供跨机器 Worker 上报流程监控；单机时默认仅本机可访问。
       - "${CYGNUSX_WEB_BIND_HOST:-127.0.0.1}:${CYGNUSX_WEB_PORT:-8000}:8000"
@@ -429,7 +431,7 @@ services:
       context: ../../pipelines/Treasure-Seeking_Mouse
       dockerfile: deploy/Dockerfile
       target: chat
-    image: ${TREASURE_MOUSE_CHAT_IMAGE:-cygnusx-treasure-mouse-chat:1ea2f79}
+    image: ${TREASURE_MOUSE_CHAT_IMAGE:-cygnusx-treasure-mouse-chat:16f2376}
     container_name: cygnusx-treasure-mouse-chat
     restart: unless-stopped
     logging: *default-logging
@@ -439,7 +441,8 @@ services:
     environment:
       CHAT_API_PORT: "8787"
       TREASURE_MOUSE_PLATFORM_ONLY: "true"
-      CYGNUSX_TOOL_CALLBACK_URL: ${CYGNUSX_TOOL_CALLBACK_URL:-}
+      # Fixed internal Gateway destination; read/prepare still requires explicit opt-in.
+      CYGNUSX_TOOL_CALLBACK_URL: ${CYGNUSX_TOOL_CALLBACK_URL:-http://web:8000/api/v1/agent-tools/delegated/invoke}
       TREASURE_MOUSE_INTERNAL_TOKEN: ${TREASURE_MOUSE_INTERNAL_TOKEN:?TREASURE_MOUSE_INTERNAL_TOKEN is required}
       CHAT_API_HOST: "0.0.0.0"
       NODE_ENV: production

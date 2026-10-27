@@ -32,6 +32,13 @@ class AiMetricsService:
     def _tokens_to_cookie(self, tokens: int) -> float:
         return round(tokens / 1000.0 * self._cookie_rate, 4)
 
+    @staticmethod
+    def _cache_hit_ratio(cached_tokens: int, prompt_tokens: int | None) -> float:
+        """上下文缓存命中率（cached / prompt）；无 prompt 数据时返回 0。"""
+        if not prompt_tokens:
+            return 0.0
+        return round(min(max(cached_tokens, 0) / prompt_tokens, 1.0), 4)
+
     async def daily_trend(
         self,
         days: int = 14,
@@ -50,6 +57,7 @@ class AiMetricsService:
                 func.coalesce(func.sum(m.prompt_tokens), 0).label("prompt_tokens"),
                 func.coalesce(func.sum(m.completion_tokens), 0).label("completion_tokens"),
                 func.coalesce(func.sum(m.total_tokens), 0).label("total_tokens"),
+                func.coalesce(func.sum(m.cached_tokens), 0).label("cached_tokens"),
                 func.coalesce(func.avg(m.duration_ms), 0).label("avg_duration_ms"),
                 func.percentile_cont(0.95).within_group(m.duration_ms).label("p95_duration_ms"),
             )
@@ -61,23 +69,29 @@ class AiMetricsService:
         rows = (await self._db.execute(stmt)).all()
 
         daily = []
-        sum_calls = sum_errors = sum_tokens = 0
+        sum_calls = sum_errors = sum_tokens = sum_cached = sum_prompt = 0
         for r in rows:
             calls = int(r.calls or 0)
             errors = int(r.errors or 0)
             total_tokens = int(r.total_tokens or 0)
+            prompt_tokens = int(r.prompt_tokens or 0)
+            cached_tokens = int(r.cached_tokens or 0)
             sum_calls += calls
             sum_errors += errors
             sum_tokens += total_tokens
+            sum_cached += cached_tokens
+            sum_prompt += prompt_tokens
             daily.append(
                 {
                     "date": str(r.day),
                     "calls": calls,
                     "errors": errors,
                     "error_rate": round(errors / calls, 4) if calls else 0.0,
-                    "prompt_tokens": int(r.prompt_tokens or 0),
+                    "prompt_tokens": prompt_tokens,
                     "completion_tokens": int(r.completion_tokens or 0),
                     "total_tokens": total_tokens,
+                    "cached_tokens": cached_tokens,
+                    "cache_hit_ratio": self._cache_hit_ratio(cached_tokens, prompt_tokens),
                     "cost_cookie": self._tokens_to_cookie(total_tokens),
                     "avg_duration_ms": round(float(r.avg_duration_ms or 0), 1),
                     "p95_duration_ms": round(float(r.p95_duration_ms or 0), 1),
@@ -93,6 +107,8 @@ class AiMetricsService:
                 "errors": sum_errors,
                 "error_rate": round(sum_errors / sum_calls, 4) if sum_calls else 0.0,
                 "total_tokens": sum_tokens,
+                "cached_tokens": sum_cached,
+                "cache_hit_ratio": self._cache_hit_ratio(sum_cached, sum_prompt),
                 "cost_cookie": self._tokens_to_cookie(sum_tokens),
             },
             "daily": daily,
@@ -109,6 +125,8 @@ class AiMetricsService:
                 func.count().label("calls"),
                 func.count().filter(m.status == "error").label("errors"),
                 func.coalesce(func.sum(m.total_tokens), 0).label("total_tokens"),
+                func.coalesce(func.sum(m.prompt_tokens), 0).label("prompt_tokens"),
+                func.coalesce(func.sum(m.cached_tokens), 0).label("cached_tokens"),
                 func.coalesce(func.avg(m.duration_ms), 0).label("avg_duration_ms"),
             )
             .where(m.created_at >= since)
@@ -129,6 +147,10 @@ class AiMetricsService:
                     "errors": errors,
                     "error_rate": round(errors / calls, 4) if calls else 0.0,
                     "total_tokens": total_tokens,
+                    "cached_tokens": int(r.cached_tokens or 0),
+                    "cache_hit_ratio": self._cache_hit_ratio(
+                        int(r.cached_tokens or 0), int(r.prompt_tokens or 0)
+                    ),
                     "cost_cookie": self._tokens_to_cookie(total_tokens),
                     "avg_duration_ms": round(float(r.avg_duration_ms or 0), 1),
                 }

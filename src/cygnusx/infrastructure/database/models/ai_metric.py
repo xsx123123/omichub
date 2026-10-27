@@ -28,6 +28,9 @@ class AiCallMetricModel(Base, TimestampMixin):
     prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
     completion_tokens: Mapped[int] = mapped_column(Integer, default=0)
     total_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    # DeepSeek/OpenAI 上下文缓存命中 tokens（prompt_tokens_details.cached_tokens），
+    # 管理端用它计算命中率、验证前缀稳定化收益（Session 加速优化 TODO #4）。
+    cached_tokens: Mapped[int] = mapped_column(Integer, default=0)
     session_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(

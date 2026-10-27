@@ -48,6 +48,7 @@ def record_ai_call(
         "prompt_tokens": int(usage.get("prompt_tokens", 0) or 0),
         "completion_tokens": int(usage.get("completion_tokens", 0) or 0),
         "total_tokens": int(usage.get("total_tokens", 0) or 0),
+        "cached_tokens": int(usage.get("cached_tokens", 0) or 0),
         "session_id": (session_id or None) and str(session_id)[:64],
     }
     with _lock:
@@ -95,9 +96,10 @@ def flush() -> int:
 
 
 async def _insert(batch: list[dict[str, Any]]) -> None:
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
     from cygnusx.infrastructure.database.models.ai_metric import AiCallMetricModel
     from cygnusx.infrastructure.database.session import create_unpooled_engine
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     engine = create_unpooled_engine()
     try:

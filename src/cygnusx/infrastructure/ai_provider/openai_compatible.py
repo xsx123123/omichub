@@ -13,7 +13,7 @@ import asyncio
 import json
 import re
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -286,6 +286,7 @@ class OpenAICompatibleProvider:
         max_tokens: int = 65536,
         tools: list[dict[str, Any]] | None = None,
         deep_thinking: bool = False,
+        on_attempt_usage: Callable[[dict[str, Any]], None] | None = None,
     ) -> AsyncIterator[ChatChunk]:
         """SSE 流式输出 — 对接 OpenAI /chat/completions 接口
 
@@ -355,6 +356,8 @@ class OpenAICompatibleProvider:
                     yield chunk
                 elif chunk.type == "done":
                     last_usage = chunk.metadata.get("usage")
+                    if on_attempt_usage is not None:
+                        on_attempt_usage(dict(chunk.metadata))
                     last_finish_reason = chunk.metadata.get("finish_reason") or last_finish_reason
                 elif chunk.type == "error":
                     attempt_had_error = True

@@ -28,7 +28,7 @@ import { useUploadStore } from '@/stores/upload'
 import { useNotificationStore } from '@/stores/notification'
 import { useSiteConfigStore } from '@/stores/site-config'
 import { useModulesStore } from '@/stores/modules'
-import { useAdminWelcome } from '@/composables/useAdminWelcome'
+import { useWelcomeToast } from '@/composables/useWelcomeToast'
 import { useThemeStore } from '@/stores/theme'
 import type { ModuleRegistryItem, User } from '@/types'
 
@@ -38,9 +38,8 @@ const notificationStore = useNotificationStore()
 const siteConfig = useSiteConfigStore()
 const uploadStore = useUploadStore()
 const themeStore = useThemeStore()
-// 管理员登录欢迎小彩蛋：setup 阶段注册 useNotification，onMounted 触发；
-// 内部 watch + 会话标记确保一次会话只弹一次，刷新页面不弹。
-const { triggerAdminWelcome } = useAdminWelcome()
+// Wait for explicit onboarding resolution before claiming optional welcome content.
+const { triggerWelcome, skipThisSession } = useWelcomeToast()
 const route = useRoute()
 const router = useRouter()
 const currentUser = ref<User | null>(null)
@@ -204,8 +203,11 @@ async function loadCurrentUser() {
       userLoadFailed.value = false
       notificationStore.fetchNotifications()
       if (authStore.consumeOnboarding()) {
+        skipThisSession()
         siteConfig.fetchSiteConfig().catch(() => {})
         onboardingVisible.value = true
+      } else if (!onboardingVisible.value) {
+        void triggerWelcome()
       }
       userLoadRetrying.value = false
       return
@@ -235,9 +237,6 @@ onMounted(() => {
       void loadCurrentUser()
     }, 60_000)
   }
-  // 管理员欢迎彩蛋：登录后任意页面（不只是仪表板）进入即触发，
-  // 内部 watch 等待 role 确定 + sessionStorage 标记保证一次会话只弹一次
-  triggerAdminWelcome()
 })
 
 onBeforeUnmount(() => {

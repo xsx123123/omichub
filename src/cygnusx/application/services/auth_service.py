@@ -183,10 +183,14 @@ class AuthService:
 
         # 创建令牌
         access_token = create_access_token(
-            subject=str(user.id), token_version=user.token_version
+            subject=str(user.id),
+            token_version=user.token_version,
+            onboarding_session=is_first_login,
         )
         refresh_token = create_refresh_token(
-            subject=str(user.id), token_version=user.token_version
+            subject=str(user.id),
+            token_version=user.token_version,
+            onboarding_session=is_first_login,
         )
 
         return LoginSuccess(access_token, refresh_token, user, is_first_login)
@@ -212,9 +216,13 @@ class AuthService:
             raise AuthenticationError("令牌已失效，请重新登录")
 
         # 创建新的访问令牌
-        access_token = create_access_token(subject=user_id, token_version=user.token_version)
+        access_token = create_access_token(
+            subject=user_id, token_version=user.token_version,
+            onboarding_session=bool(payload.get("onboarding_session")),
+        )
         new_refresh_token = create_refresh_token(
-            subject=user_id, token_version=user.token_version
+            subject=user_id, token_version=user.token_version,
+            onboarding_session=bool(payload.get("onboarding_session")),
         )
 
         return access_token, new_refresh_token

@@ -176,3 +176,9 @@ register_tool_routers(api_router)
 api_router.include_router(datasets.router, tags=["datasets"])
 
 api_router.include_router(research_delivery.router, tags=["research-delivery"])
+
+from cygnusx.api.v1 import welcome  # noqa: E402
+from cygnusx.api.v1.admin import welcome as admin_welcome  # noqa: E402
+
+api_router.include_router(welcome.router, prefix="/welcome", tags=["Welcome"])
+api_router.include_router(admin_welcome.router, prefix="/admin/welcome", tags=["Admin-Welcome"])

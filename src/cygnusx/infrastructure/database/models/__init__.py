@@ -278,3 +278,10 @@ __all__ = [
     "ScheduleOccurrenceModel",
     "ReminderDeliveryModel",
 ]
+
+from cygnusx.infrastructure.database.models.welcome import (  # noqa: F401
+    WelcomeBatchModel,
+    WelcomeDeliveryModel,
+    WelcomeGenerationRunModel,
+    WelcomeMessageModel,
+)

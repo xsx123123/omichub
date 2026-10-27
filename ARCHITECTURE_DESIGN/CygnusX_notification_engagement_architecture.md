@@ -147,9 +147,9 @@ sequenceDiagram
 
 ## 6. 欢迎语
 
-- 磁盘种子队列：启动后台任务 `welcome_service.seed_if_needed` 写入默认欢迎语；管理端 `POST /llm/generate-welcome` 顺序取下一句，返回给布局 toast。
-- 首次登录站内通知：与欢迎语相互独立，走通知表。
-- 前端 `useAdminWelcome.ts` 每次会话最多请求一次，3 秒超时，仅管理员展示。
+已实现 DB 周内容池替代磁盘种子队列，详见 [欢迎语系统 as-built](CygnusX_welcome_architecture.md)。内部 welcome_copywriter 复用 LangGraph、默认 provider 与独立运行审计；现有 Beat 在 analysis 队列执行生成/发布/reconcile。登录仅领取 DB 内容，旧 `/llm/generate-welcome` 为管理员兼容入口。
+
+前端 `useWelcomeToast` 在 onboarding 明确判定后触发，服务端每日 reservation/impression 控制跨设备次数；首次登录组件不变、普通用户默认关闭。通知公告管理新增欢迎语审核/生成/禁用/撤回/回滚 Tab。生产上线与真实周切换仍以验收报告记录为准。
 
 ## 7. 站点设置与首页快捷入口
 
@@ -171,9 +171,10 @@ sequenceDiagram
 | 提醒 | `POST /reminders/{delivery_id}/snooze`、`/complete` | 登录（投递所有者） |
 | 设置 | `GET /site-settings`、`GET /platform/config`、`GET /site-content` | 公共 |
 | 设置管理 | `PUT /site-settings`、`PATCH /admin/platform-config` | Admin（+TOTP） |
-| 欢迎 | `POST /llm/generate-welcome` | Admin |
+| 欢迎 | `POST /welcome/claim`、`/welcome/impression` | 登录 |
+| 欢迎管理 | `/admin/welcome/*`，旧 `/llm/generate-welcome` 兼容入口 | Admin |
 
-`/notifications`、`/announcements`、`/site-settings`、`/site-content`、`/platform`、`/llm` 为共享基础设施，不进入模块门禁。
+`/notifications`、`/announcements`、`/site-settings`、`/site-content`、`/platform`、`/llm`、`/welcome` 为共享基础设施，不进入模块门禁。
 
 ## 9. 前端映射
 
@@ -183,7 +184,7 @@ sequenceDiagram
 | `NotificationDrawer.vue` | 通知抽屉、房间邀请操作、管理端创建表单 | `DefaultLayout.vue` |
 | `AnnouncementBanner.vue` | 公告横幅与关闭策略 | `HomeView.vue` |
 | `AdminAnnouncementsView.vue` | 公告/通知/节日三个管理 Tab | `/admin/announcements` |
-| `useAdminWelcome.ts` | 管理员欢迎语 toast | `DefaultLayout.vue` |
+| `useWelcomeToast.ts`（旧 composable 为兼容包装） | 已完成 onboarding 的合资格账号欢迎语 toast | `DefaultLayout.vue` |
 | `stores/site-config.ts` | 拉取站点设置与内容 | 登录页/注册页/首页 |
 | `AdminHomeQuickEntriesView.vue` | 快捷入口编辑 | `/admin/home-quick-entries` |
 | `SchedulesView.vue` / `stores/schedule.ts` | 日程与提醒管理 | `/schedules` |

@@ -143,7 +143,7 @@ const themeOverrides = computed<GlobalThemeOverrides>(() => {
   >
     <NMessageProvider>
       <NDialogProvider>
-        <NNotificationProvider placement="top-right">
+        <NNotificationProvider placement="top-right" :theme-overrides="{ width: 'min(365px, calc(100vw - 32px))' }">
           <AppErrorBoundary>
             <RouterView />
           </AppErrorBoundary>

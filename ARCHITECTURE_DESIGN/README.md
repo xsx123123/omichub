@@ -403,3 +403,7 @@ CygnusX 前端唯一权威规范：设计目标与非协商原则、技术边界
 - `tool_configs/tools_design.md`：生信工具箱前端工具页面设计规范（2026-08-07 基线，持续维护）：所有 `/tools` 工具页面的架构、布局、样式、交互强制约定；火山图为完整样板、JBrowse 为全屏画布特例；新工具接入 6 步 checklist（含 tools_setting + tools_schema 双注册表登记）与命名约定。是 `CygnusX_platform_design.md` §2.2 生信工具基线的唯一详细来源；工具箱**后端框架与跨链路** as-built 见 `CygnusX_toolbox_architecture.md`（本文档 §5），两者互补不重叠。
 - `tool_configs/README.md`：`tool_configs/` 配置根目录导读——三类内容分治（前端注册表/LLM 注册表/工具功能配置）、命名映射规则、12 个后端子包入口表、新增工具模块化流程与部署契约。改动该目录结构前先读。
 - 开发环境热刷新约定见根目录 `README.md`「Docker 部署」一节：日常改代码/YAML/前端用 `make docker-dev-refresh`（秒级，bind mount 免重建镜像），仅依赖（`uv.lock`/Dockerfile）变更才用 `make docker-reload`。
+
+### `CygnusX_welcome_architecture.md` — 内部欢迎语 Agent 与 PostgreSQL 周内容池
+
+记录受限 LangGraph 系统 Agent、lease/run 审计、原子周发布与回滚、账号每日 reservation/impression、Onboarding 优先、管理员灰度、Celery reconcile 与管理界面。实现与真实生产周切换验收分开记录。

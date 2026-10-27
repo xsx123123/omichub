@@ -24,6 +24,7 @@ celery_app = Celery(
     backend=settings.celery_result_backend,
     task_cls=LoggedTask,
     include=[
+        "cygnusx.infrastructure.celery_app.tasks.welcome",
         "cygnusx.infrastructure.celery_app.tasks.analysis",
         "cygnusx.infrastructure.celery_app.tasks.run_events",
         "cygnusx.infrastructure.celery_app.tasks.cookie",
@@ -263,3 +264,9 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(hour=2, minute=15),
     },
 }
+
+# Minute tick evaluates the feature timezone without changing other schedules.
+celery_app.conf.task_routes.update({"welcome.*": {"queue": "analysis"}})
+celery_app.conf.beat_schedule.update({
+    "welcome-reconcile": {"task": "welcome.reconcile", "schedule": crontab(minute="*")},
+})

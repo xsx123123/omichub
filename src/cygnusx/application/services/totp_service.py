@@ -146,9 +146,13 @@ class MfaService:
         if is_first_login:
             await self._safe_create_welcome_notification(str(user.id))
 
-        access_token = create_access_token(subject=str(user.id), token_version=user.token_version)
+        access_token = create_access_token(
+            subject=str(user.id), token_version=user.token_version,
+            onboarding_session=is_first_login,
+        )
         refresh_token = create_refresh_token(
-            subject=str(user.id), token_version=user.token_version
+            subject=str(user.id), token_version=user.token_version,
+            onboarding_session=is_first_login,
         )
         return access_token, refresh_token, user, is_first_login
 

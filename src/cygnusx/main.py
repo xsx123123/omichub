@@ -312,25 +312,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await _validate_memory_embedding_provider()
     await _init_builtin_agents()
 
-    # 欢迎词补齐：须在 AI Provider 同步完成之后（依赖默认 provider），
-    # 故串行执行而非并入上方 gather。条数 < 阈值才调 LLM 补齐；失败仅 log，不阻塞启动。
-    # 注意：补齐需串行调 LLM 多次（默认阈值 20 条，单次数秒），若在 startup 同步 await 会
-    # 阻塞应用就绪 → 健康检查失败 → nginx 502。故改为后台任务，startup 立即完成，补齐异步进行。
-    async def _seed_welcome() -> None:
+    # Startup only enqueues DB reconciliation. Never generate content in web workers.
+    async def _reconcile_welcome() -> None:
         try:
-            from cygnusx.application.services.welcome_service import WelcomeService
-            from cygnusx.infrastructure.database.session import get_session_factory
+            if settings.welcome_enabled:
+                from cygnusx.infrastructure.celery_app.tasks.welcome import reconcile
+                await asyncio.to_thread(reconcile.apply_async, queue="analysis")
+        except Exception as exc:
+            logger.warning("Welcome reconciliation enqueue failed ({})", type(exc).__name__)
 
-            factory = get_session_factory()
-            if factory is not None:
-                async with factory() as session:
-                    total = await WelcomeService(session).seed_if_needed()
-                    await session.commit()
-                    logger.info(f"管理员欢迎词就绪，共 {total} 条")
-        except Exception as e:
-            logger.warning(f"欢迎词补齐失败，降级使用兜底文案: {e}")
-
-    welcome_task = asyncio.create_task(_seed_welcome())
+    welcome_task = asyncio.create_task(_reconcile_welcome())
 
     async def _auto_reindex_knowledge() -> None:
         """Incrementally refresh published knowledge chunks after deployment."""

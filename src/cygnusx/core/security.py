@@ -62,6 +62,8 @@ def create_access_token(
     subject: str | int,
     token_version: int | None = None,
     expires_delta: timedelta | None = None,
+    *,
+    onboarding_session: bool = False,
 ) -> str:
     """创建 Access Token"""
     settings = get_settings()
@@ -75,6 +77,8 @@ def create_access_token(
     }
     if token_version is not None:
         payload["token_version"] = token_version
+    if onboarding_session:
+        payload["onboarding_session"] = True
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
@@ -82,6 +86,8 @@ def create_refresh_token(
     subject: str | int,
     token_version: int | None = None,
     expires_delta: timedelta | None = None,
+    *,
+    onboarding_session: bool = False,
 ) -> str:
     """创建 Refresh Token"""
     settings = get_settings()
@@ -95,6 +101,8 @@ def create_refresh_token(
     }
     if token_version is not None:
         payload["token_version"] = token_version
+    if onboarding_session:
+        payload["onboarding_session"] = True
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 

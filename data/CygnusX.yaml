@@ -103,6 +103,8 @@ guide_steps:
 # 仅列出的助手会被加载到数据库；未列出的不会出现在前台。
 # 新增助手：1) 在 data/ai/ 下创建 yaml  2) 在此处加入文件名
 agents:
+  # 内部系统任务：不进入公开助手同步与招募列表。
+  system_enabled: [welcome_copywriter]
   enabled:
     - router
     - general

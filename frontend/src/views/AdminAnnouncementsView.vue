@@ -3,6 +3,7 @@ import { NTabPane, NTabs } from 'naive-ui'
 import AnnouncementManager from '@/components/admin/AnnouncementManager.vue'
 import FestivalManager from '@/components/admin/FestivalManager.vue'
 import NotificationManager from '@/components/admin/NotificationManager.vue'
+import WelcomeManager from '@/components/admin/WelcomeManager.vue'
 import PageHeader from '@/components/PageHeader.vue'
 </script>
 
@@ -18,6 +19,9 @@ import PageHeader from '@/components/PageHeader.vue'
       </NTabPane>
       <NTabPane name="festival" tab="节日彩蛋 ✨">
         <FestivalManager />
+      </NTabPane>
+      <NTabPane name="welcome" tab="欢迎语">
+        <WelcomeManager />
       </NTabPane>
     </NTabs>
   </div>

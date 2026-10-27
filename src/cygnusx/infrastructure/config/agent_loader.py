@@ -103,7 +103,10 @@ def _load_single_agent(yaml_path: Path) -> dict[str, Any] | None:
                 "Agent prompt_file 无法解析: %s -> %s", yaml_path, prompt_file
             )
             return None
-        data["system_prompt"] = _append_shared_prompt_sections(prompt, yaml_path)
+        data["system_prompt"] = (
+            prompt if (data.get("features") or {}).get("internal_only")
+            else _append_shared_prompt_sections(prompt, yaml_path)
+        )
     elif prompt_ref:
         prompt = get_prompt(prompt_ref)
         if not prompt:
@@ -111,7 +114,10 @@ def _load_single_agent(yaml_path: Path) -> dict[str, Any] | None:
                 "Agent prompt_ref 无法解析: %s -> %s", yaml_path, prompt_ref
             )
             return None
-        data["system_prompt"] = _append_shared_prompt_sections(prompt, yaml_path)
+        data["system_prompt"] = (
+            prompt if (data.get("features") or {}).get("internal_only")
+            else _append_shared_prompt_sections(prompt, yaml_path)
+        )
 
     _apply_tool_packs(data, yaml_path)
 
@@ -351,3 +357,18 @@ def _apply_tool_packs(data: dict[str, Any], yaml_path: Path) -> None:
     features = dict(data.get("features") or {})
     features["tool_packs"] = packs
     data["features"] = features
+
+
+def load_system_agent_configs() -> list[dict[str, Any]]:
+    """Load explicitly registered internal agents, outside the public chat catalogue."""
+    settings = get_settings()
+    site_path = Path(settings.site_content_yaml)
+    with site_path.open(encoding="utf-8") as stream:
+        names = (yaml.safe_load(stream) or {}).get("agents", {}).get("system_enabled", [])
+    configs = []
+    for name in names:
+        config = _load_single_agent((site_path.parent / "ai") / f"{name}.yaml")
+        if config is None or not (config.get("features") or {}).get("internal_only"):
+            raise ValueError(f"Invalid internal agent registration: {name}")
+        configs.append(config)
+    return configs

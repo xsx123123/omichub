@@ -26,11 +26,20 @@
   补发后与 golden 契约一致，警告风暴根除；② 写库从 %5 chunk 计数改为 0.4s 时间窗口节流
   （`chat_streaming_write_interval_seconds`）；③ `_handle_violation` 加 60s 合并抑制兜底
 
-### 3. 模型分层路由 + 多 key 负载均衡 + max_tokens 收紧【纯配置】
+### 3. 模型分层路由 + 多 key 负载均衡 + max_tokens 收紧【纯配置】◐ 2026-10-28 机制就绪+操作面落地 `7c7fe7c2`
 - 现状：ai_provider_configs 已有 tier/weight/latency_budget_ms 字段且 model_health_monitor 在跑，
   但未用于分层；qwen3.8-max 62k prompt 全量调用耗时 50.6s
 - 改法：编排/规划轮走 deepseek-v4-flash 等快模型，最终汇总才上大模型；多 API key 按 weight 并行均衡；收紧 max_tokens
 - 预期：p95 16s → <8s
+- 机制审查结论（2026-10-28）：分层机制已随 LangGraph 运行时就绪且比 TODO 假设更完整——
+  `ModelSelector` 每轮按 complexity/model_tier 选主模型（同 tier 健康池按成本+weight 排序），
+  失败级联、length 升级 heavy、heavy 超时降级 light、`latency_budget_ms` 纳入健康判定、
+  空闲 provider 主动探测；`cached_tokens` 命中率已可观测（`7c62016c`）
+- 启用清单（管理员执行）：① .env 设 `DYNAMIC_MODEL_ROUTING_ENABLED=true`（契约见 .env.example `7c7fe7c2`）
+  ② 管理端为各 provider 行标注 tier(light/heavy)、weight、cost_per_1m_in/out、latency_budget_ms
+  ③ 验证：/admin/ai-metrics/routing/health + model_routing_decisions 审计表 + ai-metrics 延迟趋势
+- 边界：Legacy 手写循环与超频 fanout **不经过**该路由（仍用 Agent 静态绑定）；如需覆盖需专项接线（受保护轮次）
+- 待决策：max_tokens 收紧值按 Agent 逐个评估（Agent YAML/DB agent_templates）
 
 ### 4. DeepSeek context caching 前缀稳定化【配合 #2】✅ 2026-10-28 `7c62016c`（验证面）+ 构造审查
 - 现状：DeepSeek API 自动磁盘缓存要求前缀 byte 稳定；agent_context_reinjected 反复重注入可能破坏前缀命中

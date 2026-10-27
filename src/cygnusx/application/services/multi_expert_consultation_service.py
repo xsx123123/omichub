@@ -18,16 +18,54 @@ class MultiExpertConsultationService:
         context_builder: AgentContextBuilder | None = None,
     ) -> None:
         self._agent_service = agent_service
-        self._context_builder = context_builder or AgentContextBuilder(
-            getattr(agent_service, "_db", None), agent_service
-        )
+        # 显式注入的 builder（测试桩等）原样使用；生产默认 None，
+        # collect 时为每位专家开独立 DB 会话装配（见 collect 注释）。
+        self._explicit_builder = context_builder
 
     async def collect(
         self, agent_ids: list[str], user_text: str, user_id: str | None = None
     ) -> list[dict[str, str]]:
+        if self._explicit_builder is not None:
+            return await self._collect_with_builder(
+                self._explicit_builder, agent_ids, user_text, user_id
+            )
+
+        # 每位专家使用独立 DB 会话：assemble 内部走 AgentService.assemble_context，
+        # 多专家共享同一 AsyncSession 并发查询会被 SQLAlchemy 拒绝
+        # （InvalidRequestError: concurrent operations are not permitted），
+        # 异常又被 return_exceptions 静默丢弃，导致会诊意见悄悄缺失。
+        from cygnusx.application.services.agent_service import AgentService
+        from cygnusx.infrastructure.database.session import get_session_factory
+
+        async def _run_one(agent_id: str) -> dict[str, str] | None:
+            async with get_session_factory()() as session:
+                builder = AgentContextBuilder(session, AgentService(session))
+                context = await builder.assemble(
+                    agent_id,
+                    user_id or "",
+                    user_message=user_text,
+                    mode="consultation",
+                )
+                if context is None:
+                    return None
+                return await self._collect_one(context, user_text)
+
+        results = await asyncio.gather(
+            *(_run_one(agent_id) for agent_id in agent_ids),
+            return_exceptions=True,
+        )
+        return [result for result in results if isinstance(result, dict)]
+
+    async def _collect_with_builder(
+        self,
+        builder: AgentContextBuilder,
+        agent_ids: list[str],
+        user_text: str,
+        user_id: str | None,
+    ) -> list[dict[str, str]]:
         contexts = await asyncio.gather(
             *(
-                self._context_builder.assemble(
+                builder.assemble(
                     agent_id,
                     user_id or "",
                     user_message=user_text,

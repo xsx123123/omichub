@@ -526,6 +526,11 @@ const canSend = computed(
     pendingSkills.value.length > 0,
 )
 
+// 流式回复期间输入框已有内容（文字或附件）时才提示"消息将排队等待"
+const hasDraftForQueue = computed(
+  () => localValue.value.trim().length > 0 || attachments.value.length > 0,
+)
+
 const canClear = computed(
   () =>
     localValue.value.trim().length > 0 ||
@@ -1259,8 +1264,8 @@ watch(() => agentHub.currentSessionId, refreshGoalStatus)
 
 <template>
   <div ref="composerShellRef" class="ai-composer-shell">
-    <!-- 消息排队条：流式回复期间提交的消息在此保留，回复完成后自动发送 -->
-    <div v-if="isStreaming || queuedItems.length" class="queue-strip" role="status">
+    <!-- 消息排队条：流式回复期间提交的消息在此保留，回复完成后自动发送；仅输入框有草稿时提示排队 -->
+    <div v-if="queuedItems.length || (isStreaming && hasDraftForQueue)" class="queue-strip" role="status">
       <span class="queue-strip__caption">
         <n-icon size="14" aria-hidden="true"><TimeOutline /></n-icon>
         {{ queuedItems.length ? `已排队 ${queuedItems.length} 条，当前回复完成后自动发送` : 'AI 正在回复，现在发送的消息将排队等待' }}

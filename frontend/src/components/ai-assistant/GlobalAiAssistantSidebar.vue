@@ -71,6 +71,9 @@ function dismissHint() {
 const inputValue = ref('')
 const listEl = ref<HTMLElement | null>(null)
 
+// 流式回复期间输入框已有内容时才提示"消息将排队等待"
+const hasDraftForQueue = computed(() => inputValue.value.trim().length > 0)
+
 // 每个页面使用独立的侧栏会话。首次挂载也清理持久化历史，避免从其他页面带入上下文。
 watch(
   () => route.fullPath,
@@ -296,9 +299,9 @@ function errorSummary(error: string): string {
               aria-label="选择模型"
             />
           </div>
-          <!-- 消息排队条：流式回复期间提交的消息在此保留，回复完成后自动发送 -->
+          <!-- 消息排队条：流式回复期间提交的消息在此保留，回复完成后自动发送；仅输入框有草稿时提示排队 -->
           <div
-            v-if="store.isStreaming || store.queuedMessages.length"
+            v-if="store.queuedMessages.length || (store.isStreaming && hasDraftForQueue)"
             class="ai-sidebar__queue-strip"
             role="status"
           >

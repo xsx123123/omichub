@@ -158,3 +158,50 @@ describe('KimiChatInput roomMode 发送链路', () => {
     expect(el.querySelector('.input-wrapper')?.classList.contains('has-highlight')).toBe(false)
   })
 })
+
+describe('KimiChatInput 消息排队条可见性', () => {
+  it('AI 回复中且输入框为空时不显示排队提示', async () => {
+    const { el } = mountComposer({ isStreaming: true, queuedItems: [] }, () => undefined)
+    await nextTick()
+
+    expect(el.querySelector('.queue-strip')).toBeNull()
+    expect(el.textContent).not.toContain('AI 正在回复')
+  })
+
+  it('AI 回复中输入内容后才显示排队提示', async () => {
+    const { el } = mountComposer({ isStreaming: true, queuedItems: [] }, () => undefined)
+    await nextTick()
+    expect(el.querySelector('.queue-strip')).toBeNull()
+
+    await typeText(el, '再补充一个分析')
+    expect(el.querySelector('.queue-strip')).not.toBeNull()
+    expect(el.textContent).toContain('AI 正在回复，现在发送的消息将排队等待')
+  })
+
+  it('已有排队消息时无论输入框是否为空都显示排队条', async () => {
+    const { el } = mountComposer(
+      { isStreaming: true, queuedItems: [{ id: 'q1', content: '先前排队的消息' }] },
+      () => undefined,
+    )
+    await nextTick()
+
+    const strip = el.querySelector('.queue-strip')
+    expect(strip).not.toBeNull()
+    expect(strip!.textContent).toContain('已排队 1 条，当前回复完成后自动发送')
+  })
+
+  it('回复结束且无排队消息后排队条消失', async () => {
+    const { el, app } = mountComposer(
+      { isStreaming: true, queuedItems: [{ id: 'q1', content: '先前排队的消息' }] },
+      () => undefined,
+    )
+    await nextTick()
+    expect(el.querySelector('.queue-strip')).not.toBeNull()
+
+    // 模拟流式结束：更新 props 需要重渲染，这里直接换挂一个非流式实例验证默认隐藏
+    app.unmount()
+    const remounted = mountComposer({ isStreaming: false, queuedItems: [] }, () => undefined)
+    await nextTick()
+    expect(remounted.el.querySelector('.queue-strip')).toBeNull()
+  })
+})

@@ -1,6 +1,7 @@
 """Studio 内置工具单元测试：schema 合法性 + 分发器行为（mock sandbox manager）"""
 
 import json
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -22,13 +23,17 @@ from cygnusx.infrastructure.studio.manager import StudioSandboxUnavailableError
 
 
 class _FakeManager:
-    def __init__(self) -> None:
+    def __init__(self, workspace: Path) -> None:
+        self.workspace = workspace
         self.exec_calls: list[dict[str, Any]] = []
         self.read_file_calls: list[dict[str, Any]] = []
         self.exec_events: list[dict[str, Any]] = []
         self.edit_result: dict[str, Any] = {}
         self.read_result: dict[str, Any] = {}
         self.raise_on: dict[str, Exception] = {}
+
+    def workspace_dir(self, session_id: str) -> Path:
+        return self.workspace
 
     def exec(self, session_id, language, code, timeout_sec=None, image=None, user_id=None):
         self.exec_calls.append(
@@ -97,8 +102,8 @@ class _FakeManager:
 
 
 @pytest.fixture
-def fake_manager(monkeypatch) -> _FakeManager:
-    fake = _FakeManager()
+def fake_manager(monkeypatch, tmp_path) -> _FakeManager:
+    fake = _FakeManager(tmp_path)
     monkeypatch.setattr(studio_tools, "studio_sandbox_manager", fake)
     return fake
 
@@ -456,6 +461,62 @@ async def test_workspace_edit_diff_passthrough(fake_manager: _FakeManager):
     assert payload["ui_payload"]["reverse_edit"] == reverse
     assert "diff" not in payload["llm_payload"]
     assert payload["llm_payload"]["path"] == "s.py"
+
+
+@pytest.mark.unit
+async def test_workspace_write_under_output_backfills_artifacts(fake_manager: _FakeManager):
+    """写入 output/ 产物目录时回填 artifacts，消息产物窗口才能展示/下载"""
+    target = fake_manager.workspace / "output" / "results" / "report.md"
+    target.parent.mkdir(parents=True)
+    content = "# report\n"
+    target.write_text(content, encoding="utf-8")
+
+    result = await execute_studio_tool(
+        "workspace_write",
+        {"path": "output/results/report.md", "content": content},
+        "sess-1",
+    )
+
+    assert result["success"] is True
+    payload = result["result"]
+    for channel in ("llm_payload", "ui_payload"):
+        artifacts = payload[channel]["artifacts"]
+        assert len(artifacts) == 1
+        assert artifacts[0]["path"] == "output/results/report.md"
+        assert artifacts[0]["size"] == len(content.encode("utf-8"))
+        assert isinstance(artifacts[0]["mtime"], float)
+
+
+@pytest.mark.unit
+async def test_workspace_write_outside_output_has_no_artifacts(fake_manager: _FakeManager):
+    """普通工作区文件（如 scripts/）不是交付产物，不回填 artifacts"""
+    result = await execute_studio_tool(
+        "workspace_write", {"path": "scripts/a.py", "content": "1"}, "sess-1"
+    )
+
+    assert result["success"] is True
+    payload = result["result"]
+    assert "artifacts" not in payload["llm_payload"]
+    assert "artifacts" not in payload["ui_payload"]
+
+
+@pytest.mark.unit
+async def test_workspace_edit_under_output_backfills_artifacts(fake_manager: _FakeManager):
+    target = fake_manager.workspace / "output" / "report.md"
+    target.parent.mkdir(parents=True)
+    target.write_text("hello", encoding="utf-8")
+    fake_manager.edit_result = {"path": "output/report.md", "size": 5, "diff": "--- diff\n"}
+
+    result = await execute_studio_tool(
+        "workspace_edit",
+        {"path": "output/report.md", "old_string": "hello", "new_string": "world"},
+        "sess-1",
+    )
+
+    assert result["success"] is True
+    payload = result["result"]
+    assert payload["ui_payload"]["artifacts"][0]["path"] == "output/report.md"
+    assert payload["llm_payload"]["artifacts"][0]["path"] == "output/report.md"
 
 
 @pytest.mark.unit

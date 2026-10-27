@@ -59,6 +59,8 @@ from cygnusx.infrastructure.studio.manager import (
     StudioSandboxUnavailableError,
     studio_sandbox_manager,
 )
+from cygnusx.infrastructure.studio.paths import PathEscapeError, relative_workspace_path
+from cygnusx.infrastructure.studio.workspace import resolve_artifact_path
 from cygnusx.tools.schema_loader import schema_loader
 
 # ===== 工具名与 OpenAI schema =====
@@ -724,6 +726,34 @@ def _ok_result(llm_payload: dict[str, Any], ui_payload: dict[str, Any]) -> dict[
     return {"success": True, "result": {"llm_payload": llm_payload, "ui_payload": ui_payload}}
 
 
+def _output_artifact_entry(
+    session_id: str, rel_path: str, size: int | None = None
+) -> dict[str, Any] | None:
+    """落盘文件位于工作区 output/ 产物目录时构造产物条目；不在产物目录返回 None。
+
+    消息级产物窗口只渲染工具结果里的 artifacts 清单（不扫盘），而
+    workspace_write/edit 不经 sandbox_execute 的执行后产物扫描，成功落盘后
+    需要在这里显式回填，产物才会出现在消息产物窗口供预览/下载。
+    """
+    if not rel_path:
+        return None
+    workspace = studio_sandbox_manager.workspace_dir(session_id)
+    try:
+        target = resolve_artifact_path(workspace, rel_path)
+    except PathEscapeError:
+        return None
+    entry: dict[str, Any] = {"path": relative_workspace_path(target, workspace)}
+    try:
+        st = target.stat()
+    except OSError:
+        if size is not None:
+            entry["size"] = size
+        return entry
+    entry["size"] = st.st_size
+    entry["mtime"] = st.st_mtime
+    return entry
+
+
 async def _workspace_remember(args: dict[str, Any], session_id: str) -> dict[str, Any]:
     """写入正文和索引；失败时恢复两者原状。"""
     from datetime import date
@@ -949,7 +979,12 @@ async def _workspace_write(
         "size": data.get("size", len(content)),
         "message": "文件已写入",
     }
-    return _ok_result(llm_payload, dict(llm_payload))
+    ui_payload = dict(llm_payload)
+    artifact = _output_artifact_entry(session_id, str(data.get("path") or path), data.get("size"))
+    if artifact is not None:
+        llm_payload["artifacts"] = [artifact]
+        ui_payload["artifacts"] = [artifact]
+    return _ok_result(llm_payload, ui_payload)
 
 
 async def _workspace_edit(
@@ -974,6 +1009,10 @@ async def _workspace_edit(
         "diff": data.get("diff", ""),
         "reverse_edit": data.get("reverse_edit"),
     }
+    artifact = _output_artifact_entry(session_id, str(data.get("path") or path), data.get("size"))
+    if artifact is not None:
+        llm_payload["artifacts"] = [artifact]
+        ui_payload["artifacts"] = [artifact]
     return _ok_result(llm_payload, ui_payload)
 
 

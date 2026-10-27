@@ -7,18 +7,24 @@
 
 ## 优化项（按优先级）
 
-### 1. 共享 httpx client + HTTP/2【半天】
+### 1. 共享 httpx client + HTTP/2【半天】✅ 2026-10-28 `e2d9d5a2`
 - 现状：`infrastructure/ai_provider/openai_compatible.py:504` 每次 LLM 调用新建 `httpx.AsyncClient`，每次重新 TCP + TLS 握手（0.3~2s）；`:727` 健康探测同样问题
 - 改法：模块级共享 client，调高连接池 limits，启用 HTTP/2（对 deepseek 单域名高并发收益明显）
 - 预期：每轮省 0.3~2s，10 分钟 35 次调用省 10~35s
+- 落地：新增 `ai_provider/shared_http.py`（按事件循环缓存共享 client，连接池 + HTTP/2，
+  `httpx[http2]` 入锁）；`_stream_once`/`list_models`/`kimi` 全切共享 client；
+  池上限走 `llm_http_max_connections`/`llm_http_max_keepalive_connections`
 
-### 2. chat_messages 流式写节流 + 事件序列风暴修复【半天】
+### 2. chat_messages 流式写节流 + 事件序列风暴修复【半天】✅ 2026-10-28 `f6fefa5c`
 - 现状：每个 text 事件全量 `UPDATE chat_messages` 重写整条 content（10 分钟 172 次全量写）；
   `chat_event_service._handle_violation`（application/services/chat/chat_event_service.py:75）同一分钟刷 760 条
   `agent_context_reinjected 后必须紧接 agent_turn_continued` 警告
 - 改法：写库节流合并（300~500ms flush 一次或按字符数），SSE 出站保持逐 token；修复事件序列/重注入逻辑，
   打断「重注入 → prompt 变大 → 更慢 → 再重注入」恶性循环
 - 预期：DB 写入量降一个量级，CPU/IO 压力显著下降
+- 落地：① 根因是 Legacy 循环轮级回灌后缺 `agent_turn_continued`（LangGraph 路径本就成对发送），
+  补发后与 golden 契约一致，警告风暴根除；② 写库从 %5 chunk 计数改为 0.4s 时间窗口节流
+  （`chat_streaming_write_interval_seconds`）；③ `_handle_violation` 加 60s 合并抑制兜底
 
 ### 3. 模型分层路由 + 多 key 负载均衡 + max_tokens 收紧【纯配置】
 - 现状：ai_provider_configs 已有 tier/weight/latency_budget_ms 字段且 model_health_monitor 在跑，
@@ -47,10 +53,19 @@
 - 现状：swap 8G 已用 7.9G（历史内存压力痕迹）；磁盘 92%（148G 剩余）
 - 改法：找出 swap 占用的进程（大概率是某容器）并处理；清理磁盘
 
-### 8. AgentContextBuilder 装配并行化【中等改动】
+### 8. AgentContextBuilder 装配并行化【中等改动】◐ 2026-10-28 `01ef80b3`（会诊路径）
 - 现状：记忆检索、知识检索、工具 schema、site_settings/agent_templates/ai_provider_configs 查询
   日志看为串行 await（每 ~3 秒一轮的查询风暴）
 - 改法：改 asyncio.gather 并行装配，每轮省 1~3s
+- 已落地（会诊路径）：`multi_expert_consultation_service.collect()` 原先把多位专家 assemble 并发跑在
+  同一 AsyncSession——SQLAlchemy async session 禁止并发操作（InvalidRequestError），异常被
+  return_exceptions 静默丢弃 = 缓存未命中时会诊只幸存首位专家意见。已改为每专家独立会话真正并行，
+  并加回归测试
+- 关键约束（后续切片必读）：**同一 AsyncSession 不能并发查询**（已实测验证）；并行装配必须
+  每协程独立会话（get_session_factory 新建），且会话需存活至 ORM 对象消费完毕
+- 待做：消息装配主路径（chat_service 记忆召回 ∥ site_settings ∥ bridge 配置的串行 await，
+  ~3633-3696 行）并行化；`assemble_context` 内 `_resolve_model`/`get_by_ids`/`_load_skills`
+  独立会话并行化
 
 ## 验证方式
 - `ai_call_metrics` 表：关注 avg/p95 duration_ms、平均 prompt_tokens 变化

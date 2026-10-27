@@ -24,6 +24,7 @@ from cygnusx.application.services.model_health_monitor import HealthEventKind, M
 from cygnusx.application.services.tool_manifest import build_tool_manifest
 from cygnusx.core.config import get_settings
 from cygnusx.core.telemetry import get_meter, get_tracer
+from cygnusx.infrastructure.ai_provider.shared_http import get_shared_llm_http_client
 from cygnusx.infrastructure.database.models.ai_provider import AIProviderConfigModel
 
 
@@ -500,19 +501,15 @@ class OpenAICompatibleProvider:
                 f"deep_thinking={deep_thinking} "
                 f"enable_thinking={payload.get('enable_thinking', '<omitted>')}"
             )
-            async with (
-                httpx.AsyncClient(
-                    timeout=httpx.Timeout(self._timeout, connect=10),
-                    verify=True,
-                    follow_redirects=True,
-                ) as client,
-                client.stream(
-                    "POST",
-                    f"{self.base_url}/chat/completions",
-                    headers=headers,
-                    json=payload,
-                ) as response,
-            ):
+            # 共享 client（连接池 + HTTP/2），超时按 provider 配置逐请求传入，
+            # 避免每次调用重复 TCP + TLS 握手（0.3~2s）。
+            async with get_shared_llm_http_client().stream(
+                "POST",
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=httpx.Timeout(self._timeout, connect=10),
+            ) as response:
                 if response.status_code == 401:
                     yield ChatChunk(
                         type="error",
@@ -724,26 +721,27 @@ class OpenAICompatibleProvider:
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
-        async with httpx.AsyncClient(timeout=10, verify=True) as client:
-            resp = await client.get(f"{self.base_url}/models", headers=headers)
-            if resp.status_code == 401:
-                raise RuntimeError(f"API Key 无效或已过期（模型: {self.name}）")
-            if resp.status_code == 404:
-                raise RuntimeError(f"该 Provider 不支持 /v1/models 端点（模型: {self.name}）")
-            if resp.status_code >= 400:
-                body = (await resp.aread()).decode()[:500]
-                raise RuntimeError(f"发现模型失败（模型: {self.name}）: {body}")
-            data = resp.json()
-            models = data.get("data", [])
-            return [
-                {
-                    "id": m.get("id", ""),
-                    "name": m.get("name") or m.get("id", ""),
-                    "owned_by": m.get("owned_by", "unknown"),
-                }
-                for m in models
-                if m.get("id")
-            ]
+        resp = await get_shared_llm_http_client().get(
+            f"{self.base_url}/models", headers=headers, timeout=10
+        )
+        if resp.status_code == 401:
+            raise RuntimeError(f"API Key 无效或已过期（模型: {self.name}）")
+        if resp.status_code == 404:
+            raise RuntimeError(f"该 Provider 不支持 /v1/models 端点（模型: {self.name}）")
+        if resp.status_code >= 400:
+            body = (await resp.aread()).decode()[:500]
+            raise RuntimeError(f"发现模型失败（模型: {self.name}）: {body}")
+        data = resp.json()
+        models = data.get("data", [])
+        return [
+            {
+                "id": m.get("id", ""),
+                "name": m.get("name") or m.get("id", ""),
+                "owned_by": m.get("owned_by", "unknown"),
+            }
+            for m in models
+            if m.get("id")
+        ]
 
     @staticmethod
     def _emit_tool_calls(tool_acc: dict[int, dict[str, Any]]) -> bool:

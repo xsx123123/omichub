@@ -203,6 +203,9 @@ class Settings(BaseSettings):
     # 429 限流单独的重试上限（独立计数，不占用瞬时重试额度）；优先尊重响应的 Retry-After 头，
     # 没有该头时退化为与瞬时重试相同的线性退避。上限刻意低于瞬时重试，避免限流时雪崩。
     llm_stream_rate_limit_retries: int = 2
+    # 共享 LLM 出站 httpx client 的连接池上限（shared_http.py）；keep-alive 复用避免每轮重握手。
+    llm_http_max_connections: int = 100
+    llm_http_max_keepalive_connections: int = 20
     # ===== 联网检索优化 =====
     web_search_refinement_cache_ttl_seconds: int = 86400
     web_search_semantic_rerank_enabled: bool = True

@@ -11,8 +11,11 @@ import {
 } from '@vicons/ionicons5'
 import hljs from 'highlight.js'
 import apiClient from '@/api/client'
+import { fetchTablePreviewBlob } from '@/api/artifactPreview'
 import { studioApi } from '@/api/studio'
 import { printBlobUrl } from '@/utils/blobPrint'
+import { TABLE_EXTENSIONS } from '@/utils/artifactTablePreview'
+import ArtifactTablePreview from './ArtifactTablePreview.vue'
 import { VChart } from './setup'
 import type { ChartData, ToolCall } from './types'
 
@@ -53,16 +56,6 @@ const HLJS_LANGUAGE_ALIASES: Record<string, string> = {
   md: 'markdown', jsonl: 'json', txt: 'plaintext', log: 'plaintext', csv: 'plaintext', tsv: 'plaintext',
 }
 const TEXT_PREVIEW_MAX_CHARS = 200_000
-const SHEET_PREVIEW_MAX_ROWS = 100
-const SHEET_PREVIEW_MAX_SHEETS = 3
-
-interface SheetPreview {
-  name: string
-  header: string[]
-  rows: string[][]
-  truncated: boolean
-}
-
 const previewUrls = ref<Record<string, string>>({})
 /** 每个预览 blob 对应的加载来源('' = studio 会话接口,其余 = 直连下载地址),来源变化时需重拉 */
 const loadedUrlByPath = ref<Record<string, string>>({})
@@ -78,7 +71,7 @@ const previewError = ref('')
 const previewTitle = ref('')
 const previewCodeHtml = ref('')
 const previewCodeTruncated = ref(false)
-const previewSheets = ref<SheetPreview[]>([])
+const previewTableArtifact = ref<ArtifactItem | null>(null)
 
 // 图片/PDF 放大预览弹窗
 const mediaPreviewVisible = ref(false)
@@ -420,6 +413,15 @@ async function fetchPreviewBlobData(artifact: ArtifactItem): Promise<Blob> {
   return res.data as Blob
 }
 
+async function fetchTableBlobData(artifact: ArtifactItem, confirmed: boolean): Promise<Blob> {
+  if (artifact.url?.startsWith('data:')) return (await fetch(artifact.url)).blob()
+  return artifact.url
+    ? fetchTablePreviewBlob(artifact.url.replace(/^\/api\/v1/, ''), confirmed)
+    : fetchTablePreviewBlob(`/studio/sessions/${props.sessionId}/artifacts/download`, confirmed, {
+        path: artifact.path,
+      })
+}
+
 async function fetchArtifactObjectUrl(artifact: ArtifactItem): Promise<string> {
   return URL.createObjectURL(await fetchArtifactBlobData(artifact))
 }
@@ -428,50 +430,31 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-async function buildSheetPreviews(buffer: ArrayBuffer): Promise<SheetPreview[]> {
-  const XLSX = await import('xlsx')
-  const workbook = XLSX.read(buffer, { type: 'array' })
-  return workbook.SheetNames.slice(0, SHEET_PREVIEW_MAX_SHEETS).map((name) => {
-    const rawRows = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[name], {
-      header: 1,
-      raw: false,
-      defval: '',
-    })
-    const normalized = rawRows.map((row) => (Array.isArray(row) ? row.map((cell) => String(cell)) : []))
-    const [header = [], ...body] = normalized
-    return {
-      name,
-      header,
-      rows: body.slice(0, SHEET_PREVIEW_MAX_ROWS),
-      truncated: body.length > SHEET_PREVIEW_MAX_ROWS,
-    }
-  })
-}
-
 async function openPreview(artifact: ArtifactItem) {
   previewTitle.value = fileName(artifact.path)
   previewError.value = ''
   previewCodeHtml.value = ''
   previewCodeTruncated.value = false
-  previewSheets.value = []
+  previewTableArtifact.value = null
   previewModalVisible.value = true
+  if (TABLE_EXTENSIONS.has(extensionOf(artifact.path))) {
+    previewLoading.value = false
+    previewTableArtifact.value = artifact
+    return
+  }
   previewLoading.value = true
   try {
     const blob = await fetchArtifactBlobData(artifact)
     const ext = extensionOf(artifact.path)
-    if (SHEET_PREVIEW_EXTENSIONS.has(ext)) {
-      previewSheets.value = await buildSheetPreviews(await blob.arrayBuffer())
-    } else {
-      let text = await blob.text()
-      if (text.length > TEXT_PREVIEW_MAX_CHARS) {
-        text = text.slice(0, TEXT_PREVIEW_MAX_CHARS)
-        previewCodeTruncated.value = true
-      }
-      const language = HLJS_LANGUAGE_ALIASES[ext] || ext
-      previewCodeHtml.value = hljs.getLanguage(language)
-        ? hljs.highlight(text, { language }).value
-        : escapeHtml(text)
+    let text = await blob.text()
+    if (text.length > TEXT_PREVIEW_MAX_CHARS) {
+      text = text.slice(0, TEXT_PREVIEW_MAX_CHARS)
+      previewCodeTruncated.value = true
     }
+    const language = HLJS_LANGUAGE_ALIASES[ext] || ext
+    previewCodeHtml.value = hljs.getLanguage(language)
+      ? hljs.highlight(text, { language }).value
+      : escapeHtml(text)
   } catch {
     previewError.value = '预览加载失败，请尝试下载后查看'
   } finally {
@@ -770,24 +753,13 @@ onBeforeUnmount(clearPreviews)
     >
       <div v-if="previewLoading" class="artifact-preview__status">正在加载预览…</div>
       <div v-else-if="previewError" class="artifact-preview__status">{{ previewError }}</div>
-      <template v-else-if="previewSheets.length">
-        <div v-for="sheet in previewSheets" :key="sheet.name" class="artifact-sheet-preview">
-          <h4 class="artifact-sheet-preview__name">{{ sheet.name }}</h4>
-          <div class="artifact-sheet-preview__scroll">
-            <table>
-              <thead>
-                <tr><th v-for="(cell, i) in sheet.header" :key="i">{{ cell }}</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, ri) in sheet.rows" :key="ri">
-                  <td v-for="(cell, ci) in row" :key="ci">{{ cell }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p v-if="sheet.truncated" class="artifact-preview__hint">仅展示前 {{ SHEET_PREVIEW_MAX_ROWS }} 行，完整数据请下载查看</p>
-        </div>
-      </template>
+      <ArtifactTablePreview
+        v-else-if="previewModalVisible && previewTableArtifact"
+        :key="previewTableArtifact.path"
+        :file-name="previewTableArtifact.path"
+        :size="previewTableArtifact.size"
+        :load-blob="(confirmed) => fetchTableBlobData(previewTableArtifact!, confirmed)"
+      />
       <template v-else>
         <pre class="artifact-code-preview hljs"><code v-html="previewCodeHtml"></code></pre>
         <p v-if="previewCodeTruncated" class="artifact-preview__hint">内容过长，仅展示前面部分，完整内容请下载查看</p>
@@ -1370,43 +1342,6 @@ p.message-artifacts__hint {
 :root[data-theme="dark"] .artifact-code-preview.hljs :deep(.hljs-selector-attr),
 :root[data-theme="dark"] .artifact-code-preview.hljs :deep(.hljs-selector-pseudo) {
   color: #7ee787;
-}
-
-.artifact-sheet-preview + .artifact-sheet-preview {
-  margin-top: var(--space-lg, 16px);
-}
-
-.artifact-sheet-preview__name {
-  margin: 0 0 var(--space-sm, 8px);
-  font-size: 13px;
-}
-
-.artifact-sheet-preview__scroll {
-  max-height: 55vh;
-  overflow: auto;
-  border: 1px solid var(--stardust-border-soft);
-  border-radius: 8px;
-}
-
-.artifact-sheet-preview__scroll table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.artifact-sheet-preview__scroll th,
-.artifact-sheet-preview__scroll td {
-  padding: 4px 10px;
-  border-bottom: 1px solid var(--stardust-border-soft);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.artifact-sheet-preview__scroll th {
-  position: sticky;
-  top: 0;
-  /* --bg-secondary 未在全局令牌中定义，兜底到卡片底色（亮色同为白，暗色为深色卡片面） */
-  background: var(--bg-secondary, var(--bg-card));
 }
 
 .message-artifacts__download:hover {

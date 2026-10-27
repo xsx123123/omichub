@@ -765,9 +765,13 @@ Arco 项目可遵守 Vue 3 `<script setup lang="ts">`、kebab-case 模板属性�
 | --- | --- | --- |
 | 图片（PNG、JPG、SVG、WebP 等） | 可点击缩略图（`cursor: zoom-in`，hover 显示"点击放大"提示） | 大图 + 缩放工具（缩小 / 百分比 / 放大 / 重置，25%–500%，支持滚轮）+ 下载、打印 |
 | PDF | **禁止内嵌 `<iframe>`**；使用"图标 + 点击放大预览"占位按钮 | 弹窗内嵌查看器 + 自定义工具条（下载、打印） |
-| 文本/代码（FASTA、CSV、日志、脚本等） | 列表 + "预览"按钮 | 前 100 行或前 200K 字符 + 高亮 + 截断提示 |
-| 表格（XLSX、XLS） | 列表 + "预览"按钮 | 前 100 行 / 前 3 个 sheet + 截断提示 |
+| 文本/代码（FASTA、日志、脚本等） | 列表 + "预览"按钮 | 前 100 行或前 200K 字符 + 高亮 + 截断提示 |
+| 表格（CSV、TSV、XLSX、XLS） | 列表 + "预览"按钮 | 消息画廊与 Studio 使用结构化表格：前 100 行数据、总行数、全部工作表 tab；首个 sheet 默认展示 |
 | 不支持的格式 | 文件图标 + 元信息（大小、修改时间）+ 下载按钮 | — |
+
+消息产物画廊和 Studio 产物面板共用 `components/ai-chat/ArtifactTablePreview.vue`。`utils/artifactTablePreview.ts` 使用 PapaParse 按 CSV/TSV 扩展名解析、仅保留前 100 行并扫描总行数；Excel 通过 SheetJS `sheetRows: 101` 限制每张工作表的解析范围，通过 `!fullref` 读取原始总行数。Naive UI 表格固定表头，横纵滚动，列宽按内容推断并封顶 240px，单元格省略与悬浮全文、数值列右对齐、斑马纹和 hover 使用组件库状态。
+
+超过 5 MiB 的表格须确认加载：清单已提供大小时在请求前确认；缺少或低报大小时，专用 `api/artifactPreview.ts` 流式传输先检查 Content-Length，未知长度则在累计超过 5 MiB 时停止读取并提示确认，确认后重新请求。预览沿用统一 API 客户端的认证；下载函数与媒体预览不变。文本编码支持 UTF-8（含 BOM）、UTF-16 BOM 和 GB18030/GBK；空表显示“该产物为空表格”，损坏表格静默回退至最多 200K 字符的纯文本。文件管理的 `FilePreviewModal` 保持原有能力，不在此表格入口范围内。
 
 #### 17.3.2 图片与 PDF 预览规则（强制）
 

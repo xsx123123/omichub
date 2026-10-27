@@ -2,14 +2,13 @@
 /**
  * StudioArtifactsPanel — 产物列表面板（右栏）
  *
- * GET /studio/sessions/{id}/artifacts：图片 lightbox、CSV/TSV 前 50 行表格、
+ * GET /studio/sessions/{id}/artifacts：图片 lightbox、CSV/TSV/Excel 前 100 行表格、
  * Markdown 渲染；同时支持下载、插入对话引用和保存为报告版本。
  */
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import DOMPurify from 'dompurify'
 import {
   NButton,
-  NDataTable,
   NIcon,
   NInput,
   NModal,
@@ -17,7 +16,6 @@ import {
   NTooltip,
   useMessage,
 } from 'naive-ui'
-import type { DataTableColumns } from 'naive-ui'
 import {
   AddOutline,
   ChatboxOutline,
@@ -32,8 +30,10 @@ import {
   SaveOutline,
 } from '@vicons/ionicons5'
 import MarkdownIt from 'markdown-it'
-import Papa from 'papaparse'
+import ArtifactTablePreview from '@/components/ai-chat/ArtifactTablePreview.vue'
+import { TABLE_EXTENSIONS } from '@/utils/artifactTablePreview'
 import { studioApi, type StudioArtifact } from '@/api/studio'
+import { fetchTablePreviewBlob } from '@/api/artifactPreview'
 import { printBlobUrl } from '@/utils/blobPrint'
 
 const props = defineProps<{
@@ -51,14 +51,13 @@ const message = useMessage()
 
 const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp'])
 const PDF_EXTS = new Set(['pdf'])
-const TABLE_EXTS = new Set(['csv', 'tsv'])
+const TABLE_EXTS = TABLE_EXTENSIONS
 const MARKDOWN_EXTS = new Set(['md', 'markdown'])
 // HTML 报告（如 plotly 交互图表）：与左侧工作区预览一致，sandbox 隔离渲染
 const HTML_EXTS = new Set(['html', 'htm'])
 const markdown = new MarkdownIt({ html: false, linkify: true, typographer: true })
 
 type PreviewKind = 'image' | 'pdf' | 'html' | 'table' | 'markdown' | 'unsupported'
-type PreviewRow = Record<string, string | number>
 
 const artifacts = ref<StudioArtifact[]>([])
 const artifactsInitialized = ref(false)
@@ -76,8 +75,6 @@ const previewLoading = ref(false)
 const previewError = ref('')
 const previewTruncated = ref(false)
 const previewMarkdown = ref('')
-const previewColumns = ref<DataTableColumns<PreviewRow>>([])
-const previewRows = ref<PreviewRow[]>([])
 const showPreview = ref(false)
 const previewZoom = ref(1)
 const ZOOM_MIN = 0.25
@@ -124,8 +121,6 @@ function clearPreview() {
   previewError.value = ''
   previewTruncated.value = false
   previewMarkdown.value = ''
-  previewColumns.value = []
-  previewRows.value = []
   previewZoom.value = 1
 }
 
@@ -177,33 +172,10 @@ onBeforeUnmount(() => {
   clearPreview()
 })
 
-function buildTablePreview(content: string, delimiter: string) {
-  const parsed = Papa.parse<string[]>(content.replace(/^\uFEFF/, ''), {
-    delimiter,
-    skipEmptyLines: 'greedy',
+async function loadTableBlob(confirmed: boolean): Promise<Blob> {
+  return fetchTablePreviewBlob(`/studio/sessions/${props.sessionId}/artifacts/download`, confirmed, {
+    path: previewArtifact.value!.path,
   })
-  const records = parsed.data.filter((row) => row.some((cell) => String(cell).trim()))
-  if (!records.length) {
-    previewError.value = '文件中没有可预览的数据'
-    return
-  }
-
-  const header = records[0]
-  const dataRows = records.slice(1)
-  previewColumns.value = header.map((label, index) => ({
-    title: String(label || `列 ${index + 1}`),
-    key: `column_${index}`,
-    minWidth: 120,
-    ellipsis: { tooltip: true },
-  }))
-  previewRows.value = dataRows.slice(0, 50).map((row, rowIndex) => {
-    const item: PreviewRow = { __rowKey: rowIndex }
-    header.forEach((_, columnIndex) => {
-      item[`column_${columnIndex}`] = row[columnIndex] ?? ''
-    })
-    return item
-  })
-  previewTruncated.value = previewTruncated.value || dataRows.length > 50
 }
 
 async function openPreview(artifact: StudioArtifact) {
@@ -235,9 +207,6 @@ async function openPreview(artifact: StudioArtifact) {
 
     if (TABLE_EXTS.has(ext)) {
       previewKind.value = 'table'
-      const result = await studioApi.readArtifactText(props.sessionId, artifact.path, 500)
-      previewTruncated.value = result.truncated
-      buildTablePreview(result.content, ext === 'tsv' ? '\t' : ',')
       return
     }
 
@@ -470,19 +439,13 @@ function formatTime(mtime: number): string {
           />
           <small class="html-preview-hint">沙盒内渲染，页面脚本可用但无法访问登录态；引用的外部本地资源可能无法加载</small>
         </div>
-        <div v-else-if="previewKind === 'table'" class="table-preview">
-          <n-data-table
-            v-if="previewRows.length"
-            :columns="previewColumns"
-            :data="previewRows"
-            :row-key="(row: PreviewRow) => row.__rowKey"
-            :max-height="560"
-            :scroll-x="Math.max(720, previewColumns.length * 140)"
-            size="small"
-            striped
-          />
-          <div v-else class="preview-message">文件中没有可预览的数据</div>
-        </div>
+        <ArtifactTablePreview
+          v-else-if="previewKind === 'table' && showPreview && previewArtifact"
+          :key="previewArtifact.path"
+          :file-name="previewArtifact.path"
+          :size="previewArtifact.size"
+          :load-blob="loadTableBlob"
+        />
         <article
           v-else-if="previewKind === 'markdown'"
           class="markdown-preview"
@@ -492,7 +455,7 @@ function formatTime(mtime: number): string {
           此文件类型暂不支持在线预览，请下载后查看。
         </div>
         <div v-if="previewTruncated" class="truncated-tip">
-          预览内容已截断，仅展示 CSV/TSV 前 50 行或 Markdown 前 2000 行
+          预览内容已截断，仅展示 Markdown 前 2000 行
         </div>
         <n-button
           v-if="previewArtifact && previewKind === 'unsupported'"

@@ -90,7 +90,10 @@ describe('MessageArtifactGallery', () => {
       'results',
     )
     const bytes = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' })
-    apiGet.mockResolvedValue({ data: new Blob([bytes]) })
+    apiGet.mockResolvedValue({
+      data: new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(bytes)); controller.close() } }),
+      headers: { 'content-length': bytes.byteLength },
+    })
     const host = document.createElement('div')
     document.body.appendChild(host)
     const app = createApp(MessageArtifactGallery, {
@@ -127,7 +130,7 @@ describe('MessageArtifactGallery', () => {
 
     expect(apiGet).toHaveBeenCalledWith(
       '/chat/sandbox-sessions/sandbox-1/artifacts/download?path=carcinogenic_pathways.xlsx',
-      { responseType: 'blob' },
+      { adapter: 'fetch', responseType: 'stream' },
     )
     expect(studioFetch).not.toHaveBeenCalled()
     expect(document.body.textContent).toContain('results')

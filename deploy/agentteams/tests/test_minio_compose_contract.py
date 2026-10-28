@@ -9,8 +9,15 @@ AGENTTEAMS_COMPOSE = ROOT / "deploy/agentteams/docker-compose.agentteams.yml"
 MAIN_COMPOSE = ROOT / "deploy/docker/docker-compose.yml"
 
 
+class _ComposeLoader(yaml.SafeLoader):
+    """Accept Compose's sequence reset without broadening SafeLoader."""
+
+
+_ComposeLoader.add_constructor("!reset", yaml.SafeLoader.construct_sequence)
+
+
 def test_main_compose_exposes_private_agentteams_bucket() -> None:
-    payload = yaml.safe_load(MAIN_COMPOSE.read_text(encoding="utf-8"))
+    payload = yaml.load(MAIN_COMPOSE.read_text(encoding="utf-8"), Loader=_ComposeLoader)
     services = payload["services"]
 
     assert set(services["minio"]["networks"]) == {"data_net", "cygnusx_net"}

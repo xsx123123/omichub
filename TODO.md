@@ -221,3 +221,51 @@
 - 保持 HTML 预览 opaque-origin 隔离及现有网络/导航限制，不为兼容图表放开父页面、平台存储或凭据访问。
 - 数值结论须来自当前授权源表；每项交付保留来源、参数和真实文件证据。涉及新行为时同步更新 as-built 文档，并按对应域执行测试。
 - 本次运行证据索引见架构文档；`/tmp/omichub-report-breakpoint/` 与 `/tmp/report-copilot-repair/` 为临时验收材料，后续验收前将必要脱敏记录归档到项目规定位置，不能依赖临时目录长期留存。
+
+---
+
+# 本地客户端加密接入 TODO（12 月施工）
+
+> 施工总计划：`docs/info/26.10.29/本地客户端接入-12月施工总计划.md`（自包含：各阶段含目标、任务分解、paste-ready 提示词、验收 checklist）。
+> 依据：活文档《本地客户端加密接入-调查阶段实现计划》Part 1–5（2026-10-29 定稿）+ 仓库现状调查报告 v1.0（基线 `feat/report-center-ai-linkage` @ `b7482e6f`）。
+> 状态：待启动，2026-12 起按阶段推进；每阶段验收过了才进下一阶段，阶段 2/3 跨年属预期不赶工。
+> 总目标：① Tauri 桌面客户端经 mTLS 独立 8443 监听加密接入后端，复用 `/api/v1` 全部能力，Web 端零回归；② 新增集群状态页（一机一卡）；③ mTLS = 设备准入 + JWT = 用户身份双层叠加。
+
+## 已定决策（不再讨论）
+
+- 客户端形态：Tauri（复用现有 Vue 前端构建产物打进壳内）；小范围分发（自助 enroll + 管理员吊销，更新需签名）
+- phylo/searxng 跨服务器在用：端口不回收，改认证 + 白名单；浏览器长期共存 → mTLS 走独立 8443，443 不动
+- 客户端鉴权：token-in-header（系统钥匙串存 JWT），不复用 Cookie；报告预览优先客户端本地代理同源化，后端不加新通道
+
+## 前置条件（12 月开工第一天检查）
+
+- [ ] 阶段 0 手册在手：《本地客户端接入-阶段0止血实施手册.md》
+- [ ] 活文档在手（总计划 + 活文档 Part 4 保留意见清单）
+- [ ] 生产环境可发版窗口（阶段 0/1 各需要一次发版）
+- [ ] 一台备用测试机（阶段 1.5 起当第 2/3 个集群节点用）
+
+## 推进清单（按周排期，可按实际节奏平移）
+
+- [ ] **阶段 0　止血包（W1，1–2 天施工 + 半天核查）**：照《阶段0止血实施手册》执行——Step 0 只查不改（部署拓扑 A/B、CookieRequired 对纯 Bearer 是否放行、phylo Redis/SearXNG 调用方盘点）；uvicorn `--proxy-headers --forwarded-allow-ips`；XFF 防伪造；tasks 进度 SSE 归属校验（`tasks.py:228-253`，mas_rooms 不动）；生产 `openapi_url=None`；Phylo Redis requirepass + SearXNG 白名单；全量门禁 + Web 冒烟。出口：手册验收表全绿 + Step 0 三条核查结论书面化回填活文档
+- [ ] **阶段 1　API 兼容层（W2–W3）**：任务 0 回填 CookieRequired 核查结论（必要时先加 `/api/v1` + Authorization 头豁免）；任务 1 前端基址收口（runtime 配置层导出 apiBaseUrl/wsBaseUrl，全仓相对 URL 收口）；任务 2 SSE 鉴权统一（TaskProgressCard 改 fetch + ReadableStream 带 Authorization，盘点 10 个 SSE 端点补齐 Bearer）；任务 3 WS 鉴权升级（Sec-WebSocket-Protocol 子协议传 token，query token 保留但 deprecated）；任务 4 引导端点 `GET /api/v1/client/bootstrap`（公开但限流）；任务 5 devices 表 + CRUD 骨架（不签证书，cert_* 留空，写操作入 audit_logs）。验收：curl 模拟非浏览器客户端 登录→刷新→SSE→WS 全链路通，无 Cookie 依赖
+- [ ] **阶段 1.5　集群状态页面（W4）**：cluster_nodes 表 + Redis latest（TTL 120s）+ cluster_metrics 历史抽样（每分钟一条留 7 天）；`POST /api/v1/cluster/heartbeat`（X-Node-Key 预共享 key，鉴权层可替换为阶段 2 设备证书）；查询 API 按角色裁剪字段（普通用户简化卡片、admin 完整）；`scripts/node_reporter/` 上报端（/proc 采集 + systemd timer）；前端 grid 页（响应式卡片、5s 轮询、admin 抽屉趋势线）。验收：两台测试机在线卡片、停上报 90s 变灰、普通用户响应无敏感字段
+- [ ] **阶段 2　mTLS 引导（W5–W6，可跨 1 月）**：私有 CA（离线根 + 在线中间 CA，deploy/pki/，私钥不入库）；nginx 8443 server 块（ssl_verify_client on，透传 X-Client-Verify/Fingerprint/Subject，443 不动）；ClientCert 中间件（只对 8443 生效，指纹查 devices 表，在 Auth 之前）；enroll/renew/revoke API（CSR 签发、到期前 30 天续、吊销写 CRL）；audit_logs 增加 device_id/cert_fingerprint/client_version；443 回归 + 全量回归。参考范式：`infrastructure/download/supervisor_server.py:344-395`。验收：无证书握手失败、双身份缺一不可、吊销 5s 内 403、直连 8000 伪造 X-Client-* 头被忽略
+- [ ] **阶段 3　Tauri 客户端 MVP（1–2 月，比赛季后）**：前置阶段 1+2 均已验收。3A 壳与基础链路（W1–W3）：Tauri 2 工程 + 复用 frontend 产物（base './' + hash 路由构建模式）、Rust loopback 代理注入 Authorization、钥匙串存令牌、首次引导向导（bootstrap → CA 指纹 TOFU 核对 → 登录含 2FA）；3B mTLS 接入与产品化（W4–W6）：设备 enroll（密钥不出钥匙串）、到期静默 renew、报告预览走代理换 Cookie（对齐 `reports.py:447-455`）、文件能力（分块上传/Rust 落盘）、集群页接入、自动更新 + 签名校验。验收：新机器 ≤5 分钟接入、重启免登录、吊销 5s 内被踢、Web 端零回归
+
+## 施工纪律（每阶段通用）
+
+1. 开工前 `git status` 工作区不干净不动工；每任务独立 commit，message 带阶段号（如 `feat(api): 阶段1 任务1 基址收口`），翻车可单独 revert
+2. 只改本阶段列明的文件，不顺手重构、不扩 scope；安全相关改动必须 e2e 验证（命令 + 退出码 + 现象），不接受只跑单测
+3. 验收权在用户手里：编码 Agent 交"改动清单 + 证据"，按总计划各阶段 checklist 逐项过；每阶段结束把总结（任务 × commit × 证据）核对后再下发下一阶段
+
+## 风险与回退速查
+
+- 基址收口遗漏 → grep 产物硬编码 `/api/v1` 补漏；CookieRequired 拦纯 Bearer → 先做豁免再进任务 1
+- mTLS 影响 443 → 8443 server 块独立，注释即可整体下线；设备私钥泄露 → revoke + 重新 enroll，按 fingerprint 审计追溯
+- 心跳端点被打 → 收紧限流桶 + key 轮换；进度跨年 → 属预期，阶段间独立，停在任何边界都是完整可用态
+
+## 执行日志（自填）
+
+| 日期 | 阶段/任务 | commit | 验收结果 | 备注 |
+| --- | --- | --- | --- | --- |
+| | | | | |

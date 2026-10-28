@@ -1,0 +1,53 @@
+{
+  "all_passed": true,
+  "cases": [
+    {
+      "case": "active",
+      "expected": 200,
+      "uncached_status": 200,
+      "cached_status": 200
+    },
+    {
+      "case": "module_disabled_next_request",
+      "expected": 403,
+      "uncached_status": 403,
+      "cached_status": 403
+    },
+    {
+      "case": "account_disabled_next_request",
+      "expected": 401,
+      "uncached_status": 401,
+      "cached_status": 401
+    },
+    {
+      "case": "old_token_version_revoked",
+      "expected": 401,
+      "uncached_status": 401,
+      "cached_status": 401
+    },
+    {
+      "case": "new_token_version_accepted",
+      "expected": 200,
+      "uncached_status": 200,
+      "cached_status": 200
+    },
+    {
+      "case": "original_identity_restored",
+      "expected": 200,
+      "uncached_status": 200,
+      "cached_status": 200
+    },
+    {
+      "case": "bad_signature_rejected",
+      "expected": 401,
+      "uncached_status": 401,
+      "cached_status": 401
+    },
+    {
+      "case": "refresh_token_cannot_authenticate",
+      "expected": 401,
+      "uncached_status": 401,
+      "cached_status": 401
+    }
+  ]
+}

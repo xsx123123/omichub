@@ -1,0 +1,18 @@
+{
+  "health": {
+    "status": "ok",
+    "version": "0.1.0",
+    "git_sha": "9313e6ab",
+    "build_time": "2026-10-26T02:09:15Z"
+  },
+  "all_samples_have_expiry": true,
+  "samples": 12,
+  "claim_fields": [
+    "delivery_id",
+    "reservation_expires_at",
+    "title",
+    "message",
+    "source",
+    "duration_ms"
+  ]
+}

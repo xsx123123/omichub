@@ -1,0 +1,68 @@
+{
+  "styles": [
+    {
+      "fontFamily": "Georgia, \"Times New Roman\", \"Songti SC\", serif",
+      "fontStyle": "italic",
+      "fontWeight": "700",
+      "letterSpacing": "1.5px",
+      "backgroundImage": "linear-gradient(90deg, rgba(238, 248, 255, 0.92) 0%, rgb(255, 255, 255) 24%, rgb(111, 180, 255) 50%, rgb(255, 255, 255) 76%, rgba(238, 248, 255, 0.92) 100%)",
+      "backgroundSize": "200%",
+      "backgroundClip": "text",
+      "fill": "rgba(0, 0, 0, 0)",
+      "filter": "drop-shadow(rgba(112, 181, 255, 0.55) 0px 0px 10px)",
+      "animation": "10s linear infinite shimmer-d4948df9",
+      "fontSize": "15px"
+    },
+    {
+      "fontFamily": "Georgia, \"Times New Roman\", \"Songti SC\", serif",
+      "fontStyle": "italic",
+      "fontWeight": "700",
+      "letterSpacing": "1.5px",
+      "backgroundImage": "linear-gradient(90deg, rgba(238, 248, 255, 0.92) 0%, rgb(255, 255, 255) 24%, rgb(111, 180, 255) 50%, rgb(255, 255, 255) 76%, rgba(238, 248, 255, 0.92) 100%)",
+      "backgroundSize": "200%",
+      "backgroundClip": "text",
+      "fill": "rgba(0, 0, 0, 0)",
+      "filter": "drop-shadow(rgba(112, 181, 255, 0.55) 0px 0px 10px)",
+      "animation": "10s linear infinite shimmer-d4948df9",
+      "fontSize": "24px"
+    },
+    {
+      "fontFamily": "Georgia, \"Times New Roman\", \"Songti SC\", serif",
+      "fontStyle": "italic",
+      "fontWeight": "700",
+      "letterSpacing": "1.5px",
+      "backgroundImage": "linear-gradient(90deg, rgba(238, 248, 255, 0.92) 0%, rgb(255, 255, 255) 24%, rgb(111, 180, 255) 50%, rgb(255, 255, 255) 76%, rgba(238, 248, 255, 0.92) 100%)",
+      "backgroundSize": "200%",
+      "backgroundClip": "text",
+      "fill": "rgba(0, 0, 0, 0)",
+      "filter": "drop-shadow(rgba(112, 181, 255, 0.55) 0px 0px 10px)",
+      "animation": "10s linear infinite shimmer-d4948df9",
+      "fontSize": "14px"
+    },
+    {
+      "fontFamily": "Georgia, \"Times New Roman\", \"Songti SC\", serif",
+      "fontStyle": "italic",
+      "fontWeight": "700",
+      "letterSpacing": "1.5px",
+      "backgroundImage": "linear-gradient(90deg, rgba(238, 248, 255, 0.92) 0%, rgb(255, 255, 255) 24%, rgb(111, 180, 255) 50%, rgb(255, 255, 255) 76%, rgba(238, 248, 255, 0.92) 100%)",
+      "backgroundSize": "200%",
+      "backgroundClip": "text",
+      "fill": "rgba(0, 0, 0, 0)",
+      "filter": "drop-shadow(rgba(112, 181, 255, 0.55) 0px 0px 10px)",
+      "animation": "10s linear infinite shimmer-d4948df9",
+      "fontSize": "14px"
+    }
+  ],
+  "motion": {
+    "first": "200% 50%",
+    "second": "0% 50%"
+  },
+  "mobileFits": true,
+  "reduced": [
+    "none",
+    "none",
+    "none",
+    "none"
+  ],
+  "errors": []
+}

@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-outbreak-pipeline
 description: Orchestrates genomic-epidemiology outbreak investigation from pathogen isolates to transmission networks, forking bacterial (snippy -> Gubbins recombination-masking -> IQ-TREE -> TreeTime -> TransPhylo) vs viral (Nextstrain/augur), with parallel MLST typing (cgMLST delegated to epidemiological-genomics/pathogen-typing) and AMR surveillance. Use when committing ONE reference genome for SNP calling (every isolate and distance inherits its coordinates), applying MANDATORY Gubbins recombination-masking on core.full.aln before the tree for recombining bacteria (skipping it inflates the clock 2-5x), gating time-scaling on a temporal-signal test (TempEst R2 >= 0.3), using a pathogen- AND population-specific cluster threshold rather than a universal SNP cutoff, or pinning pangolin-data/Nextclade/Freyja versions for the viral route. Hands mechanism to the epidemiological-genomics component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 病原暴发基因组流调
+display_name_en: Outbreak Genomics Pipeline
+description_zh: >-
+  从病原分离株到传播网络的基因组流行病学暴发调查流程，区分细菌（snippy、Gubbins、IQ-TREE、TreeTime、TransPhylo）与病毒（Nextstrain/augur）路线，并行开展 MLST 分型与耐药监测。
+description_en: >-
+  Orchestrates genomic-epidemiology outbreak investigation from pathogen isolates to transmission networks, forking bacterial (snippy -> Gubbins recombination-masking -> IQ-TREE -> TreeTime -> TransPhylo) vs viral (Nextstrain/augur), with parallel MLST typing (cgMLST delegated to epidemiological-genomics/pathogen-typing) and AMR surveillance. Use when committing ONE reference genome for SNP calling (every isolate and distance inherits its coordinates), applying MANDATORY Gubbins recombination-masking on core.full.aln before the tree for recombining bacteria (skipping it inflates the clock 2-5x), gating time-scaling on a temporal-signal test (TempEst R2 >= 0.3), using a pathogen- AND population-specific cluster threshold rather than a universal SNP cutoff, or pinning pangolin-data/Nextclade/Freyja versions for the viral route. Hands mechanism to the epidemiological-genomics component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用细菌分离株测序数据重建暴发传播树"
+  - "帮我用 Gubbins 去除重组后再建树"
+  - "对病毒基因组做 Nextstrain 分析"
+examples_en:
+  - "Reconstruct a transmission tree from these bacterial outbreak isolates"
+  - "Mask recombination with Gubbins before building the tree"
+  - "Run a Nextstrain analysis on these viral genomes"
 tool_type: mixed
 primary_tool: mlst
 workflow: true
@@ -158,7 +174,7 @@ hamronize summarize -t tsv -o ${OUTDIR}/amr/cohort.hamr.tsv ${OUTDIR}/amr/*.hamr
 echo "AMR summary: ${OUTDIR}/amr/cohort.hamr.tsv"
 ```
 
-For *M. tuberculosis*, route to TB-Profiler instead -- AMRFinderPlus has no Mtb organism mode. For colistin / mcr surveillance and any plasmid-mobility claim, follow with MOB-suite (`mob_recon` + `mob_typer`) to determine plasmid context. See epidemiological-genomics/amr-surveillance for the full decision tree.
+For *M. tuberculosis*, route to TB-Profiler instead -- AMRFinderPlus has no Mtb organism mode. For colistin / mcr surveillance and any plasmid-mobility claim, follow with MOB-suite (`mob_recon` + `mob_typer`) to determine plasmid context. See references/epidemiological-genomics--amr-surveillance.md for the full decision tree.
 
 ### Step 2: Core Genome Alignment + Recombination Masking (Bacteria)
 
@@ -402,7 +418,7 @@ plt.savefig('outbreak_results/outbreak_timeline.pdf')
 
 ## Pathogen-Specific SNP / cgMLST Cluster Thresholds
 
-Cluster definition is pathogen- AND population-specific. NEVER apply a universal cutoff. See epidemiological-genomics/transmission-inference for full table with citations.
+Cluster definition is pathogen- AND population-specific. NEVER apply a universal cutoff. See references/epidemiological-genomics--transmission-inference.md for full table with citations.
 
 | Pathogen | Cluster threshold | Source |
 |----------|-------------------|--------|
@@ -443,11 +459,11 @@ Cluster definition is pathogen- AND population-specific. NEVER apply a universal
 
 - database-access/sra-data - Download outbreak FASTQ from SRA / ENA
 - database-access/ncbi-datasets-cli - Bulk-pull pathogen reference genomes (e.g. `datasets download virus`)
-- epidemiological-genomics/pathogen-typing - MLST and cgMLST details
-- epidemiological-genomics/amr-surveillance - AMRFinderPlus, ResFinder
-- epidemiological-genomics/phylodynamics - TreeTime, BEAST2 parameters
-- epidemiological-genomics/transmission-inference - TransPhylo configuration
-- epidemiological-genomics/variant-surveillance - Nextclade for viral outbreaks
+- references/epidemiological-genomics--pathogen-typing.md - MLST and cgMLST details
+- references/epidemiological-genomics--amr-surveillance.md - AMRFinderPlus, ResFinder
+- references/epidemiological-genomics--phylodynamics.md - TreeTime, BEAST2 parameters
+- references/epidemiological-genomics--transmission-inference.md - TransPhylo configuration
+- references/epidemiological-genomics--variant-surveillance.md - Nextclade for viral outbreaks
 - phylogenetics/modern-tree-inference - IQ-TREE2 model selection
 
 ## References

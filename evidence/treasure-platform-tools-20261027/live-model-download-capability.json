@@ -1,0 +1,10 @@
+{
+  "scope": "LIVE_MODEL_WITH_ISOLATED_CALLBACK_NOT_EXECUTION_ACCEPTANCE",
+  "http_status": 200,
+  "model": "deepseek-v4-flash",
+  "calls": [
+    "downloads.describe_capabilities"
+  ],
+  "answer": "已查询平台下载能力，结果如下。\n\n**总体状态**\n\n- 平台工具通道已启用（tool_channel_available=true），我可以调用下载与分析相关的预案类工具。\n- 下载运行门禁未开放：runtime_status 为 BLOCKED，各来源的 execution_allowed 均为 false，write_enabled 为 false。\n- 当前未选择项目（project_selected=false），涉及 Dataset 资产的操作需要先在页面选定项目。\n\n**各来源登记情况（简述）**\n\n- SRA 源（SRR/ERR/DRR、SRP/ERP/DRP、PRJNA/PRJEB/PRJDB）：支持 aws 与 ftp 两种方式，配置上已启用，但运行时未验证，包含 DNS 出口、传输时长预算、二进制版本三项未通过运行验收，执行仍被阻断。\n- NCBI SRA 与 ENA fastq：同样已配置、运行时未验证，执行阻断。\n- 直链（http/https/ftp）、GEO supplementary、对象存储（oss/tos/obs）：代码存在但配置未启用，且执行阻断。\n- 云盘：未实现，仅 UI 占位。\n- 项目内已有文件（file_record）：仅限自有项目，Dataset 读取处于关闭状态。\n\n**现在能做到哪一步**\n\n1. 可以做：检索并核验编号与文件（GEO/SRA/ENA/GSA 项目、Run 列表、下载链接表），确认数据是否存在、是否公开。\n2. 可以做：提交下载预案与分析预案（选择来源方式、线程等参数），预案只是待批准的计划，不等于任务已创建。\n3. 尚不能做：真实传输与真实下载、真实分析提交。门禁关闭期间即便有人工批准也不会放行，我不会声称已提交或已完成。\n4. 前置条件：先在页面选择项目，再基于已登记的 Dataset 资产准备预案。\n\n如果你愿意，给我一个具体编号（如 GSE 或 SRR），我可以先把数据范围和 Run 清单核验清楚，再准备一份可审阅的下载预案。\n\n:::followup\n1. 帮我核验 GSE 编号对应的 Run 清单和文件大小\n2. 平台已登记哪些可用的分析流程\n3. 如何先把项目选好再准备下载预案\n:::",
+  "errors": []
+}

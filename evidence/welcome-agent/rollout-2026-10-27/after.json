@@ -1,0 +1,28 @@
+{
+  "observed_at": "2026-10-27T01:30:45.302303+00:00",
+  "containers": [
+    {
+      "name": "/cygnusx-web",
+      "image_id": "sha256:77d8f29ee43ed34650bdd21ee73ae3dd0486c35500a784abf0efc348e62a5ff1",
+      "started_at": "2026-10-27T01:14:52.707145492Z",
+      "status": "running"
+    },
+    {
+      "name": "/cygnusx-worker",
+      "image_id": "sha256:72f1ef20f223e9b705feeb26caed70697dca1642cc42388710823529593926fe",
+      "started_at": "2026-10-27T01:11:05.068090353Z",
+      "status": "running"
+    },
+    {
+      "name": "/cygnusx-beat",
+      "image_id": "sha256:5770473d5db50272666576ab65d893a51b57bb1340c779db400fa7c127fde348",
+      "started_at": "2026-10-27T01:15:21.856013067Z",
+      "status": "running"
+    }
+  ],
+  "source_head": "b6ad48855660b79a9710fb33267b6cd5c068985d",
+  "working_tree_changes_are_not_all_committed": true,
+  "web_reload": "SIGHUP rolling attempt aborted on existing readiness timeout; authorized full restart completed",
+  "worker_drained_before_restart": true,
+  "beat_resumed": true
+}

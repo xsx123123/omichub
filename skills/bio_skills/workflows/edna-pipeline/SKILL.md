@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-edna-pipeline
 description: End-to-end eDNA metabarcoding from raw amplicons to community ecology. Covers QC, primer removal (mandatory before DADA2 filterAndTrim), denoising with OBITools3 v3 (obi stats plural; DMS-based) or DADA2 ASVs (Callahan 2017), decontam combined method as screening-not-classifier (Davis 2018), tag-jumping (Schnell 2015) with a platform-dependent baseline (NovaSeq patterned flow cells ~10x MiSeq), Hill-number effective species counts with coverage-based rarefaction (Jost 2006; Chao & Jost 2012; doubling rule), beta-diversity decomposition with MANDATORY PERMANOVA + PERMDISP pair (Anderson & Walsh 2013), constrained ordination, and the read-counts-not-abundance critique (Lamb 2019). Use when processing eDNA samples for biodiversity assessment, deciding ASV vs OTU, configuring OBITools3 v3, interpreting decontam screening, or reporting community comparisons with the dispersion confound check.
+version: 1.0.0
+display_name: eDNA 宏条形码分析流程
+display_name_en: eDNA Metabarcoding Pipeline
+description_zh: >-
+  从原始扩增子到群落生态分析的 eDNA 宏条形码全流程，涵盖质控、引物去除、OBITools3/DADA2 去噪、decontam 与 tag-jumping 筛查、Hill 数多样性、PERMANOVA 与约束排序。
+description_en: >-
+  End-to-end eDNA metabarcoding from raw amplicons to community ecology. Covers QC, primer removal (mandatory before DADA2 filterAndTrim), denoising with OBITools3 v3 (obi stats plural; DMS-based) or DADA2 ASVs (Callahan 2017), decontam combined method as screening-not-classifier (Davis 2018), tag-jumping (Schnell 2015) with a platform-dependent baseline (NovaSeq patterned flow cells ~10x MiSeq), Hill-number effective species counts with coverage-based rarefaction (Jost 2006; Chao & Jost 2012; doubling rule), beta-diversity decomposition with MANDATORY PERMANOVA + PERMDISP pair (Anderson & Walsh 2013), constrained ordination, and the read-counts-not-abundance critique (Lamb 2019). Use when processing eDNA samples for biodiversity assessment, deciding ASV vs OTU, configuring OBITools3 v3, interpreting decontam screening, or reporting community comparisons with the dispersion confound check.
+author: JZHANG
+examples_zh:
+  - "用 eDNA 样本做物种多样性分析"
+  - "帮我比较 ASV 与 OTU 两条路线"
+  - "计算 Hill 数并做 PERMANOVA 与 PERMDISP 检验"
+examples_en:
+  - "Assess species diversity from these eDNA samples"
+  - "Compare the ASV and OTU routes for my amplicon data"
+  - "Compute Hill numbers and run PERMANOVA with PERMDISP"
 tool_type: mixed
 primary_tool: obitools3
 goal_approach_exempt: true
@@ -485,10 +501,10 @@ summary(indval, alpha = 0.05)
 
 ## Related Skills
 
-- ecological-genomics/edna-metabarcoding - Detailed eDNA processing
-- ecological-genomics/biodiversity-metrics - Diversity analysis details
-- ecological-genomics/community-ecology - Ordination and indicator species
-- read-qc/quality-reports - Raw read quality assessment
+- references/ecological-genomics--edna-metabarcoding.md - Detailed eDNA processing
+- references/ecological-genomics--biodiversity-metrics.md - Diversity analysis details
+- references/ecological-genomics--community-ecology.md - Ordination and indicator species
+- references/read-qc--quality-reports.md - Raw read quality assessment
 - reporting/automated-qc-reports - Aggregate FastQC across samples with MultiQC (a triage snapshot, not a pass/fail gate)
 - microbiome/amplicon-processing - 16S clinical alternative
 

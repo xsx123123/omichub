@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-metabolomics-pipeline
 description: Orchestrates the untargeted LC-MS metabolomics pipeline end-to-end (xcms 4.x feature extraction, QC/drift/normalization, confidence-stratified annotation, permutation-validated statistics, background-aware pathway mapping), naming what each stage decides and where it silently fails. Use when running a full LC-MS metabolomics study from raw mzML to enriched pathways and needing the honest handoffs between stages. Each stage defers to its component skill for parameters and traps; for stable-isotope flux (a separate branch, not this untargeted flow) see metabolomics/isotope-tracing.
+version: 1.0.0
+display_name: 非靶向代谢组学流程
+display_name_en: Untargeted Metabolomics Pipeline
+description_zh: >-
+  从原始 mzML 到通路富集的非靶向 LC-MS 代谢组学全流程，涵盖 xcms 特征提取、质控与漂移校正归一化、置信度分层注释、置换验证统计与背景感知通路映射。
+description_en: >-
+  Orchestrates the untargeted LC-MS metabolomics pipeline end-to-end (xcms 4.x feature extraction, QC/drift/normalization, confidence-stratified annotation, permutation-validated statistics, background-aware pathway mapping), naming what each stage decides and where it silently fails. Use when running a full LC-MS metabolomics study from raw mzML to enriched pathways and needing the honest handoffs between stages. Each stage defers to its component skill for parameters and traps; for stable-isotope flux (a separate branch, not this untargeted flow) see metabolomics/isotope-tracing.
+author: JZHANG
+examples_zh:
+  - "用 LC-MS 数据跑完整非靶向代谢组分析"
+  - "帮我做 QC 校正和批次漂移归一化"
+  - "对代谢物做置信度分层注释和通路富集"
+examples_en:
+  - "Run a complete untargeted metabolomics analysis on my LC-MS data"
+  - "Correct for QC drift and normalize the feature table"
+  - "Do confidence-stratified annotation and pathway mapping"
 tool_type: r
 primary_tool: xcms
 workflow: true
@@ -53,29 +69,29 @@ This skill is an orchestrator: it sequences the five component skills and enforc
 
 | Stage | The decision it owns | The trap it must not paper over | Defers to |
 |---|---|---|---|
-| 1. Feature extraction | centWave/grouping/alignment parameters that set the detection floor | A feature table is a parameterized hypothesis; `fillChromPeaks` fabricates intensities; 1 compound = 5-15 features | metabolomics/xcms-preprocessing |
-| 2. QC + normalization | drift correction, RSD/D-ratio filtering, dilution normalization, mechanism-aware imputation | Over-correction is invisible to QC RSD; half-min-impute-then-test inflates significance; confounded design is unrescuable | metabolomics/normalization-qc |
-| 3. Annotation | the MSI/Schymanski confidence level of every name | A database hit is Level 4-5, not an identification; ambiguous m/z inflates downstream pathways | metabolomics/metabolite-annotation |
-| 4. Statistics | univariate FDR + permutation-validated multivariate, reconciled | A clean PLS-DA score plot is the generic output of p>>n; R2 is no evidence; scaling changes conclusions | metabolomics/statistical-analysis |
-| 5. Pathway mapping | ORA on IDs vs mummichog on m/z, with an explicit background | The background IS the null; enrichment launders annotation uncertainty into confident biology | metabolomics/pathway-mapping |
+| 1. Feature extraction | centWave/grouping/alignment parameters that set the detection floor | A feature table is a parameterized hypothesis; `fillChromPeaks` fabricates intensities; 1 compound = 5-15 features | references/metabolomics--xcms-preprocessing.md |
+| 2. QC + normalization | drift correction, RSD/D-ratio filtering, dilution normalization, mechanism-aware imputation | Over-correction is invisible to QC RSD; half-min-impute-then-test inflates significance; confounded design is unrescuable | references/metabolomics--normalization-qc.md |
+| 3. Annotation | the MSI/Schymanski confidence level of every name | A database hit is Level 4-5, not an identification; ambiguous m/z inflates downstream pathways | references/metabolomics--metabolite-annotation.md |
+| 4. Statistics | univariate FDR + permutation-validated multivariate, reconciled | A clean PLS-DA score plot is the generic output of p>>n; R2 is no evidence; scaling changes conclusions | references/metabolomics--statistical-analysis.md |
+| 5. Pathway mapping | ORA on IDs vs mummichog on m/z, with an explicit background | The background IS the null; enrichment launders annotation uncertainty into confident biology | references/metabolomics--pathway-mapping.md |
 
 ## Pipeline Flow
 
 ```
 raw mzML (centroided)
-   |  metabolomics/xcms-preprocessing
+   |  references/metabolomics--xcms-preprocessing.md
    v  readMsExperiment -> findChromPeaks -> adjustRtime -> groupChromPeaks -> fillChromPeaks
 features x samples table (+ is_filled flags, mzmed/rtmed)
-   |  metabolomics/normalization-qc
+   |  references/metabolomics--normalization-qc.md
    v  blank/detection filter -> within-batch drift (QCRSC) -> RSD/D-ratio filter -> PQN -> mechanism-aware impute
 QC-clean, dilution-normalized matrix
    |  split: statistics  AND  annotation (independent axes)
    v
-metabolomics/statistical-analysis            metabolomics/metabolite-annotation
+references/metabolomics--statistical-analysis.md            references/metabolomics--metabolite-annotation.md
 permutation-validated hits + univariate FDR  confidence-stratified names (MSI level per feature)
    |                                                |
    +-------------------- join on feature_id --------+
-   v  metabolomics/pathway-mapping
+   v  references/metabolomics--pathway-mapping.md
 identified compounds -> ORA/MSEA   OR   raw m/z (no IDs) -> mummichog/PSEA (background = FULL table)
    v
 pathways "consistent with perturbation", conditional on annotations + background
@@ -87,7 +103,7 @@ Stable-isotope tracing (flux) is a SEPARATE branch off labeled raw data, not a s
 
 **Goal:** Turn centroided mzML into a features-by-samples table, carrying the parameters as part of the result.
 
-**Approach:** Use the `MsExperiment`/`XcmsExperiment` containers with `*Param` objects; align to pooled QC, group AFTER alignment (obiwarp aligns the raw profile directly, so no pre-grouping is needed; the PeakGroups method instead needs group -> align -> regroup because it uses grouped anchor peaks), and treat filled values as imputations. Full parameter rationale (ppm, peakwidth, bw, prefilter) lives in metabolomics/xcms-preprocessing.
+**Approach:** Use the `MsExperiment`/`XcmsExperiment` containers with `*Param` objects; align to pooled QC, group AFTER alignment (obiwarp aligns the raw profile directly, so no pre-grouping is needed; the PeakGroups method instead needs group -> align -> regroup because it uses grouped anchor peaks), and treat filled values as imputations. Full parameter rationale (ppm, peakwidth, bw, prefilter) lives in references/metabolomics--xcms-preprocessing.md.
 
 ```r
 library(xcms)
@@ -133,13 +149,13 @@ Drift correction should lower QC RSD AND leave biological-sample RSD unchanged; 
 
 **Goal:** Attach an MSI/Schymanski confidence level to each feature so the pathway stage knows what it is allowed to claim.
 
-**Approach:** Match MS/MS to a library (Level 2a) or run SIRIUS/CSI:FingerID (formula Level 4, structure Level 2b/3); a bare m/z is Level 5. Collapse ion families (CAMERA) first so adducts of one compound are not counted as separate metabolites. Mechanics and thresholds live in metabolomics/metabolite-annotation. Annotation and statistics are independent axes -- run them in parallel and join on feature_id.
+**Approach:** Match MS/MS to a library (Level 2a) or run SIRIUS/CSI:FingerID (formula Level 4, structure Level 2b/3); a bare m/z is Level 5. Collapse ion families (CAMERA) first so adducts of one compound are not counted as separate metabolites. Mechanics and thresholds live in references/metabolomics--metabolite-annotation.md. Annotation and statistics are independent axes -- run them in parallel and join on feature_id.
 
 ## Stage 4 -- Statistics (univariate FDR + validated multivariate)
 
 **Goal:** Decide which metabolites genuinely differ, with neither a score plot nor an unadjusted p-value standing alone.
 
-**Approach:** Transform (if heteroscedastic), pick a scaling explicitly (run >=1 alternative and check the conclusion is not scaling-fragile), run a Welch/Mann-Whitney univariate test with BH FDR, AND a permutation-validated OPLS-DA (`permI >= 1000`), then reconcile the two. Full validation checklist in metabolomics/statistical-analysis.
+**Approach:** Transform (if heteroscedastic), pick a scaling explicitly (run >=1 alternative and check the conclusion is not scaling-fragile), run a Welch/Mann-Whitney univariate test with BH FDR, AND a permutation-validated OPLS-DA (`permI >= 1000`), then reconcile the two. Full validation checklist in references/metabolomics--statistical-analysis.md.
 
 ```r
 library(ropls)
@@ -157,7 +173,7 @@ Univariate Welch + BH (`p.adjust(method='BH')` in R, `multipletests(method='fdr_
 
 **Goal:** Interpret the differential result in pathway context without laundering annotation uncertainty into confident biology.
 
-**Approach:** Two disjoint entry points. Confidently identified compounds -> ORA/MSEA with an assay-coverage background (NOT all of KEGG). Raw m/z with no IDs -> mummichog/PSEA whose permutation null is sampled from the FULL feature table. Either way, report mapping coverage and the MSI levels of the driving compounds; downgrade claims to "consistent with perturbation." Full method choice and background construction in metabolomics/pathway-mapping.
+**Approach:** Two disjoint entry points. Confidently identified compounds -> ORA/MSEA with an assay-coverage background (NOT all of KEGG). Raw m/z with no IDs -> mummichog/PSEA whose permutation null is sampled from the FULL feature table. Either way, report mapping coverage and the MSI levels of the driving compounds; downgrade claims to "consistent with perturbation." Full method choice and background construction in references/metabolomics--pathway-mapping.md.
 
 ```r
 library(MetaboAnalystR)
@@ -180,7 +196,7 @@ mSet <- CalculateOraScore(mSet, 'rbc', 'hyperg')
 
 ## Alternative Front End -- MS-DIAL
 
-When peak detection happens in the MS-DIAL GUI/console (MS2Dec deconvolution, GC-EI, DIA/SWATH), import the alignment-result table and enter the pipeline at Stage 2. The framing is unchanged: the imported table is still a parameterized hypothesis. See metabolomics/msdial-preprocessing for the export-parsing details, then continue with normalization-qc onward.
+When peak detection happens in the MS-DIAL GUI/console (MS2Dec deconvolution, GC-EI, DIA/SWATH), import the alignment-result table and enter the pipeline at Stage 2. The framing is unchanged: the imported table is still a parameterized hypothesis. See references/metabolomics--msdial-preprocessing.md for the export-parsing details, then continue with normalization-qc onward.
 
 ## QC Checkpoints
 
@@ -219,13 +235,13 @@ Each gate hands off to its component skill when it fails; "refresh" means re-run
 
 ## Related Skills
 
-- metabolomics/xcms-preprocessing - Stage 1 feature extraction parameters and the feature-table-as-artifact framing
-- metabolomics/normalization-qc - Stage 2 drift correction, RSD/D-ratio filtering, PQN, mechanism-aware imputation
-- metabolomics/metabolite-annotation - Stage 3 MSI/Schymanski confidence levels
-- metabolomics/statistical-analysis - Stage 4 permutation-validated multivariate and dependence-aware FDR
-- metabolomics/pathway-mapping - Stage 5 ORA vs mummichog and background construction
-- metabolomics/msdial-preprocessing - Alternative front end entering at Stage 2
-- metabolomics/lipidomics - Lipid-specific peak widths and annotation
-- metabolomics/targeted-analysis - Absolute quantification branch
+- references/metabolomics--xcms-preprocessing.md - Stage 1 feature extraction parameters and the feature-table-as-artifact framing
+- references/metabolomics--normalization-qc.md - Stage 2 drift correction, RSD/D-ratio filtering, PQN, mechanism-aware imputation
+- references/metabolomics--metabolite-annotation.md - Stage 3 MSI/Schymanski confidence levels
+- references/metabolomics--statistical-analysis.md - Stage 4 permutation-validated multivariate and dependence-aware FDR
+- references/metabolomics--pathway-mapping.md - Stage 5 ORA vs mummichog and background construction
+- references/metabolomics--msdial-preprocessing.md - Alternative front end entering at Stage 2
+- references/metabolomics--lipidomics.md - Lipid-specific peak widths and annotation
+- references/metabolomics--targeted-analysis.md - Absolute quantification branch
 - metabolomics/isotope-tracing - Separate stable-isotope flux branch, not a stage of this untargeted pipeline
 - multi-omics-integration/mofa-integration - Integrating the feature table with other omics layers

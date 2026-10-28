@@ -1,5 +1,11 @@
 export type ReportStatus = 'generating' | 'completed' | 'failed' | 'expired'
 
+export interface ReportPreview {
+  url: string
+  expires_at: string
+  channel: string
+}
+
 export interface ReportFile {
   id: string
   report_id: string

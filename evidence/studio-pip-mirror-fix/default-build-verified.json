@@ -1,0 +1,20 @@
+[
+  {
+    "image": "cygnusx-sandbox-base:v0.0.2dev",
+    "id": "sha256:297f74d0b359167795a578babf5fe3e53aed11ed19f4c38be23d6f9a49d655bc",
+    "matches_smoke_tested_image": true,
+    "user": "10001:10001"
+  },
+  {
+    "image": "cygnusx-sandbox-bio:v0.0.2dev",
+    "id": "sha256:9b3b289d6a0f50596e4ab769a5538b5a5ac52def7db0c3d9c2922bbbbdbb100f",
+    "matches_smoke_tested_image": true,
+    "user": "10001:10001"
+  },
+  {
+    "image": "cygnusx-sandbox-browser-office:v0.0.2dev",
+    "id": "sha256:f3ce9878a67d525d02059cee65821dcb28051aca65a6e77945a59bc35694f894",
+    "matches_smoke_tested_image": true,
+    "user": "10001:10001"
+  }
+]

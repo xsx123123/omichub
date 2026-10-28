@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-hic-pipeline
 description: End-to-end Hi-C analysis workflow from FASTQ to compartments, TADs, and loops, with the decision of WHICH features the sequencing depth can support. Covers pairtools read-pair processing and library QC, cooler matrices, ICE balancing and distance-decay expected, A/B compartments, TAD boundaries, loop calling, and the routing of HiChIP/PLAC-seq/Capture Hi-C to protein-directed loop callers. Use when processing Hi-C data end to end, deciding a resolution for a given depth, or choosing between bulk-Hi-C and protein-directed loop calling.
+version: 1.0.0
+display_name: Hi-C 数据分析流程
+display_name_en: Hi-C Analysis Pipeline
+description_zh: >-
+  从 FASTQ 到 A/B 区室、TAD 与染色质环的 Hi-C 全流程，涵盖 pairtools 配对处理、cooler 矩阵、ICE 平衡、距离衰减期望、区室与边界识别、环调用及 HiChIP/PLAC-seq 分流。
+description_en: >-
+  End-to-end Hi-C analysis workflow from FASTQ to compartments, TADs, and loops, with the decision of WHICH features the sequencing depth can support. Covers pairtools read-pair processing and library QC, cooler matrices, ICE balancing and distance-decay expected, A/B compartments, TAD boundaries, loop calling, and the routing of HiChIP/PLAC-seq/Capture Hi-C to protein-directed loop callers. Use when processing Hi-C data end to end, deciding a resolution for a given depth, or choosing between bulk-Hi-C and protein-directed loop calling.
+author: JZHANG
+examples_zh:
+  - "用 Hi-C 数据识别 A/B 区室和 TAD"
+  - "根据测序深度帮我选择合适分辨率"
+  - "处理 HiChIP 数据并调用蛋白定向的染色质环"
+examples_en:
+  - "Identify A/B compartments and TADs from my Hi-C data"
+  - "What resolution does this sequencing depth support?"
+  - "Analyze HiChIP data with a protein-directed loop caller"
 tool_type: mixed
 primary_tool: cooler
 workflow: true
@@ -39,9 +55,9 @@ Complete workflow for Hi-C chromosome conformation capture analysis.
 
 ## The Decision That Frames the Whole Pipeline -- depth dictates the feature
 
-Contacts scale with the SQUARE of the bin count, so the affordable resolution is set by depth, not ambition. Read `hi-c-analysis/matrix-operations` for the budget; the rule of thumb is ~1000 contacts/bin. Compartments (100kb-1Mb) come from almost any library; TAD boundaries (10-40kb) need a moderate map; de-novo loop calling (5-10kb dots) needed ~5 billion contacts in Rao 2014. On a shallow map, do NOT de-novo call loops -- run aggregate peak analysis (APA) on known CTCF/cohesin anchors instead (`hi-c-analysis/loop-calling`).
+Contacts scale with the SQUARE of the bin count, so the affordable resolution is set by depth, not ambition. Read `references/hi-c-analysis--matrix-operations.md` for the budget; the rule of thumb is ~1000 contacts/bin. Compartments (100kb-1Mb) come from almost any library; TAD boundaries (10-40kb) need a moderate map; de-novo loop calling (5-10kb dots) needed ~5 billion contacts in Rao 2014. On a shallow map, do NOT de-novo call loops -- run aggregate peak analysis (APA) on known CTCF/cohesin anchors instead (`references/hi-c-analysis--loop-calling.md`).
 
-Protein-directed assays branch here: HiChIP, PLAC-seq, and Capture Hi-C have non-uniform peak-anchored coverage, so generic dots/HiCCUPS use the wrong null. Route them to `hi-c-analysis/hichip-plac-loops` (FitHiChIP/MAPS/CHiCAGO), NOT to step 6 below.
+Protein-directed assays branch here: HiChIP, PLAC-seq, and Capture Hi-C have non-uniform peak-anchored coverage, so generic dots/HiCCUPS use the wrong null. Route them to `references/hi-c-analysis--hichip-plac-loops.md` (FitHiChIP/MAPS/CHiCAGO), NOT to step 6 below.
 
 ## Workflow Overview
 
@@ -90,7 +106,7 @@ bwa-mem2 mem -SP5M -t 16 reference.fa reads_R1.fastq.gz reads_R2.fastq.gz | \
     pairtools split --nproc-in 8 --output-pairs sample.pairs.gz
 ```
 
-**QC Checkpoint:** read `pairtools stats` as the go/no-go. The one-number readout is the LONG-RANGE cis fraction (>=20kb), not bare %valid: short-range cis is inflated by dangling ends and self-circles. Trans fraction is a noise floor but its acceptable value is genome-size-dependent (a human <10% threshold is meaningless for a microbe). High duplicate rate = low library complexity (not rescuable by sequencing deeper). See `hi-c-analysis/contact-pairs` for the orientation-balance QC and the Micro-C/Arima variants.
+**QC Checkpoint:** read `pairtools stats` as the go/no-go. The one-number readout is the LONG-RANGE cis fraction (>=20kb), not bare %valid: short-range cis is inflated by dangling ends and self-circles. Trans fraction is a noise floor but its acceptable value is genome-size-dependent (a human <10% threshold is meaningless for a microbe). High duplicate rate = low library complexity (not rescuable by sequencing deeper). See `references/hi-c-analysis--contact-pairs.md` for the orientation-balance QC and the Micro-C/Arima variants.
 
 ## Step 2: Generate Contact Matrix
 
@@ -112,7 +128,7 @@ cooler zoomify sample.1000.cool \
 
 **Goal:** ICE-balance the matrix so every bin has equal marginal coverage, without letting empty/artifact bins corrupt the result.
 
-**Approach:** Mask low-coverage and blacklist bins BEFORE balancing, then balance per resolution. ICE assumes equal visibility per bin, so an unmasked empty or repeat/blacklist bin is iteratively up-weighted into a bright stripe artifact; `mad_max` filters bins whose coverage is `mad_max` MADs below the median, and a blacklist/`--blacklist` (or pre-masking bad bins) removes known artifacts. Balancing is REQUIRED before any analysis, but it does NOT make two maps comparable across conditions — that needs depth-matching + distance-stratified normalization (hi-c-analysis/hic-differential).
+**Approach:** Mask low-coverage and blacklist bins BEFORE balancing, then balance per resolution. ICE assumes equal visibility per bin, so an unmasked empty or repeat/blacklist bin is iteratively up-weighted into a bright stripe artifact; `mad_max` filters bins whose coverage is `mad_max` MADs below the median, and a blacklist/`--blacklist` (or pre-masking bad bins) removes known artifacts. Balancing is REQUIRED before any analysis, but it does NOT make two maps comparable across conditions — that needs depth-matching + distance-stratified normalization (references/hi-c-analysis--hic-differential.md).
 
 ```python
 import cooler
@@ -202,7 +218,7 @@ loops.to_csv('loops.tsv', sep='\t', index=False)
 
 # Alternative caller (template matching): chromosight
 # chromosight detect --pattern loops sample.mcool::/resolutions/10000 loops
-# For HiChIP/PLAC-seq/Capture Hi-C do NOT use dots -> hi-c-analysis/hichip-plac-loops
+# For HiChIP/PLAC-seq/Capture Hi-C do NOT use dots -> references/hi-c-analysis--hichip-plac-loops.md
 ```
 
 ## Step 7: Visualization
@@ -309,8 +325,8 @@ print(f'Results saved to {outdir}/')
 | Bright stripes/plaid artifacts after balancing | Empty/repeat/blacklist bins not masked before ICE | Mask with `mad_max`/`--blacklist`/`min_nnz` before balancing |
 | A/B compartments flipped between samples | Eigenvector sign is arbitrary without phasing | Phase E1 by a GC track matching the cooler binning exactly |
 | De-novo loops look sparse/noisy | Called `dots` on a shallow map | Only de-novo call on deep maps (~billions of contacts, Rao 2014); else APA on known anchors |
-| Cross-condition differences dominated by depth | Compared balanced maps directly | Depth-match + distance-stratified normalize first (hi-c-analysis/hic-differential) |
-| HiChIP/PLAC "loops" full of false positives | Generic dots/HiCCUPS null on peak-anchored coverage | Route to FitHiChIP/MAPS/CHiCAGO (hi-c-analysis/hichip-plac-loops) |
+| Cross-condition differences dominated by depth | Compared balanced maps directly | Depth-match + distance-stratified normalize first (references/hi-c-analysis--hic-differential.md) |
+| HiChIP/PLAC "loops" full of false positives | Generic dots/HiCCUPS null on peak-anchored coverage | Route to FitHiChIP/MAPS/CHiCAGO (references/hi-c-analysis--hichip-plac-loops.md) |
 
 ## References
 
@@ -322,12 +338,12 @@ print(f'Results saved to {outdir}/')
 
 ## Related Skills
 
-- hi-c-analysis/contact-pairs - Read-pair processing and the library-QC decision
-- hi-c-analysis/hic-data-io - Cooler file operations and format conversion
-- hi-c-analysis/matrix-operations - ICE balancing, expected/P(s), and the resolution-vs-depth budget
-- hi-c-analysis/compartment-analysis - Sign-phased A/B compartments and saddle strength
-- hi-c-analysis/tad-detection - Insulation-score boundaries across a window sweep
-- hi-c-analysis/loop-calling - Dot calling and APA validation
-- hi-c-analysis/hic-visualization - Normalization-aware contact-map plotting
-- hi-c-analysis/hic-differential - Scale-matched comparison between conditions
-- hi-c-analysis/hichip-plac-loops - Protein-directed loops (HiChIP/PLAC-seq/Capture Hi-C)
+- references/hi-c-analysis--contact-pairs.md - Read-pair processing and the library-QC decision
+- references/hi-c-analysis--hic-data-io.md - Cooler file operations and format conversion
+- references/hi-c-analysis--matrix-operations.md - ICE balancing, expected/P(s), and the resolution-vs-depth budget
+- references/hi-c-analysis--compartment-analysis.md - Sign-phased A/B compartments and saddle strength
+- references/hi-c-analysis--tad-detection.md - Insulation-score boundaries across a window sweep
+- references/hi-c-analysis--loop-calling.md - Dot calling and APA validation
+- references/hi-c-analysis--hic-visualization.md - Normalization-aware contact-map plotting
+- references/hi-c-analysis--hic-differential.md - Scale-matched comparison between conditions
+- references/hi-c-analysis--hichip-plac-loops.md - Protein-directed loops (HiChIP/PLAC-seq/Capture Hi-C)

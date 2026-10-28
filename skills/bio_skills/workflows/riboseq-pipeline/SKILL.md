@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-riboseq-pipeline
 description: End-to-end Ribo-seq analysis from FASTQ through periodicity QC, P-site calibration, ORF detection, translation efficiency, and stalling. Use when orchestrating a full ribosome profiling pipeline and deciding harvest/dedup/alignment options and which downstream analyses the library can support.
+version: 1.0.0
+display_name: Ribo-seq 分析流程
+display_name_en: Ribo-seq Pipeline
+description_zh: >-
+  从 FASTQ 到周期性质控、P-site 校准、ORF 检测、翻译效率与核糖体停滞的 Ribo-seq 全流程，并帮助判断建库与比对选项及该文库可支持的下游分析。
+description_en: >-
+  End-to-end Ribo-seq analysis from FASTQ through periodicity QC, P-site calibration, ORF detection, translation efficiency, and stalling. Use when orchestrating a full ribosome profiling pipeline and deciding harvest/dedup/alignment options and which downstream analyses the library can support.
+author: JZHANG
+examples_zh:
+  - "用 Ribo-seq 数据计算翻译效率"
+  - "帮我做读框周期性检查和 P-site 校准"
+  - "检测核糖体停滞位点并关联 ORF"
+examples_en:
+  - "Estimate translation efficiency from my Ribo-seq data"
+  - "Check reading-frame periodicity and calibrate P-sites"
+  - "Detect ribosome stalling sites and link them to ORFs"
 tool_type: mixed
 primary_tool: STAR
 workflow: true
@@ -126,11 +142,11 @@ Stalling/pausing (only on flash-frozen no-drug data; see ribosome-stalling) and 
 
 ## Related Skills
 
-- ribo-seq/riboseq-preprocessing - UMI handling, trimming, rRNA removal, alignment
-- ribo-seq/ribosome-periodicity - Periodicity QC and P-site calibration
-- ribo-seq/orf-detection - Translated ORF calling
-- ribo-seq/translation-efficiency - Differential TE and buffering
-- ribo-seq/initiation-site-mapping - Start-codon mapping from TI-seq
+- references/ribo-seq--riboseq-preprocessing.md - UMI handling, trimming, rRNA removal, alignment
+- references/ribo-seq--ribosome-periodicity.md - Periodicity QC and P-site calibration
+- references/ribo-seq--orf-detection.md - Translated ORF calling
+- references/ribo-seq--translation-efficiency.md - Differential TE and buffering
+- references/ribo-seq--initiation-site-mapping.md - Start-codon mapping from TI-seq
 - differential-expression/deseq2-basics - Count-based differential testing
 
 ## References

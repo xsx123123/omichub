@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-smrna-pipeline
 description: Orchestrates the end-to-end small RNA-seq pipeline from FASTQ to differential miRNAs and expression-filtered targets, chaining kit-aware cutadapt trimming (adapter on every read, UMI/4N handling), miRge3 known+isomiR quantification or miRDeep2 novel discovery, compositionally-aware DESeq2, and miRanda target prediction. Use when committing the library-kit adapter/UMI handling once, choosing the NORMALIZER (which drives which miRNAs are called DE more than the DE model does), deciding known quantification vs novel discovery, handling biofluid/plasma libraries that lack a trustworthy endogenous normalizer, routing tRF/piRNA reads to their own profiling, or feeding RAW (not RPM) counts with size-factor inspection into DE. Hands mechanism to the small-rna-seq component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 小 RNA 测序分析流程
+display_name_en: Small RNA-seq Pipeline
+description_zh: >-
+  从 FASTQ 到差异 miRNA 与靶基因的小 RNA-seq 全流程，涵盖试剂盒感知的接头与 UMI 修剪、miRge3 已知与 isomiR 定量或 miRDeep2 新 miRNA 发现、组成感知 DESeq2 与 miRanda 靶预测。
+description_en: >-
+  Orchestrates the end-to-end small RNA-seq pipeline from FASTQ to differential miRNAs and expression-filtered targets, chaining kit-aware cutadapt trimming (adapter on every read, UMI/4N handling), miRge3 known+isomiR quantification or miRDeep2 novel discovery, compositionally-aware DESeq2, and miRanda target prediction. Use when committing the library-kit adapter/UMI handling once, choosing the NORMALIZER (which drives which miRNAs are called DE more than the DE model does), deciding known quantification vs novel discovery, handling biofluid/plasma libraries that lack a trustworthy endogenous normalizer, routing tRF/piRNA reads to their own profiling, or feeding RAW (not RPM) counts with size-factor inspection into DE. Hands mechanism to the small-rna-seq component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用血浆 small RNA-seq 数据找差异 miRNA"
+  - "帮我处理接头和 UMI 并定量 isomiR"
+  - "预测差异 miRNA 的靶基因"
+examples_en:
+  - "Find differentially expressed miRNAs in my plasma small RNA-seq data"
+  - "Handle adapters and UMIs, then quantify isomiRs"
+  - "Predict target genes for the differential miRNAs"
 tool_type: mixed
 primary_tool: miRge3.0
 workflow: true
@@ -51,16 +67,16 @@ A small RNA-seq result turns on two things the mRNA pipeline never faces — the
 
 ```
 FASTQ (single-end small RNA)
-  | [1] Trim (kit-aware) --------> cutadapt (+ umi_tools / 4N)   (small-rna-seq/smrna-preprocessing)
+  | [1] Trim (kit-aware) --------> cutadapt (+ umi_tools / 4N)   (references/small-rna-seq--smrna-preprocessing.md)
   v     ^-- commitment: kit adapter + UMI/4N; --discard-untrimmed; NO position-dedup w/o UMI
-  | [2] Quantify OR discover ----> miRge3.0 (known+isomiR) | miRDeep2 (novel)  (small-rna-seq/mirge3-analysis, mirdeep2-analysis)
+  | [2] Quantify OR discover ----> miRge3.0 (known+isomiR) | miRDeep2 (novel)  (references/small-rna-seq--mirge3-analysis.md, references/small-rna-seq--mirdeep2-analysis.md)
   v
-  | [3] Differential expression -> DESeq2 on RAW counts; INSPECT size factors   (small-rna-seq/differential-mirna)
+  | [3] Differential expression -> DESeq2 on RAW counts; INSPECT size factors   (references/small-rna-seq--differential-mirna.md)
   v     ^-- commitment: the NORMALIZER (drives which miRNAs are DE)
-  | [4] Target prediction -------> miRanda, filtered by anti-correlated mRNA DE  (small-rna-seq/target-prediction)
+  | [4] Target prediction -------> miRanda, filtered by anti-correlated mRNA DE  (references/small-rna-seq--target-prediction.md)
   v
 Differential miRNAs + expression-supported targets
-   (tRF/piRNA reads -> small-rna-seq/trf-pirna-profiling)
+   (tRF/piRNA reads -> references/small-rna-seq--trf-pirna-profiling.md)
 ```
 
 ## Made-once commitments
@@ -87,10 +103,10 @@ Pipeline-level selection only; mechanism lives in the component skills.
 
 | Fork | Lean toward | Hand off to |
 |------|-------------|-------------|
-| Quantify vs discover | miRge3.0 (known + isomiR, curated, common) vs miRDeep2 (novel only; high FP, genome + bowtie1, survey.pl cutoff) | small-rna-seq/mirge3-analysis, small-rna-seq/mirdeep2-analysis |
-| Normalizer | median-of-ratios/TMM (risky under composition shift) vs quantile/loess (better on skewed miRNA) vs RUVg (control/empirical miRNAs) vs CoDA/ALDEx2 (compositional sensitivity check) | small-rna-seq/differential-mirna |
-| Biofluid/plasma | no trustworthy endogenous normalizer (miR-16 is hemolysis-sensitive, U6 degrades); cel-miR-39 spike controls EXTRACTION not biological scale; model batch/hemolysis explicitly | small-rna-seq/differential-mirna |
-| RNA class | miRNA vs tRF/piRNA (26-32 nt peak) -> route to trf-pirna-profiling (MINTmap/unitas) | small-rna-seq/trf-pirna-profiling |
+| Quantify vs discover | miRge3.0 (known + isomiR, curated, common) vs miRDeep2 (novel only; high FP, genome + bowtie1, survey.pl cutoff) | references/small-rna-seq--mirge3-analysis.md, references/small-rna-seq--mirdeep2-analysis.md |
+| Normalizer | median-of-ratios/TMM (risky under composition shift) vs quantile/loess (better on skewed miRNA) vs RUVg (control/empirical miRNAs) vs CoDA/ALDEx2 (compositional sensitivity check) | references/small-rna-seq--differential-mirna.md |
+| Biofluid/plasma | no trustworthy endogenous normalizer (miR-16 is hemolysis-sensitive, U6 degrades); cel-miR-39 spike controls EXTRACTION not biological scale; model batch/hemolysis explicitly | references/small-rna-seq--differential-mirna.md |
+| RNA class | miRNA vs tRF/piRNA (26-32 nt peak) -> route to trf-pirna-profiling (MINTmap/unitas) | references/small-rna-seq--trf-pirna-profiling.md |
 
 ## Primary path: cutadapt -> miRge3.0 -> DESeq2 -> miRanda
 
@@ -170,23 +186,23 @@ Ligation bias means absolute cross-miRNA abundance WITHIN a sample is untrustwor
 
 ## Pipeline map (hand-offs)
 
-- small-rna-seq/smrna-preprocessing - kit-specific adapter, UMI, and 4N handling
-- small-rna-seq/mirge3-analysis - known-miRNA and isomiR quantification
-- small-rna-seq/mirdeep2-analysis - novel miRNA discovery and survey.pl cutoff
-- small-rna-seq/differential-mirna - compositionally-aware DE and normalizer selection
-- small-rna-seq/target-prediction - seed prediction filtered by expression
-- small-rna-seq/trf-pirna-profiling - tRF and piRNA profiling
+- references/small-rna-seq--smrna-preprocessing.md - kit-specific adapter, UMI, and 4N handling
+- references/small-rna-seq--mirge3-analysis.md - known-miRNA and isomiR quantification
+- references/small-rna-seq--mirdeep2-analysis.md - novel miRNA discovery and survey.pl cutoff
+- references/small-rna-seq--differential-mirna.md - compositionally-aware DE and normalizer selection
+- references/small-rna-seq--target-prediction.md - seed prediction filtered by expression
+- references/small-rna-seq--trf-pirna-profiling.md - tRF and piRNA profiling
 
 The runnable miRDeep2 discovery-route script is in this skill's examples/ (`smrna_full_pipeline.sh`).
 
 ## Related Skills
 
-- small-rna-seq/smrna-preprocessing - Kit-specific adapter, UMI, and 4N handling
-- small-rna-seq/mirdeep2-analysis - Novel miRNA discovery
-- small-rna-seq/mirge3-analysis - Known-miRNA and isomiR quantification
-- small-rna-seq/differential-mirna - Compositionally-aware DE
-- small-rna-seq/target-prediction - Seed prediction filtered by expression
-- small-rna-seq/trf-pirna-profiling - tRF and piRNA profiling
+- references/small-rna-seq--smrna-preprocessing.md - Kit-specific adapter, UMI, and 4N handling
+- references/small-rna-seq--mirdeep2-analysis.md - Novel miRNA discovery
+- references/small-rna-seq--mirge3-analysis.md - Known-miRNA and isomiR quantification
+- references/small-rna-seq--differential-mirna.md - Compositionally-aware DE
+- references/small-rna-seq--target-prediction.md - Seed prediction filtered by expression
+- references/small-rna-seq--trf-pirna-profiling.md - tRF and piRNA profiling
 - differential-expression/deseq2-basics - DESeq2 model, contrasts, shrinkage
 - workflow-management/nf-core-pipelines - Run nf-core/smrnaseq as a curated, reproducible pipeline
 

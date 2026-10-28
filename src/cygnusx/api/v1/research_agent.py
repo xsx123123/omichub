@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException
@@ -20,9 +21,36 @@ from cygnusx.application.schemas.research_agent import (
     ResearchLiteratureRequest,
     ResearchSessionUpdate,
 )
+from cygnusx.application.schemas.research_stats import (
+    ResearchLeaderboard,
+    ResearchNicknameUpdate,
+    ResearchUsageStats,
+)
+from cygnusx.application.services.research_stats_service import ResearchStatsService
 from cygnusx.application.services.research_treasure_service import ResearchTreasureService
 
 router = APIRouter()
+
+
+@router.get("/leaderboard", response_model=ResearchLeaderboard)
+async def leaderboard(
+    current_user_id: CurrentUserId, db: DbSession, period: Literal["all", "week"] = "all",
+) -> ResearchLeaderboard:
+    return await ResearchStatsService(db).leaderboard(current_user_id, period)
+
+
+@router.get("/stats", response_model=ResearchUsageStats)
+async def usage_stats(current_user_id: CurrentUserId, db: DbSession) -> ResearchUsageStats:
+    return await ResearchStatsService(db).usage(current_user_id)
+
+
+@router.patch("/nickname")
+async def update_nickname(
+    request: ResearchNicknameUpdate, current_user_id: CurrentUserId, db: DbSession,
+) -> dict[str, object]:
+    return await ResearchStatsService(db).set_nickname(current_user_id, request.nickname)
+
+
 def _service(db: DbSession) -> ResearchTreasureService:
     return ResearchTreasureService(db)
 

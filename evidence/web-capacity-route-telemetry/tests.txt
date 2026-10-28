@@ -1,0 +1,37 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/zj/zj_code_libarary/OmicHub
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, langsmith-0.10.16
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 14 items
+
+tests/unit/core/test_telemetry_routes.py ........                        [ 57%]
+tests/unit/core/test_telemetry_propagation.py ......                     [100%]
+
+=============================== warnings summary ===============================
+src/cygnusx/application/schemas/ai_provider.py:36
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/schemas/ai_provider.py:36: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AIProviderConfigDTO(AIProviderConfigBaseDTO):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 14 passed, 1 warning in 0.16s =========================
+--- Logging error in Loguru Handler #5 ---
+Record was: {'elapsed': datetime.timedelta(seconds=5, microseconds=468471), 'exception': (type=<class 'ValueError'>, value=ValueError('I/O operation on closed file.'), traceback=<traceback object at 0x700c160c1dc0>), 'extra': {'service': 'app', 'trace_id': '', 'span_id': '', 'request_id': '', 'session_id': ''}, 'file': (name='__init__.py', path='/home/zj/.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/logging/__init__.py'), 'function': 'callHandlers', 'level': (name='ERROR', no=40, icon='❌'), 'line': 1706, 'message': 'Exception while exporting Span.', 'module': '__init__', 'name': 'logging', 'process': (id=2979199, name='MainProcess'), 'thread': (id=123195222910656, name='OtelBatchSpanRecordProcessor'), 'time': datetime(2026, 10, 27, 9, 32, 3, 445052, tzinfo=datetime.timezone(datetime.timedelta(seconds=28800), 'CST'))}
+Traceback (most recent call last):
+  File "/home/zj/zj_code_libarary/OmicHub/.venv/lib/python3.11/site-packages/opentelemetry/sdk/_shared_internal/__init__.py", line 182, in _export
+    self._exporter.export(
+  File "/home/zj/zj_code_libarary/OmicHub/.venv/lib/python3.11/site-packages/opentelemetry/sdk/trace/export/__init__.py", line 346, in export
+    self.out.write(self.formatter(span))
+ValueError: I/O operation on closed file.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/zj/zj_code_libarary/OmicHub/.venv/lib/python3.11/site-packages/loguru/_handler.py", line 206, in emit
+    self._sink.write(str_record)
+  File "/home/zj/zj_code_libarary/OmicHub/.venv/lib/python3.11/site-packages/loguru/_simple_sinks.py", line 16, in write
+    self._stream.write(message)
+ValueError: I/O operation on closed file.
+--- End of logging error ---

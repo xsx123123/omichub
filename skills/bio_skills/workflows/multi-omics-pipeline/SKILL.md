@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-multi-omics-pipeline
 description: Orchestrates VERTICAL bulk multi-omics integration (RNA + protein + methylation on the SAME samples) from harmonization to a validated result, routing to MOFA2 (shared factors), mixOmics/DIABLO (predictive signature), or SNF (patient subtypes). Use when confirming the correspondence is vertical (not horizontal same-features-different-cohorts), joining on a stable sample primary key rather than cbind on assumed row order, normalizing each omic in its OWN space and equalizing block variance BEFORE stacking (or the widest omic hijacks every shared factor), correcting batch ONCE in one place, and validating in a HELD-OUT cohort because in-cohort CV at n<<p is optimistically biased. Hands mechanism to the multi-omics-integration component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 多组学整合分析流程
+display_name_en: Multi-Omics Integration Pipeline
+description_zh: >-
+  面向同一样本纵向多组学（RNA、蛋白、甲基化）的整合流程，从样本主键对齐与组学内归一化出发，按目标路由至 MOFA2 共享因子、mixOmics/DIABLO 预测签名或 SNF 分型，并强调结果验证。
+description_en: >-
+  Orchestrates VERTICAL bulk multi-omics integration (RNA + protein + methylation on the SAME samples) from harmonization to a validated result, routing to MOFA2 (shared factors), mixOmics/DIABLO (predictive signature), or SNF (patient subtypes). Use when confirming the correspondence is vertical (not horizontal same-features-different-cohorts), joining on a stable sample primary key rather than cbind on assumed row order, normalizing each omic in its OWN space and equalizing block variance BEFORE stacking (or the widest omic hijacks every shared factor), correcting batch ONCE in one place, and validating in a HELD-OUT cohort because in-cohort CV at n<<p is optimistically biased. Hands mechanism to the multi-omics-integration component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "把同一批样本的转录组和蛋白组整合分析"
+  - "帮我判断该用 MOFA2 还是 DIABLO"
+  - "用多组学数据做患者分型并验证"
+examples_en:
+  - "Integrate transcriptome and proteome data from the same samples"
+  - "Should I use MOFA2 or DIABLO for this integration?"
+  - "Subtype patients with multi-omics data and validate the result"
 tool_type: r
 primary_tool: MOFA2
 workflow: true
@@ -32,7 +48,7 @@ package and adapt the example to match the actual API rather than retrying.
 
 **"Integrate my multi-omics datasets"** -> Decide the strategy first, then orchestrate harmonization, the chosen integration method (MOFA2, mixOmics, or SNF), interpretation, and validation - because bulk multi-omics is small-n, huge-p, so an unvalidated integrated result is the default noise outcome.
 
-Before any tool runs, settle the design with multi-omics-integration/integration-design: confirm the data is vertical (different omics on the SAME samples, not the same features across cohorts), map the question to a method (shared factors -> MOFA2, predictive signature -> DIABLO, patient subtypes -> SNF), and plan a held-out cohort because in-cohort cross-validation at small n is optimistically biased. Inspect the per-view variance-explained table to confirm no single omic dominates the shared structure.
+Before any tool runs, settle the design with references/multi-omics-integration--integration-design.md: confirm the data is vertical (different omics on the SAME samples, not the same features across cohorts), map the question to a method (shared factors -> MOFA2, predictive signature -> DIABLO, patient subtypes -> SNF), and plan a held-out cohort because in-cohort cross-validation at small n is optimistically biased. Inspect the per-view variance-explained table to confirm no single omic dominates the shared structure.
 
 ## The governing principle
 
@@ -401,11 +417,11 @@ Single-cell multimodal data (CITE-seq, 10x Multiome) is a different paradigm - p
 
 ## Related Skills
 
-- multi-omics-integration/integration-design - Method selection, correspondence, and the n<<p discipline (decide first)
-- multi-omics-integration/mofa-integration - MOFA2 unsupervised factor analysis
-- multi-omics-integration/mixomics-analysis - mixOmics DIABLO/sPLS/MINT methods
-- multi-omics-integration/similarity-network - SNF patient stratification
-- multi-omics-integration/data-harmonization - Cross-omic preprocessing and scaling
+- references/multi-omics-integration--integration-design.md - Method selection, correspondence, and the n<<p discipline (decide first)
+- references/multi-omics-integration--mofa-integration.md - MOFA2 unsupervised factor analysis
+- references/multi-omics-integration--mixomics-analysis.md - mixOmics DIABLO/sPLS/MINT methods
+- references/multi-omics-integration--similarity-network.md - SNF patient stratification
+- references/multi-omics-integration--data-harmonization.md - Cross-omic preprocessing and scaling
 - pathway-analysis/go-enrichment - Factor/signature interpretation
 - differential-expression/batch-correction - Batch effects
 - clinical-biostatistics/survival-analysis - Survival validation of factors and subtypes

@@ -2634,13 +2634,9 @@ onBeforeUnmount(() => {
 .room-sidebar__list::-webkit-scrollbar-thumb:hover, .room-messages::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* Case 列表项：可选择卡片协议（§5.2）——左缘 4px 状态线由全局 .cygnusx-selectable-card::before 提供，
-   hover 低强调预览 / 选中连续主色内描边在此以本地规则落齐，避免注入顺序导致被基础背景覆盖 */
-.case-entry { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-md) var(--space-md) var(--space-xl); border: 1px solid var(--neutral-border); border-radius: var(--radius-card); background: var(--neutral-card); text-align: left; cursor: pointer; transition: border-color var(--motion-quick) ease-out, box-shadow var(--motion-quick) ease-out, background-color var(--motion-quick) ease-out; }
-.case-entry:not(.active):hover { border-color: color-mix(in srgb, var(--arco-primary) 14%, var(--neutral-border)); background-color: color-mix(in srgb, var(--arco-primary) 4%, var(--neutral-card)); }
+   hover / selected 底色与边框统一消费全局规则，本地只保留布局、焦点及内部操作 */
+.case-entry { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-md) var(--space-md) var(--space-xl); border: 1px solid var(--neutral-border); border-radius: var(--radius-card); background: var(--neutral-card); text-align: left; cursor: pointer; }
 .case-entry:focus-visible { outline: 2px solid var(--arco-primary); outline-offset: 3px; }
-.case-entry.active { border-color: color-mix(in srgb, var(--arco-primary) 20%, var(--neutral-border)); background-color: color-mix(in srgb, var(--arco-primary) 7%, var(--neutral-card)); box-shadow: inset 0 0 0 1px var(--arco-primary); }
-:root[data-theme='dark'] .case-entry:not(.active):hover { border-color: var(--border-default); background-color: var(--surface-highlight); }
-:root[data-theme='dark'] .case-entry.active { border-color: var(--border-focus); background-color: var(--surface-highlight); }
 /* 房间徽标：意图首字符圆角方块，品牌浅底；选中态反转为实心主色 */
 .case-entry__avatar { display: inline-flex; flex: 0 0 40px; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: var(--radius-card); background: var(--arco-primary-light); color: var(--arco-primary); font-size: var(--font-card-title-size); font-weight: 600; transition: background-color var(--motion-quick) ease-out, color var(--motion-quick) ease-out; }
 .case-entry.active .case-entry__avatar { background: var(--arco-primary); color: var(--text-on-primary); }

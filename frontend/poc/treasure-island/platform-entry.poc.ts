@@ -28,6 +28,7 @@ function button(shadow: ShadowRoot, label: string): HTMLButtonElement {
 function allowed() {
   calls.capabilities.mockResolvedValue({ read_sessions: true, read_discovery: true })
   calls.projects.mockResolvedValue([]); calls.sessions.mockResolvedValue([])
+  calls.related.mockResolvedValue([])
 }
 describe('actual platform uses the complete original React presentation', () => {
   it('shows the four original scenes when discovery is disabled, without protected requests or old login', async () => {
@@ -59,6 +60,9 @@ describe('actual platform uses the complete original React presentation', () => 
     expect(shadow.querySelector('strong')!.textContent).toBe('已检索')
     expect(shadow.textContent).toContain('1305ms')
     expect(shadow.textContent).not.toContain(':::followup')
+    expect(button(shadow, '展开会话列表')).toBeDefined()
+    expect(shadow.querySelector('.session-sidebar')).toBeNull()
+    button(shadow, '展开会话列表').click(); await settle()
     button(shadow, '收起会话列表').click(); await settle()
     button(shadow, '展开会话列表').click(); await settle()
     expect(shadow.textContent).toContain('干扰素数据')

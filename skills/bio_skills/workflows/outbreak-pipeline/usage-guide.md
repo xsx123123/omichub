@@ -93,7 +93,7 @@ Tell your AI agent what you want to do:
 
 ## Pathogen-Specific SNP / cgMLST Cluster Thresholds
 
-No universal cutoff. See epidemiological-genomics/transmission-inference for the full table with citations.
+No universal cutoff. See references/epidemiological-genomics--transmission-inference.md for the full table with citations.
 
 | Pathogen | Threshold | Source |
 |----------|-----------|--------|
@@ -132,11 +132,11 @@ No universal cutoff. See epidemiological-genomics/transmission-inference for the
 
 ## Related Skills
 
-- epidemiological-genomics/pathogen-typing - MLST / cgMLST / serotyping / Pangolin / Nextclade details
-- epidemiological-genomics/amr-surveillance - AMRFinderPlus species mode, TB-Profiler, hAMRonization, MGE context
-- epidemiological-genomics/phylodynamics - TreeTime / BEAST2 BDSKY / BICEPS / MASCOT / Gubbins recombination masking
-- epidemiological-genomics/transmission-inference - outbreaker2 / TransPhylo / pathogen-specific SNP thresholds
-- epidemiological-genomics/variant-surveillance - Nextstrain Augur, Pangolin UShER, Freyja wastewater deconvolution
+- references/epidemiological-genomics--pathogen-typing.md - MLST / cgMLST / serotyping / Pangolin / Nextclade details
+- references/epidemiological-genomics--amr-surveillance.md - AMRFinderPlus species mode, TB-Profiler, hAMRonization, MGE context
+- references/epidemiological-genomics--phylodynamics.md - TreeTime / BEAST2 BDSKY / BICEPS / MASCOT / Gubbins recombination masking
+- references/epidemiological-genomics--transmission-inference.md - outbreaker2 / TransPhylo / pathogen-specific SNP thresholds
+- references/epidemiological-genomics--variant-surveillance.md - Nextstrain Augur, Pangolin UShER, Freyja wastewater deconvolution
 - phylogenetics/divergence-dating - General-purpose dating beyond outbreaks
 - phylogenetics/bayesian-inference - BEAST mechanics beyond BDSKY
 - comparative-genomics/whole-genome-alignment - Core-genome alignment input

@@ -96,14 +96,14 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- clip-seq/clip-preprocessing - UMI extraction and adapter trimming
-- clip-seq/clip-alignment - STAR ENCODE block
-- clip-seq/clip-qc - Five-gate QC
-- clip-seq/clip-peak-calling - CLIPper / Skipper / PureCLIP
-- clip-seq/crosslink-site-detection - Single-nt CL maps
-- clip-seq/binding-site-annotation - ChIPseeker + RBP-Maps
-- clip-seq/clip-motif-analysis - HOMER + mCross + RBNS
-- clip-seq/differential-clip - DEWSeq cross-condition
+- references/clip-seq--clip-preprocessing.md - UMI extraction and adapter trimming
+- references/clip-seq--clip-alignment.md - STAR ENCODE block
+- references/clip-seq--clip-qc.md - Five-gate QC
+- references/clip-seq--clip-peak-calling.md - CLIPper / Skipper / PureCLIP
+- references/clip-seq--crosslink-site-detection.md - Single-nt CL maps
+- references/clip-seq--binding-site-annotation.md - ChIPseeker + RBP-Maps
+- references/clip-seq--clip-motif-analysis.md - HOMER + mCross + RBNS
+- references/clip-seq--differential-clip.md - DEWSeq cross-condition
 - clip-seq/m6a-clip - For m6A profiling
 - clip-seq/stamp-antibody-free - For antibody-free
 - clip-seq/ago-clip-mirna-targets - For miRNA targets

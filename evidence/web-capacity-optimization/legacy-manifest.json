@@ -1,0 +1,10 @@
+{
+  "port": 18001,
+  "app_debug": false,
+  "pool_size": 4,
+  "max_overflow": 0,
+  "legacy_wrappers": true,
+  "audit_call": "BaseHTTPMiddleware.__call__",
+  "cookie_call": "BaseHTTPMiddleware.__call__",
+  "lifecycle": "read-only capacity startup; real routes and request middleware"
+}

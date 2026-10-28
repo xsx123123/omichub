@@ -88,11 +88,11 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- immunoinformatics/mhc-binding-prediction - MHCflurry parameters
-- immunoinformatics/mhc-class-ii-prediction - Class II (CD4) neoantigens for vaccine help
-- immunoinformatics/neoantigen-prediction - pVACtools details
-- immunoinformatics/immunogenicity-scoring - Ranking algorithms
-- clinical-databases/hla-typing - HLA typing + HLA-LOH detection
+- references/immunoinformatics--mhc-binding-prediction.md - MHCflurry parameters
+- references/immunoinformatics--mhc-class-ii-prediction.md - Class II (CD4) neoantigens for vaccine help
+- references/immunoinformatics--neoantigen-prediction.md - pVACtools details
+- references/immunoinformatics--immunogenicity-scoring.md - Ranking algorithms
+- references/clinical-databases--hla-typing.md - HLA typing + HLA-LOH detection
 - clinical-databases/tumor-mutational-burden - TMB-H ICI biomarker
 - clinical-databases/msi-detection - MSI-H / dMMR ICI biomarker
 - clinical-databases/somatic-signatures - Mutational mechanism context

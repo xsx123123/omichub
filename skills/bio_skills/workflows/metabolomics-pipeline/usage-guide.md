@@ -49,10 +49,10 @@ Tell your AI agent what you want to do:
 
 - Untargeted LC-MS/MS metabolite profiling
 - Metabolic biomarker discovery and treatment-response studies
-- Lipidomics (adjust peak widths and annotation; see metabolomics/lipidomics)
+- Lipidomics (adjust peak widths and annotation; see references/metabolomics--lipidomics.md)
 - Studies where the feature table must reach pathway interpretation honestly
 
-Not for: stable-isotope flux/fluxomics (see metabolomics/isotope-tracing) or absolute targeted quantification as the primary goal (see metabolomics/targeted-analysis).
+Not for: stable-isotope flux/fluxomics (see metabolomics/isotope-tracing) or absolute targeted quantification as the primary goal (see references/metabolomics--targeted-analysis.md).
 
 ## Required Inputs
 
@@ -77,17 +77,17 @@ QC2.mzML,QC,QC,1,4
 - A clean PLS-DA/OPLS-DA score plot is the generic output of p>>n data; require Q2 high AND a small permutation p before believing separation.
 - Never promote a database hit to an identification: a name without an MSI level is incomplete, and pathway enrichment launders that uncertainty into confident biology.
 - The pathway background IS the null hypothesis: ORA needs the assay-coverage metabolome, mummichog needs the entire feature table.
-- Switch the front end to MS-DIAL (metabolomics/msdial-preprocessing) for MS2Dec deconvolution, GC-EI, or DIA/SWATH, then enter at Stage 2.
+- Switch the front end to MS-DIAL (references/metabolomics--msdial-preprocessing.md) for MS2Dec deconvolution, GC-EI, or DIA/SWATH, then enter at Stage 2.
 
 ## Related Skills
 
-- metabolomics/xcms-preprocessing - Stage 1 feature extraction parameters and the feature-table-as-artifact framing
-- metabolomics/normalization-qc - Stage 2 drift correction, RSD/D-ratio filtering, PQN, mechanism-aware imputation
-- metabolomics/metabolite-annotation - Stage 3 MSI/Schymanski confidence levels
-- metabolomics/statistical-analysis - Stage 4 permutation-validated multivariate and dependence-aware FDR
-- metabolomics/pathway-mapping - Stage 5 ORA vs mummichog and background construction
-- metabolomics/msdial-preprocessing - Alternative front end entering at Stage 2
-- metabolomics/lipidomics - Lipid-specific peak widths and annotation
-- metabolomics/targeted-analysis - Absolute quantification branch
+- references/metabolomics--xcms-preprocessing.md - Stage 1 feature extraction parameters and the feature-table-as-artifact framing
+- references/metabolomics--normalization-qc.md - Stage 2 drift correction, RSD/D-ratio filtering, PQN, mechanism-aware imputation
+- references/metabolomics--metabolite-annotation.md - Stage 3 MSI/Schymanski confidence levels
+- references/metabolomics--statistical-analysis.md - Stage 4 permutation-validated multivariate and dependence-aware FDR
+- references/metabolomics--pathway-mapping.md - Stage 5 ORA vs mummichog and background construction
+- references/metabolomics--msdial-preprocessing.md - Alternative front end entering at Stage 2
+- references/metabolomics--lipidomics.md - Lipid-specific peak widths and annotation
+- references/metabolomics--targeted-analysis.md - Absolute quantification branch
 - metabolomics/isotope-tracing - Separate stable-isotope flux branch, not a stage of this untargeted pipeline
 - multi-omics-integration/mofa-integration - Integrating the feature table with other omics layers

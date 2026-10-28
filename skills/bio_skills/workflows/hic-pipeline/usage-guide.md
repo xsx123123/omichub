@@ -56,4 +56,4 @@ Tell your AI agent what you want to do:
 - **Resolution to feature**: 100kb-1Mb for compartments, 10-40kb for TADs, 5-10kb for loops (1-2kb for Micro-C).
 - **Phasing is not optional**: the compartment eigenvector sign is arbitrary until oriented by a GC or gene-density track.
 - **QC**: the long-range cis (>=20kb) fraction is the one-number library readout; trans is a noise floor whose threshold is genome-size-dependent. High duplicate rate = low complexity (not fixable by sequencing deeper).
-- **Protein-directed assays branch out**: HiChIP, PLAC-seq, and Capture Hi-C need FitHiChIP/MAPS/CHiCAGO (hi-c-analysis/hichip-plac-loops), not generic dot calling.
+- **Protein-directed assays branch out**: HiChIP, PLAC-seq, and Capture Hi-C need FitHiChIP/MAPS/CHiCAGO (references/hi-c-analysis--hichip-plac-loops.md), not generic dot calling.

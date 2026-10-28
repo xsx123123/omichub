@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-crispr-screen-pipeline
 description: End-to-end pooled and single-cell CRISPR screen analysis from FASTQ to hit genes. Orchestrates library design QC, guide counting, six-stage screen QC (plasmid Gini, replicate Pearson, CEGv2 PR-AUC, copy-number artifact), method-appropriate hit calling across MAGeCK RRA/MLE, BAGEL2, drugZ, JACKS, and Chronos, cancer-cell-line copy-number correction (CRISPRcleanR / Chronos), batch correction for multi-batch screens, and the specialized branches for combinatorial paralog screens, single-cell Perturb-seq, base-editor variant-function screens, prime-editor screens, and in vivo bottleneck-aware screens. Use when analyzing any pooled CRISPR screen end-to-end, matching the hit-calling method to the experimental design, integrating copy-number correction into the pipeline, or branching the workflow for single-cell, combinatorial, base-editor, prime-editor, or in vivo variants.
+version: 1.0.0
+display_name: CRISPR 筛选分析流程
+display_name_en: CRISPR Screen Analysis Pipeline
+description_zh: >-
+  从 FASTQ 到命中基因的混合与单细胞 CRISPR 筛选全流程，涵盖文库设计质控、guide 计数、六阶段筛选质控、MAGeCK/BAGEL2/Chronos 等命中选择、拷贝数校正、批次校正及 Perturb-seq 等分支。
+description_en: >-
+  End-to-end pooled and single-cell CRISPR screen analysis from FASTQ to hit genes. Orchestrates library design QC, guide counting, six-stage screen QC (plasmid Gini, replicate Pearson, CEGv2 PR-AUC, copy-number artifact), method-appropriate hit calling across MAGeCK RRA/MLE, BAGEL2, drugZ, JACKS, and Chronos, cancer-cell-line copy-number correction (CRISPRcleanR / Chronos), batch correction for multi-batch screens, and the specialized branches for combinatorial paralog screens, single-cell Perturb-seq, base-editor variant-function screens, prime-editor screens, and in vivo bottleneck-aware screens. Use when analyzing any pooled CRISPR screen end-to-end, matching the hit-calling method to the experimental design, integrating copy-number correction into the pipeline, or branching the workflow for single-cell, combinatorial, base-editor, prime-editor, or in vivo variants.
+author: JZHANG
+examples_zh:
+  - "分析这批 pooled CRISPR 筛选数据并给出命中基因"
+  - "帮我判断该用 MAGeCK 还是 BAGEL2"
+  - "对 Perturb-seq 数据做单细胞层面的筛选分析"
+examples_en:
+  - "Analyze this pooled CRISPR screen and rank the hit genes"
+  - "Help me choose between MAGeCK and BAGEL2 for hit calling"
+  - "Run a single-cell Perturb-seq analysis on this screen"
 tool_type: mixed
 primary_tool: MAGeCK
 workflow: true
@@ -50,7 +66,7 @@ Every LFC, QC gate, and hit call is computed against a reference that is committ
 
 1. **The guide LIBRARY definition (guide->gene map + control classes) is the denominator, the calibrator, and the training reference — committed once.** The library must carry non-targeting controls (NTCs, ~1%, the null distribution) AND CEGv2 reference essentials + NEGv1 non-essentials (the positive/negative calibrators for PR-AUC and BAGEL2/Chronos priors). NTCs calibrate the null/FDR; CEGv2/NEGv1 calibrate PR-AUC — swapping or dropping a class silently breaks FDR or QC.
 2. **The baseline choice has a right answer and rescales every hit.** Dropout/enrichment LFC is against a baseline: plasmid pool for the cloning-bottleneck baseline, Day-0/T0 for the biology baseline, and vehicle (NOT Day-0) for drug screens — drug-vs-Day-0 conflates drug effect with normal proliferation.
-3. **Copy-number correction MUST precede hit calling in cancer cell lines.** Multiple simultaneous Cas9 cuts at amplified loci trigger a gene-independent DNA-damage/G2 arrest (Aguirre 2016; Munoz 2016; the effect appears in both TP53-mutant and TP53-wild-type lines, though Aguirre 2016 found TP53 status correlates with its magnitude -- separately, Ihry 2018 / Haapaniemi 2018 report p53-dependent toxicity of Cas9 cutting generally), so amplified regions look essential regardless of gene function; calling hits first yields false essentials at ERBB2/MYC/FGFR1. Run CRISPRcleanR/Chronos BEFORE hit calling, or use CRISPRi to bypass the DSB. This is a pipeline step, not a post-hoc interpretation. Verifying `abs(rho(LFC,CN)) < 0.1` afterwards needs a matched CN profile: CRISPRcleanR corrects unsupervised without one, so the check happens in crispr-screens/copy-number-correction (or use Chronos, which consumes CN directly).
+3. **Copy-number correction MUST precede hit calling in cancer cell lines.** Multiple simultaneous Cas9 cuts at amplified loci trigger a gene-independent DNA-damage/G2 arrest (Aguirre 2016; Munoz 2016; the effect appears in both TP53-mutant and TP53-wild-type lines, though Aguirre 2016 found TP53 status correlates with its magnitude -- separately, Ihry 2018 / Haapaniemi 2018 report p53-dependent toxicity of Cas9 cutting generally), so amplified regions look essential regardless of gene function; calling hits first yields false essentials at ERBB2/MYC/FGFR1. Run CRISPRcleanR/Chronos BEFORE hit calling, or use CRISPRi to bypass the DSB. This is a pipeline step, not a post-hoc interpretation. Verifying `abs(rho(LFC,CN)) < 0.1` afterwards needs a matched CN profile: CRISPRcleanR corrects unsupervised without one, so the check happens in references/crispr-screens--copy-number-correction.md (or use Chronos, which consumes CN directly).
 4. **CEGv2 essential-gene depletion is the screen's built-in positive control.** If known essentials do not deplete (CEGv2 PR-AUC below ~0.7), the screen failed selection and NO novel hit is trustworthy regardless of its p-value — the seam analog of a spike-in. Normalize -> QC -> (CN correct) -> hit-call, never hit-call first; add batch as an MLE covariate, never pre-corrected with ComBat on counts (distorts the NB mean-variance the caller assumes).
 
 ## Made-once commitments
@@ -364,20 +380,20 @@ MAGeCKFlute R package provides one-shot FluteRRA / FluteMLE dashboards with KEGG
 
 ## Related Skills
 
-- crispr-screens/library-design - Library composition and design rules
-- crispr-screens/screen-qc - Six-stage QC + CEGv2 PR-AUC
-- crispr-screens/mageck-analysis - MAGeCK RRA + MLE detail
-- crispr-screens/bagel-essentiality - BAGEL2 Bayes factor essentiality
-- crispr-screens/drugz-chemogenomic - drugZ for drug-modifier screens
-- crispr-screens/jacks-analysis - Joint multi-screen analysis with shared efficacy
-- crispr-screens/hit-calling - Cross-method decision tree + reconciliation
-- crispr-screens/copy-number-correction - CRISPRcleanR / CERES / Chronos
-- crispr-screens/batch-correction - Multi-batch design matrix
-- crispr-screens/crispresso-editing - CRISPResso2 editing quantification
-- crispr-screens/base-editing-analysis - Variant-function BE screens
-- crispr-screens/prime-editing-screens - PRIDICT2 pegRNA design
-- crispr-screens/perturb-seq-analysis - Single-cell screen analysis
-- crispr-screens/combinatorial-screens - Cas12a multiplex + GI scoring
-- crispr-screens/in-vivo-screens - Bottleneck-aware in vivo design
+- references/crispr-screens--library-design.md - Library composition and design rules
+- references/crispr-screens--screen-qc.md - Six-stage QC + CEGv2 PR-AUC
+- references/crispr-screens--mageck-analysis.md - MAGeCK RRA + MLE detail
+- references/crispr-screens--bagel-essentiality.md - BAGEL2 Bayes factor essentiality
+- references/crispr-screens--drugz-chemogenomic.md - drugZ for drug-modifier screens
+- references/crispr-screens--jacks-analysis.md - Joint multi-screen analysis with shared efficacy
+- references/crispr-screens--hit-calling.md - Cross-method decision tree + reconciliation
+- references/crispr-screens--copy-number-correction.md - CRISPRcleanR / CERES / Chronos
+- references/crispr-screens--batch-correction.md - Multi-batch design matrix
+- references/crispr-screens--crispresso-editing.md - CRISPResso2 editing quantification
+- references/crispr-screens--base-editing-analysis.md - Variant-function BE screens
+- references/crispr-screens--prime-editing-screens.md - PRIDICT2 pegRNA design
+- references/crispr-screens--perturb-seq-analysis.md - Single-cell screen analysis
+- references/crispr-screens--combinatorial-screens.md - Cas12a multiplex + GI scoring
+- references/crispr-screens--in-vivo-screens.md - Bottleneck-aware in vivo design
 - pathway-analysis/go-enrichment - Functional enrichment of hits
 - pathway-analysis/gsea - Pre-ranked GSEA on hit lists

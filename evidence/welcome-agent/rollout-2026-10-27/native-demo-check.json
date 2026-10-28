@@ -1,0 +1,11 @@
+{
+  "account_kind": "public_demo",
+  "endpoint": "http://127.0.0.1:8888",
+  "scope": "Native login and general-disabled claim only; no private project APIs",
+  "login_status": 200,
+  "first_login": false,
+  "profile_status": 200,
+  "role": "user",
+  "claim_status": 204,
+  "general_disabled_confirmed": true
+}

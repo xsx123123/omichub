@@ -1,0 +1,9 @@
+  . welcome.reconcile
+[2026-10-26 10:35:00,008: INFO/MainProcess] Task welcome.reconcile[2515dda9-58a0-4aa3-9162-35dc4d11073a] received
+2026-10-26 10:35:00.010 | INFO     | worker | cygnusx.infrastructure.celery_app.logging:__call__:73 | Task 2515dda9-58a0-4aa3-9162-35dc4d11073a started: welcome.reconcile
+2026-10-26 10:35:00.295 | INFO     | worker | cygnusx.infrastructure.celery_app.logging:__call__:91 | Task 2515dda9-58a0-4aa3-9162-35dc4d11073a finished: welcome.reconcile
+[2026-10-26 10:35:00,296: INFO/MainProcess] Task welcome.reconcile[2515dda9-58a0-4aa3-9162-35dc4d11073a] succeeded in 0.28783831401960924s: {'published': 2, 'enqueued': 0}
+[2026-10-26 10:36:00,001: INFO/MainProcess] Task welcome.reconcile[527f6bf4-71e7-43db-b5e4-67b5033c53c5] received
+2026-10-26 10:36:00.002 | INFO     | worker | cygnusx.infrastructure.celery_app.logging:__call__:73 | Task 527f6bf4-71e7-43db-b5e4-67b5033c53c5 started: welcome.reconcile
+2026-10-26 10:36:00.024 | INFO     | worker | cygnusx.infrastructure.celery_app.logging:__call__:91 | Task 527f6bf4-71e7-43db-b5e4-67b5033c53c5 finished: welcome.reconcile
+[2026-10-26 10:36:00,025: INFO/MainProcess] Task welcome.reconcile[527f6bf4-71e7-43db-b5e4-67b5033c53c5] succeeded in 0.023576553008751944s: {'published': 0, 'enqueued': 0}

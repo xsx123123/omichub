@@ -60,18 +60,18 @@ Tell your AI agent what you want to do:
 - Always soft-mask (`-xsmall`) rather than hard-mask for gene prediction input
 - BRAKER3 with both RNA-seq and protein evidence gives best results
 - Use the full Bakta database for comprehensive prokaryotic annotation
-- BUSCO completeness > 90% is the target; use the deepest applicable clade dataset (not the shallow `eukaryota_odb10`), and compare proteome-mode to genome-mode BUSCO on the same assembly to tell whether the predictor or the assembly is the limit (see genome-annotation/annotation-qc)
+- BUSCO completeness > 90% is the target; use the deepest applicable clade dataset (not the shallow `eukaryota_odb10`), and compare proteome-mode to genome-mode BUSCO on the same assembly to tell whether the predictor or the assembly is the limit (see references/genome-annotation--annotation-qc.md)
 - If functional annotation is < 60%, try broader taxonomy scope in eggNOG
 - Check repeat content against expectations for the taxon before proceeding
 - Run QUAST and BUSCO on the assembly itself before starting annotation
 
 ## Related Skills
-- genome-annotation/prokaryotic-annotation - Bakta and Prokka details
-- genome-annotation/eukaryotic-gene-prediction - BRAKER3 and AUGUSTUS options
-- genome-annotation/repeat-annotation - Soft-masking before gene prediction
-- genome-annotation/functional-annotation - eggNOG-mapper and InterProScan
-- genome-annotation/ncrna-annotation - Infernal/Rfam and tRNAscan-SE detail
+- references/genome-annotation--prokaryotic-annotation.md - Bakta and Prokka details
+- references/genome-annotation--eukaryotic-gene-prediction.md - BRAKER3 and AUGUSTUS options
+- references/genome-annotation--repeat-annotation.md - Soft-masking before gene prediction
+- references/genome-annotation--functional-annotation.md - eggNOG-mapper and InterProScan
+- references/genome-annotation--ncrna-annotation.md - Infernal/Rfam and tRNAscan-SE detail
 - rna-structure/ncrna-search - Covariance-model search, gathering thresholds, and clan resolution
-- genome-annotation/annotation-qc - BUSCO genome-vs-proteome, OMArk, CheckM2 gates
-- genome-assembly/assembly-qc - Pre-annotation assembly quality checks
+- references/genome-annotation--annotation-qc.md - BUSCO genome-vs-proteome, OMArk, CheckM2 gates
+- references/genome-assembly--assembly-qc.md - Pre-annotation assembly quality checks
 - genome-intervals/gtf-gff-handling - GFF3/GTF hierarchy traversal, AGAT sanitizing/validation, coordinate conversion, and seqid-consistency checks on the merged annotation

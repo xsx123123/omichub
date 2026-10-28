@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-neoantigen-pipeline
 description: Orchestrates neoantigen discovery from somatic variants to ranked vaccine candidates, chaining HLA typing (OptiType/arcasHLA + LOHHLA), VEP annotation (Wildtype+Frameshift plugins) + expression/readcount annotation, proximal-variant phasing, pVACseq MHC-I/II binding, CCF/clonality, and immunogenicity/quality ranking. Use when recognizing that binding is single-digit PPV and the critical steps are downstream (full-resolution HLA + LOH gating, proximal-variant phasing, clonality from purity+CN not raw VAF, expression), sequencing normalize+annotate -> phase -> HLA -> binding -> quality in the defensible order, dropping candidates on LOH-lost alleles, supplying --phased-proximal-variants-vcf so the mutant peptide is real, or ranking WITHIN patient rather than a fixed IC50 threshold. Hands mechanism to the immunoinformatics component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 新抗原发现流程
+display_name_en: Neoantigen Discovery Pipeline
+description_zh: >-
+  从体细胞变异到排序疫苗候选的新抗原发现流程，涵盖 HLA 分型与 LOH、VEP 注释、近端变异定相、pVACseq MHC-I/II 结合预测、克隆性与免疫原性排序。
+description_en: >-
+  Orchestrates neoantigen discovery from somatic variants to ranked vaccine candidates, chaining HLA typing (OptiType/arcasHLA + LOHHLA), VEP annotation (Wildtype+Frameshift plugins) + expression/readcount annotation, proximal-variant phasing, pVACseq MHC-I/II binding, CCF/clonality, and immunogenicity/quality ranking. Use when recognizing that binding is single-digit PPV and the critical steps are downstream (full-resolution HLA + LOH gating, proximal-variant phasing, clonality from purity+CN not raw VAF, expression), sequencing normalize+annotate -> phase -> HLA -> binding -> quality in the defensible order, dropping candidates on LOH-lost alleles, supplying --phased-proximal-variants-vcf so the mutant peptide is real, or ranking WITHIN patient rather than a fixed IC50 threshold. Hands mechanism to the immunoinformatics component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "从肿瘤突变数据筛选新抗原候选"
+  - "帮我做 HLA 分型和 LOH 判断"
+  - "用 pVACseq 预测 MHC-I/II 结合并排序候选"
+examples_en:
+  - "Rank neoantigen vaccine candidates from my tumor mutations"
+  - "Run HLA typing and loss-of-heterozygosity assessment"
+  - "Predict MHC-I/II binding with pVACseq and rank candidates"
 tool_type: mixed
 primary_tool: pVACtools
 goal_approach_exempt: true
@@ -38,7 +54,7 @@ Complete workflow from somatic variants to ranked neoantigen vaccine candidates 
 
 ## Key Judgment -- binding is the easy part; PPV lives downstream
 
-A binding-only pipeline has single-digit-percent positive predictive value (TESLA; Wells 2020 Cell 183:818). The critical steps are downstream of binding: correct full-resolution HLA typing (wrong allele = confident garbage), HLA loss-of-heterozygosity (run LOHHLA and DROP candidates on a lost allele; it invalidates predictions silently), proximal-variant phasing (supply `--phased-proximal-variants-vcf` or the mutant peptide is wrong), cancer cell fraction for clonality (clonal beats subclonal; use purity + copy number, not raw VAF), expression, and quality features (agretopicity, foreignness). Treat the ranked output as a tier-1 hypothesis list for immunopeptidomics MS and functional T-cell validation, not a final answer. Add MHC class II (CD4) neoantigens for vaccine help (see immunoinformatics/mhc-class-ii-prediction). Note on DAI below: agretopicity is most often the WT/MT binding ratio; whichever form is used, an anchor-position mutation inflates it without changing the TCR-facing surface, and a barely-presented WT makes it unstable; pair it with anchor evaluation.
+A binding-only pipeline has single-digit-percent positive predictive value (TESLA; Wells 2020 Cell 183:818). The critical steps are downstream of binding: correct full-resolution HLA typing (wrong allele = confident garbage), HLA loss-of-heterozygosity (run LOHHLA and DROP candidates on a lost allele; it invalidates predictions silently), proximal-variant phasing (supply `--phased-proximal-variants-vcf` or the mutant peptide is wrong), cancer cell fraction for clonality (clonal beats subclonal; use purity + copy number, not raw VAF), expression, and quality features (agretopicity, foreignness). Treat the ranked output as a tier-1 hypothesis list for immunopeptidomics MS and functional T-cell validation, not a final answer. Add MHC class II (CD4) neoantigens for vaccine help (see references/immunoinformatics--mhc-class-ii-prediction.md). Note on DAI below: agretopicity is most often the WT/MT binding ratio; whichever form is used, an anchor-position mutation inflates it without changing the TCR-facing surface, and a barely-presented WT makes it unstable; pair it with anchor evaluation.
 
 ## Made-once commitments
 
@@ -335,7 +351,7 @@ plt.savefig('neoantigen_summary.pdf')
 | Confident but invalid predictions | HLA allele wrong or on a LOH-lost haplotype | Full 4-digit typing + LOHHLA drop before ranking |
 | `--expn-val`/VAF filters silently pass everything | Expression/readcounts not annotated into the VCF | `vcf-expression-annotator` + `vcf-readcount-annotator` before pVACseq |
 | Clonal candidate mis-tiered subclonal | Raw VAF used as clonality on a low-purity tumor | CCF from purity + copy number (copy-number/allele-specific-copy-number) |
-| Candidates mis-ranked across patients | Fixed IC50 threshold applied cross-patient | Rank WITHIN patient (immunoinformatics/immunogenicity-scoring) |
+| Candidates mis-ranked across patients | Fixed IC50 threshold applied cross-patient | Rank WITHIN patient (references/immunoinformatics--immunogenicity-scoring.md) |
 | No neoantigens found | Low mutation burden | Lower IC50 threshold to 1000nM; check TMB/MSI first |
 
 ## References
@@ -356,12 +372,12 @@ plt.savefig('neoantigen_summary.pdf')
 
 ## Related Skills
 
-- immunoinformatics/mhc-binding-prediction - MHCflurry parameters; BA vs EL, %Rank vs nM, abundance bias
-- immunoinformatics/mhc-class-ii-prediction - class II (CD4) neoantigens for vaccine help
-- immunoinformatics/neoantigen-prediction - pVACtools details; LOHHLA, phasing, clonality
-- immunoinformatics/immunogenicity-scoring - rank within patient (don't threshold); fitness-model quality
-- immunoinformatics/epitope-prediction - B-cell epitopes
-- clinical-databases/hla-typing - HLA typing (T1K is the 2024-2026 all-rounder; OptiType for class I; arcasHLA for RNA-seq); check HLA-LOH via LOHHLA / DASH which abolishes neoantigen presentation in ~17% pan-cancer (~30%+ HNSCC / NSCLC / cervical)
+- references/immunoinformatics--mhc-binding-prediction.md - MHCflurry parameters; BA vs EL, %Rank vs nM, abundance bias
+- references/immunoinformatics--mhc-class-ii-prediction.md - class II (CD4) neoantigens for vaccine help
+- references/immunoinformatics--neoantigen-prediction.md - pVACtools details; LOHHLA, phasing, clonality
+- references/immunoinformatics--immunogenicity-scoring.md - rank within patient (don't threshold); fitness-model quality
+- references/immunoinformatics--epitope-prediction.md - B-cell epitopes
+- references/clinical-databases--hla-typing.md - HLA typing (T1K is the 2024-2026 all-rounder; OptiType for class I; arcasHLA for RNA-seq); check HLA-LOH via LOHHLA / DASH which abolishes neoantigen presentation in ~17% pan-cancer (~30%+ HNSCC / NSCLC / cervical)
 - clinical-databases/tumor-mutational-burden - TMB-H pan-tumor ICI biomarker; check before neoantigen-vaccine candidate selection
 - clinical-databases/msi-detection - MSI-H / dMMR pan-tumor ICI biomarker; MSI-H supersedes TMB-H per Sha 2020
 - clinical-databases/somatic-signatures - Clonal neoantigen burden (McGranahan 2016 Science) predicts ICI response better than total TMB

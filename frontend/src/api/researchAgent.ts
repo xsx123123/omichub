@@ -1,6 +1,7 @@
 import apiClient from './client'
 import { chatApi } from './chat'
 import type { TreasureIslandProps } from '@/types/treasureIsland'
+import type { PlatformLeaderboard, PlatformUsageStats } from '../../treasure-island/platformStats'
 
 export interface ResearchCapabilities {
   native_ui_enabled: boolean
@@ -82,6 +83,15 @@ export interface ResearchMessage {
 }
 
 export const researchAgentApi = {
+  async leaderboard(period: 'all' | 'week' = 'all'): Promise<PlatformLeaderboard> {
+    return (await apiClient.get<PlatformLeaderboard>('/research-agent/leaderboard', { params: { period } })).data
+  },
+  async usageStats(): Promise<PlatformUsageStats> {
+    return (await apiClient.get<PlatformUsageStats>('/research-agent/stats')).data
+  },
+  async updateNickname(nickname: string): Promise<{ ok: boolean }> {
+    return (await apiClient.patch<{ ok: boolean }>('/research-agent/nickname', { nickname })).data
+  },
   async capabilities(): Promise<ResearchCapabilities> {
     return (await apiClient.get<ResearchCapabilities>('/research-agent/capabilities')).data
   },

@@ -77,9 +77,9 @@ Tell your AI agent what you want to do:
 - database-access/geo-data - Public expression cohorts for independent validation
 - database-access/sra-data - Pull raw FASTQ to build re-quantified validation cohorts
 - database-access/uniprot-access - Protein-level features (sequence, GO, PTMs) for protein biomarkers
-- machine-learning/biomarker-discovery - Detailed feature selection methods
-- machine-learning/model-validation - Nested CV implementation details
-- machine-learning/omics-classifiers - Classifier options and tuning
-- machine-learning/prediction-explanation - SHAP and LIME interpretation
+- references/machine-learning--biomarker-discovery.md - Detailed feature selection methods
+- references/machine-learning--model-validation.md - Nested CV implementation details
+- references/machine-learning--omics-classifiers.md - Classifier options and tuning
+- references/machine-learning--prediction-explanation.md - SHAP and LIME interpretation
 - differential-expression/de-results - Pre-filter with DE genes
 - pathway-analysis/go-enrichment - Functional enrichment of biomarkers

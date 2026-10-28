@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-genome-annotation-pipeline
 description: Orchestrates genome annotation from assembled contigs to functional annotation, forking prokaryotic (Bakta one-step, genetic-code table from GTDB-Tk) vs eukaryotic (RepeatMask -> BRAKER3 -> functional -> ncRNA), then eggNOG/InterProScan functional assignment and Infernal/tRNAscan ncRNA. Use when committing the pro-vs-eukaryotic path and the genetic-code table from taxonomy (never guessing), annotating ONLY a decontaminated QC-passed assembly (CheckM2 before prokaryotic annotation is non-negotiable), committing the evidence set (RNA-seq + protein drives BRAKER3 training), soft-masking with a curated repeat library before gene prediction, or pinning the tool + DB version for any pangenome comparison. Hands mechanism to the genome-annotation component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 基因组注释全流程
+display_name_en: Genome Annotation Pipeline
+description_zh: >-
+  从组装 contig 到功能注释的基因组注释流程，区分原核（Bakta）与真核（RepeatMasker、BRAKER3、ncRNA）路线，并完成 eggNOG 与 InterProScan 功能指派和 Infernal/tRNAscan 非编码 RNA 注释。
+description_en: >-
+  Orchestrates genome annotation from assembled contigs to functional annotation, forking prokaryotic (Bakta one-step, genetic-code table from GTDB-Tk) vs eukaryotic (RepeatMask -> BRAKER3 -> functional -> ncRNA), then eggNOG/InterProScan functional assignment and Infernal/tRNAscan ncRNA. Use when committing the pro-vs-eukaryotic path and the genetic-code table from taxonomy (never guessing), annotating ONLY a decontaminated QC-passed assembly (CheckM2 before prokaryotic annotation is non-negotiable), committing the evidence set (RNA-seq + protein drives BRAKER3 training), soft-masking with a curated repeat library before gene prediction, or pinning the tool + DB version for any pangenome comparison. Hands mechanism to the genome-annotation component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "给这个细菌基因组做完整注释"
+  - "帮我判断用原核还是真核注释流程"
+  - "用 RNA-seq 证据运行 BRAKER3 并做功能注释"
+examples_en:
+  - "Annotate this bacterial genome end to end"
+  - "Help me decide between the prokaryotic and eukaryotic annotation paths"
+  - "Run BRAKER3 with RNA-seq evidence and assign functional annotations"
 tool_type: mixed
 primary_tool: Bakta
 goal_approach_exempt: true
@@ -242,7 +258,7 @@ braker.pl \
 # BUSCO completeness on predicted proteins. Use the DEEPEST applicable clade dataset
 # (e.g. insecta_odb10 / embryophyta_odb10), NOT the shallow eukaryota_odb10.
 # The diagnostic that matters: compare this proteome BUSCO to a genome-mode BUSCO on the
-# same assembly -- a large gap means the predictor missed present genes (see genome-annotation/annotation-qc).
+# same assembly -- a large gap means the predictor missed present genes (see references/genome-annotation--annotation-qc.md).
 busco \
     -i braker_out/braker.aa \
     -l <clade>_odb10 \
@@ -467,14 +483,14 @@ fi
 
 ## Related Skills
 
-- genome-annotation/prokaryotic-annotation - Bakta and Prokka details
-- genome-annotation/eukaryotic-gene-prediction - BRAKER3 and AUGUSTUS options
-- genome-annotation/repeat-annotation - Soft-masking before gene prediction
-- genome-annotation/functional-annotation - eggNOG-mapper and InterProScan
-- genome-annotation/ncrna-annotation - Infernal/Rfam and tRNAscan-SE detail
+- references/genome-annotation--prokaryotic-annotation.md - Bakta and Prokka details
+- references/genome-annotation--eukaryotic-gene-prediction.md - BRAKER3 and AUGUSTUS options
+- references/genome-annotation--repeat-annotation.md - Soft-masking before gene prediction
+- references/genome-annotation--functional-annotation.md - eggNOG-mapper and InterProScan
+- references/genome-annotation--ncrna-annotation.md - Infernal/Rfam and tRNAscan-SE detail
 - rna-structure/ncrna-search - Covariance-model search, gathering thresholds, and clan resolution
-- genome-annotation/annotation-qc - BUSCO genome-vs-proteome, OMArk, CheckM2 gates
-- genome-assembly/assembly-qc - Pre-annotation assembly quality checks
+- references/genome-annotation--annotation-qc.md - BUSCO genome-vs-proteome, OMArk, CheckM2 gates
+- references/genome-assembly--assembly-qc.md - Pre-annotation assembly quality checks
 - genome-intervals/gtf-gff-handling - GFF3/GTF hierarchy traversal, AGAT sanitizing/validation, coordinate conversion, and seqid-consistency checks on the merged annotation
 - workflows/genome-assembly-pipeline - Upstream: hands off the decontaminated, QC-passed FASTA (with its QV/BUSCO)
 

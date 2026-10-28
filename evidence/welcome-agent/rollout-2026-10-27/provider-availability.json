@@ -1,0 +1,7 @@
+{
+  "default_provider": "deepseek-v4-flash",
+  "observed_http_status": 402,
+  "observed_error": "Insufficient Balance",
+  "evidence_found": true,
+  "effect": "Current DB welcome deliveries need no inference; future generation needs the default provider restored."
+}

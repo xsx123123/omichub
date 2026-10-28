@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import apiClient from '@/api/client'
+import { clearReportPreviewContext } from '@/utils/reportPreviewSession'
 import type {
   User,
   TokenResponse,
@@ -37,6 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function clearTokens() {
+    clearReportPreviewContext()
     accessToken.value = null
     refreshToken.value = null
     user.value = null
@@ -71,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const data = response.data
     if (!data.requires_2fa) {
+      clearReportPreviewContext()
       setTokens(data.access_token, data.refresh_token)
       markOnboardingPending(!!data.first_login)
       await fetchUser()
@@ -82,6 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
     const req: TwoFactorLoginRequest = { challenge_token: challengeToken, code }
     const response = await apiClient.post<TokenResponse>('/auth/2fa/login', req)
     const data = response.data
+    clearReportPreviewContext()
     setTokens(data.access_token, data.refresh_token)
     markOnboardingPending(!!data.first_login)
     await fetchUser()
@@ -116,6 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function setupFirstAdmin(req: RegisterRequest): Promise<void> {
     const response = await apiClient.post<TokenResponse>('/auth/setup', req)
+    clearReportPreviewContext()
     setTokens(response.data.access_token, response.data.refresh_token)
     // 首位管理员也是新用户，同样展示迎新引导
     markOnboardingPending(true)

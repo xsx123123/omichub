@@ -1,0 +1,59 @@
+{
+  "queue": "analysis",
+  "task": "celery.accumulate(1)",
+  "worker_concurrency": {
+    "celery@5ca8224e52b3": 16
+  },
+  "scope": "existing production Worker builtin no-op round trip; excludes HTTP and business work",
+  "queue_depth_scope": "shared analysis queue, includes unrelated tasks",
+  "stages": [
+    {
+      "users": 10,
+      "submitted": 100,
+      "completed": 100,
+      "errors": [],
+      "elapsed_s": 3.294,
+      "completed_tasks_per_s": 30.36,
+      "end_to_end_p95_ms": 2061.92,
+      "publish_to_start_p95_ms": null,
+      "service_p95_ms": null,
+      "max_sampled_queue_depth": 4
+    },
+    {
+      "users": 20,
+      "submitted": 200,
+      "completed": 200,
+      "errors": [],
+      "elapsed_s": 7.167,
+      "completed_tasks_per_s": 27.91,
+      "end_to_end_p95_ms": 3233.8,
+      "publish_to_start_p95_ms": null,
+      "service_p95_ms": null,
+      "max_sampled_queue_depth": 17
+    },
+    {
+      "users": 50,
+      "submitted": 500,
+      "completed": 500,
+      "errors": [],
+      "elapsed_s": 16.318,
+      "completed_tasks_per_s": 30.64,
+      "end_to_end_p95_ms": 4641.43,
+      "publish_to_start_p95_ms": null,
+      "service_p95_ms": null,
+      "max_sampled_queue_depth": 52
+    },
+    {
+      "users": 100,
+      "submitted": 1000,
+      "completed": 1000,
+      "errors": [],
+      "elapsed_s": 32.107,
+      "completed_tasks_per_s": 31.15,
+      "end_to_end_p95_ms": 4632.38,
+      "publish_to_start_p95_ms": null,
+      "service_p95_ms": null,
+      "max_sampled_queue_depth": 102
+    }
+  ]
+}

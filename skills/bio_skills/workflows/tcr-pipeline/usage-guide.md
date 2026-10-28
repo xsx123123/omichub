@@ -74,9 +74,9 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- tcr-bcr-analysis/mixcr-analysis - V(D)J alignment and clonotype assembly
-- tcr-bcr-analysis/vdjtools-analysis - Depth-normalized diversity and overlap
-- tcr-bcr-analysis/immcantation-analysis - BCR clonal clustering, SHM and lineages
-- tcr-bcr-analysis/scirpy-analysis - Single-cell VDJ + gene-expression integration
-- tcr-bcr-analysis/repertoire-visualization - Figures for the pipeline outputs
-- tcr-bcr-analysis/specificity-annotation - Optional antigen-specificity annotation
+- references/tcr-bcr-analysis--mixcr-analysis.md - V(D)J alignment and clonotype assembly
+- references/tcr-bcr-analysis--vdjtools-analysis.md - Depth-normalized diversity and overlap
+- references/tcr-bcr-analysis--immcantation-analysis.md - BCR clonal clustering, SHM and lineages
+- references/tcr-bcr-analysis--scirpy-analysis.md - Single-cell VDJ + gene-expression integration
+- references/tcr-bcr-analysis--repertoire-visualization.md - Figures for the pipeline outputs
+- references/tcr-bcr-analysis--specificity-annotation.md - Optional antigen-specificity annotation

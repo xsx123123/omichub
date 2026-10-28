@@ -1,0 +1,60 @@
+{
+  "host_cpus": 16,
+  "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+  "containers": [
+    {
+      "name": "/cygnusx-web",
+      "image_id": "sha256:77d8f29ee43ed34650bdd21ee73ae3dd0486c35500a784abf0efc348e62a5ff1",
+      "started_at": "2026-10-26T02:13:28.751168501Z",
+      "cmd": [
+        "uvicorn",
+        "cygnusx.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--workers",
+        "2"
+      ],
+      "memory_limit": 0,
+      "nano_cpus": 0
+    },
+    {
+      "name": "/cygnusx-worker",
+      "image_id": "sha256:72f1ef20f223e9b705feeb26caed70697dca1642cc42388710823529593926fe",
+      "started_at": "2026-10-26T02:15:42.386882705Z",
+      "cmd": [
+        "/bin/sh",
+        "-c",
+        "export CYGNUSX_WORKFLOW_MONITOR_TOKEN=\"${CYGNUSX_WORKFLOW_MONITOR_TOKEN:-${WORKFLOW_MONITOR_INGEST_TOKEN}}\"\nexec celery -A cygnusx.infrastructure.celery_app.celery worker -Q analysis,blast_search,blast_db_build --loglevel=info\n"
+      ],
+      "memory_limit": 0,
+      "nano_cpus": 0
+    },
+    {
+      "name": "/cygnusx-db",
+      "image_id": "sha256:509e00a38eb18c132173bd7e3f753105266fd39c5f125bf825675f3bb603558d",
+      "started_at": "2026-10-26T02:12:57.326785562Z",
+      "cmd": null,
+      "memory_limit": 0,
+      "nano_cpus": 0
+    },
+    {
+      "name": "/cygnusx-cache",
+      "image_id": "sha256:487efc0616382465781b8fdc3d6d1db449e6fd80ae23bf48432a2da6b6929908",
+      "started_at": "2026-10-26T02:12:57.098815843Z",
+      "cmd": null,
+      "memory_limit": 0,
+      "nano_cpus": 0
+    },
+    {
+      "name": "/cygnusx-nginx",
+      "image_id": "sha256:ea51152ef8c480b999cee0271a288c698704b18483276119b1253e576ef3232f",
+      "started_at": "2026-10-26T02:13:29.180553533Z",
+      "cmd": null,
+      "memory_limit": 0,
+      "nano_cpus": 0
+    }
+  ],
+  "git_head": "b6ad48855660b79a9710fb33267b6cd5c068985d"
+}

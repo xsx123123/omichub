@@ -7,6 +7,10 @@ ARG CYGNUSX_IMAGE_TAG=v0.0.2dev
 #（blast / samtools / bedtools / seqkit，取自 Debian 官方仓库，seqkit 不可用时跳过）
 FROM cygnusx-sandbox-base:${CYGNUSX_IMAGE_TAG}
 
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ARG PIP_TIMEOUT=60
+ARG PIP_RETRIES=5
+
 LABEL maintainer="CygnusX"
 LABEL description="OmicStudio sandbox bio image (scanpy + NGS CLI tools)"
 
@@ -32,6 +36,9 @@ RUN apt-get update \
 # 单细胞 / 生信 Python 栈
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python -m pip install --prefer-binary \
+        --index-url "${PIP_INDEX_URL}" \
+        --timeout "${PIP_TIMEOUT}" \
+        --retries "${PIP_RETRIES}" \
         scanpy \
         anndata \
         pysam \

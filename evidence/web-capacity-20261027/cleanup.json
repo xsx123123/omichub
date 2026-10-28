@@ -1,0 +1,22 @@
+{
+  "users_before": 100,
+  "users_after": 0,
+  "revoked_token_status": 401,
+  "host_tokens_removed": true,
+  "container_tokens_removed": true,
+  "health": {
+    "/cygnusx-web": "healthy",
+    "/cygnusx-worker": "healthy",
+    "/cygnusx-cache": "healthy",
+    "/cygnusx-db": "healthy"
+  },
+  "temporary_worker_processes_absent": true,
+  "probe_worker_clean_shutdown": {
+    "celery-isolated.json": true,
+    "celery-recycle1000.json": true
+  },
+  "temporary_queue_depths": {
+    "webperf_6b9240ae43b9": 0,
+    "webperf_0faa2a6bd3c7": 0
+  }
+}

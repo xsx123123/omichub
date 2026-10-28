@@ -1,0 +1,22 @@
+Image mapping validation passed (17 images).
+PASS: audited 19 enabled agents
+  agent-atacseq            analysis-atacseq cygnusx-analysis:atacseq-v0.0.1dev
+  agent-cloud-ops          analysis-core    cygnusx-analysis:core-v0.0.2dev
+  agent-code               analysis-core    cygnusx-analysis:core-v0.0.2dev
+  agent-data               analysis-core    cygnusx-analysis:core-v0.0.2dev
+  agent-delivery           analysis-core    cygnusx-analysis:core-v0.0.2dev
+  agent-explorer           analysis-core    cygnusx-analysis:core-v0.0.2dev
+  agent-general            analysis-scrna   cygnusx-analysis:scrna-v0.0.3dev
+  agent-mcp-builder        analysis-core    cygnusx-analysis:core-v0.0.2dev
+  agent-qc                 analysis-qc      cygnusx-analysis:qc-v0.0.1dev
+  agent-rnaseq             analysis-rnaseq  cygnusx-analysis:rnaseq-v0.0.1dev
+  agent-router             analysis-core    cygnusx-analysis:core-v0.0.2dev
+  agent-scrna              analysis-scrna   cygnusx-analysis:scrna-v0.0.3dev
+  agent-scrna-advanced     analysis-scrna   cygnusx-analysis:scrna-v0.0.3dev
+  agent-scrna-integration  analysis-scrna   cygnusx-analysis:scrna-v0.0.3dev
+  agent-scrna-upstream     analysis-scrna   cygnusx-analysis:scrna-v0.0.3dev
+  agent-skill-builder      analysis-core    cygnusx-analysis:core-v0.0.2dev
+  agent-viz                analysis-plot    cygnusx-analysis:plot-v0.0.2dev
+  agentteams-manager       analysis-core    cygnusx-analysis:core-v0.0.2dev
+  shania                   analysis-core    cygnusx-analysis:core-v0.0.2dev
+PASS: visualization, scrna version, fallback, and capability-selection checks

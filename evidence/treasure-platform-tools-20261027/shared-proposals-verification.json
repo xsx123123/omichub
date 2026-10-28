@@ -1,0 +1,28 @@
+{
+  "observed_at": "2026-10-27T08:41:32.731421+00:00",
+  "implemented": [
+    "Shared Gateway download/analysis proposal restoration and human decision routing",
+    "Session/project/scope revalidation and stale-response isolation",
+    "SSE proposal notification followed by durable record refresh",
+    "Expired-proposal display and disabled decisions in the built React Island"
+  ],
+  "verified": {
+    "frontend_tests": "758 passed",
+    "island_tests": "16 passed",
+    "browser": "PASS_ISOLATED_BROWSER; fixture HTTP only",
+    "model": "LIVE_MODEL_WITH_ISOLATED_CALLBACK_NOT_EXECUTION_ACCEPTANCE",
+    "live_database": "read-only table/column schema drift check passed"
+  },
+  "runtime_execution_acceptance": "NOT_ACHIEVED",
+  "visible_host_prerequisites_missing": [
+    "writable_cgroup_subtree_hint",
+    "cgroup_kill_visible",
+    "workdir_project_quota_mount_option_visible"
+  ],
+  "backend_or_node_containers_recreated": false,
+  "frontend_static_assets_rebuilt": true,
+  "remaining": [
+    "Configure/deploy the trusted Node callback and opt-in read/prepare channel",
+    "Validate real download/analysis tasks in a suitable non-production runtime before changing protected gates"
+  ]
+}

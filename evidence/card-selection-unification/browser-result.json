@@ -1,0 +1,282 @@
+{
+  "defaults": {
+    ".entry-card": {
+      "background": "none",
+      "color": "rgb(255, 255, 255)",
+      "border": "rgb(229, 230, 235)",
+      "borderLeft": "rgb(229, 230, 235)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(156, 163, 175)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "none",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    },
+    ".pillar-card": {
+      "background": "none",
+      "color": "rgb(255, 255, 255)",
+      "border": "rgb(229, 230, 235)",
+      "borderLeft": "rgb(229, 230, 235)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(156, 163, 175)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "none",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    },
+    ".ecosystem-card": {
+      "background": "none",
+      "color": "rgb(255, 255, 255)",
+      "border": "rgb(229, 230, 235)",
+      "borderLeft": "rgb(229, 230, 235)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(156, 163, 175)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "none",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    }
+  },
+  "hover": {
+    ".entry-card": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "borderLeft": "rgb(229, 230, 235)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(156, 163, 175)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    },
+    ".pillar-card": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "borderLeft": "rgb(229, 230, 235)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(156, 163, 175)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    },
+    ".ecosystem-card": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "borderLeft": "rgb(229, 230, 235)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(156, 163, 175)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    }
+  },
+  "selected": {
+    ".entry-card": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "borderLeft": "rgb(199, 210, 254)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(79, 110, 247)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "none",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    },
+    ".pillar-card": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(248, 250, 255, 0)",
+      "border": "rgb(199, 210, 254)",
+      "borderLeft": "rgb(199, 210, 254)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(79, 110, 247)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "matrix(1, 0, 0, 1, 0, -9.72079e-09)",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    },
+    ".ecosystem-card": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "borderLeft": "rgb(199, 210, 254)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(79, 110, 247)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "none",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    }
+  },
+  "shared": {
+    ".image-item.is-selected": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "borderLeft": "rgb(199, 210, 254)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": null,
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "none",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    },
+    ".agent-card.is-highlighted": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "borderLeft": "rgb(199, 210, 254)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": "rgb(79, 110, 247)",
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "none",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    },
+    ".model-item.is-selected": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "borderLeft": "rgb(199, 210, 254)",
+      "borderWidth": "1px",
+      "borderStyle": "solid",
+      "arrow": null,
+      "bar": {
+        "left": "0px",
+        "top": "12px",
+        "bottom": "12px",
+        "width": "4px",
+        "radius": "2px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)",
+        "transform": "none"
+      },
+      "overflow": "hidden",
+      "transform": "none",
+      "transitionDuration": "0.2s, 0.2s, 0.2s, 0.2s"
+    }
+  },
+  "reduced": {
+    "transform": "none",
+    "duration": "1e-05s"
+  },
+  "errors": [],
+  "keyboard": true,
+  "active": true,
+  "mobileOverflow": false
+}

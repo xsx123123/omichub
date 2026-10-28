@@ -84,28 +84,9 @@ function selectImage(id: string) {
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.image-item:hover:not(.is-selected) {
-  border-color: color-mix(in srgb, var(--arco-primary) 24%, var(--neutral-border));
-  background-color: color-mix(in srgb, var(--arco-primary) 4%, var(--neutral-card));
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card-hover, 0 2px 8px rgba(0, 0, 0, 0.06));
-}
-
-/* 选中态：1px 主色边框 + 1px 主色内描边连成单一连续描边，左缘状态线由
-   全局 .cygnusx-selectable-card::before 提供 */
-.image-item.is-selected {
-  border-color: var(--arco-primary);
-  background-color: color-mix(in srgb, var(--arco-primary) 5%, var(--neutral-card));
-  box-shadow: inset 0 0 0 1px var(--arco-primary);
-}
-
-:root[data-theme='dark'] .image-item.is-selected {
-  background-color: color-mix(in srgb, var(--arco-primary) 16%, var(--neutral-card));
-}
-
+/* Hover and selected surfaces are owned by the shared card-state protocol. */
 .image-item:focus-visible {
   outline: 2px solid var(--arco-primary);
   outline-offset: 3px;

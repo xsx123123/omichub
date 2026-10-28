@@ -2,7 +2,7 @@
 
 ## Overview
 
-End-to-end ChIP-seq workflow from FASTQ to annotated peaks. Covers QC, alignment with Bowtie2, deduplication, peak calling with MACS3, ENCODE QC metrics (FRiP, NSC, RSC, library complexity), IDR or naive overlap for replicate concordance, and peak annotation with ChIPseeker. Handles both narrow peaks (transcription factors and sharp histone marks like H3K4me3) and broad peaks (H3K27me3, H3K9me3, H3K36me3). For CUT&RUN/CUT&Tag protocols use chip-seq/cut-and-run-tag instead. For experiments with expected global signal shifts (HDACi, BETi, EZH2i) add spike-in normalization per chip-seq/spike-in-normalization.
+End-to-end ChIP-seq workflow from FASTQ to annotated peaks. Covers QC, alignment with Bowtie2, deduplication, peak calling with MACS3, ENCODE QC metrics (FRiP, NSC, RSC, library complexity), IDR or naive overlap for replicate concordance, and peak annotation with ChIPseeker. Handles both narrow peaks (transcription factors and sharp histone marks like H3K4me3) and broad peaks (H3K27me3, H3K9me3, H3K36me3). For CUT&RUN/CUT&Tag protocols use chip-seq/cut-and-run-tag instead. For experiments with expected global signal shifts (HDACi, BETi, EZH2i) add spike-in normalization per references/chip-seq--spike-in-normalization.md.
 
 ## Prerequisites
 
@@ -119,7 +119,7 @@ Standard reads-in-peaks normalization (DiffBind default) assumes most peaks are 
 | Target factor knockdown / degron | Yes (or matched-input subtraction) |
 | Standard TF perturbation, local rebinding | No |
 
-For spike-in workflow, see chip-seq/spike-in-normalization.
+For spike-in workflow, see references/chip-seq--spike-in-normalization.md.
 
 ## Tips
 
@@ -162,19 +162,19 @@ For spike-in workflow, see chip-seq/spike-in-normalization.
 
 - database-access/sra-data - Pull ChIP-seq FASTQ from SRA / ENA for re-analysis
 - database-access/geo-data - Resolve ENCODE / Roadmap GSE accessions to SRA
-- chip-seq/chipseq-qc - FRiP, NSC/RSC, library complexity, hyper-ChIPable detection
-- chip-seq/peak-calling - MACS3/MACS2/HOMER/SPP, IDR, per-tool failure modes
-- chip-seq/peak-annotation - ChIPseeker, ENCODE cCRE classification, GREAT
-- chip-seq/differential-binding - DiffBind, DESeq2, csaw with composition / trended / global shift handling
-- chip-seq/chipseq-visualization - bigWig normalization, heatmaps, browser tracks
-- chip-seq/motif-analysis - HOMER, MEME-ChIP, monaLisa
+- references/chip-seq--chipseq-qc.md - FRiP, NSC/RSC, library complexity, hyper-ChIPable detection
+- references/chip-seq--peak-calling.md - MACS3/MACS2/HOMER/SPP, IDR, per-tool failure modes
+- references/chip-seq--peak-annotation.md - ChIPseeker, ENCODE cCRE classification, GREAT
+- references/chip-seq--differential-binding.md - DiffBind, DESeq2, csaw with composition / trended / global shift handling
+- references/chip-seq--chipseq-visualization.md - bigWig normalization, heatmaps, browser tracks
+- references/chip-seq--motif-analysis.md - HOMER, MEME-ChIP, monaLisa
 - chip-seq/super-enhancers - ROSE/ROSE2/LILY for SE calling
 - chip-seq/cut-and-run-tag - CUT&RUN/CUT&Tag protocols (different peak caller and spike-in)
-- chip-seq/spike-in-normalization - Drosophila ChIP-Rx for global-shift experiments
+- references/chip-seq--spike-in-normalization.md - Drosophila ChIP-Rx for global-shift experiments
 - chip-seq/chromatin-state-segmentation - ChromHMM multi-mark chromatin states
 - chip-seq/chip-deep-learning - BPNet/chromBPNet for variant effect prediction
 - chip-seq/allele-specific-binding - WASP/BaalChIP for allele-specific TF binding
-- read-qc/fastp-workflow - Upstream adapter trimming
-- read-alignment/bowtie2-alignment - Standard ChIP-seq aligner
-- alignment-files/duplicate-handling - MarkDuplicates upstream
+- references/read-qc--fastp-workflow.md - Upstream adapter trimming
+- references/read-alignment--bowtie2-alignment.md - Standard ChIP-seq aligner
+- references/alignment-files--duplicate-handling.md - MarkDuplicates upstream
 - atac-seq/atac-peak-calling - Parallel ATAC peak calling (no input control)

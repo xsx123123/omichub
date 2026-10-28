@@ -87,14 +87,14 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- genome-assembly/genome-profiling - k-mer spectrum for size, heterozygosity, ploidy
-- genome-assembly/short-read-assembly - SPAdes for Illumina-only genomes
-- genome-assembly/long-read-assembly - Flye/Canu for noisy ONT/CLR
-- genome-assembly/hifi-assembly - hifiasm phased HiFi assembly
-- genome-assembly/metagenome-assembly - metaFlye/metaSPAdes + binning
-- genome-assembly/assembly-polishing - Racon/medaka/Pilon, applied conditionally
-- genome-assembly/contamination-detection - FCS-GX/BlobToolKit vs CheckM2/GUNC
-- genome-assembly/scaffolding - YaHS Hi-C scaffolding and curation
-- genome-assembly/assembly-qc - Three-axis QC with Merqury QV
-- read-qc/fastp-workflow - Short-read QC before assembly
-- long-read-sequencing/long-read-qc - Long-read QC and basecaller-era awareness
+- references/genome-assembly--genome-profiling.md - k-mer spectrum for size, heterozygosity, ploidy
+- references/genome-assembly--short-read-assembly.md - SPAdes for Illumina-only genomes
+- references/genome-assembly--long-read-assembly.md - Flye/Canu for noisy ONT/CLR
+- references/genome-assembly--hifi-assembly.md - hifiasm phased HiFi assembly
+- references/genome-assembly--metagenome-assembly.md - metaFlye/metaSPAdes + binning
+- references/genome-assembly--assembly-polishing.md - Racon/medaka/Pilon, applied conditionally
+- references/genome-assembly--contamination-detection.md - FCS-GX/BlobToolKit vs CheckM2/GUNC
+- references/genome-assembly--scaffolding.md - YaHS Hi-C scaffolding and curation
+- references/genome-assembly--assembly-qc.md - Three-axis QC with Merqury QV
+- references/read-qc--fastp-workflow.md - Short-read QC before assembly
+- references/long-read-sequencing--long-read-qc.md - Long-read QC and basecaller-era awareness

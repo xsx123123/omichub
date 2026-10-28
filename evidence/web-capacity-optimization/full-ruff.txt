@@ -1,0 +1,5079 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+B008 Do not perform function call `File` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> src/cygnusx/api/v1/admin/skills.py:188:24
+    |
+186 |     _admin: AdminRequired,
+187 |     service: SkillImportServiceDep,
+188 |     file: UploadFile = File(...),
+    |                        ^^^^^^^^^
+189 | ) -> SkillImportPreviewDTO:
+190 |     data = await file.read()
+    |
+
+B008 Do not perform function call `File` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> src/cygnusx/api/v1/admin/skills.py:207:24
+    |
+205 |     _admin: AdminRequired,
+206 |     service: SkillImportServiceDep,
+207 |     file: UploadFile = File(...),
+    |                        ^^^^^^^^^
+208 | ) -> SkillImportPreviewDTO:
+209 |     filename = file.filename or "skill.md"
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/api/v1/cookies.py:3:1
+   |
+ 1 |   """饼干积分 — 用户端路由"""
+ 2 |
+ 3 | / from typing import Annotated
+ 4 | | from uuid import UUID
+ 5 | |
+ 6 | | from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+ 7 | |
+ 8 | | from cygnusx.api.deps import CurrentUserId, DbSession, get_active_user_from_token_payload
+ 9 | | from cygnusx.application.schemas.cookie import (
+10 | |     CookieAccountDTO,
+11 | |     AiTokenRateDTO,
+12 | |     CookieTransactionDTO,
+13 | |     CostEstimateDTO,
+14 | | )
+15 | | from cygnusx.application.services.cookie_service import CookieService
+16 | | from cygnusx.core.security import decode_token
+17 | | from cygnusx.infrastructure.cache.cookie_pubsub import subscribe_cookie_balance
+   | |_______________________________________________________________________________^
+18 |
+19 |   router = APIRouter()
+   |
+help: Organize imports
+   |
+9  | from cygnusx.application.schemas.cookie import (
+10 +     AiTokenRateDTO,
+11 |     CookieAccountDTO,
+   -     AiTokenRateDTO,
+12 |     CookieTransactionDTO,
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/api/v1/mas_rooms.py:103:5
+    |
+101 |       """SSE：run 内事件 + 本房间新消息（落库即推送）。"""
+102 |
+103 | /     from cygnusx.infrastructure.database.session import get_session_factory
+104 | |     from cygnusx.application.services.mas.mas_room_service import subscribe_room
+    | |________________________________________________________________________________^
+105 |
+106 |       async def generate_sse() -> Any:
+    |
+help: Organize imports
+    |
+102 |
+103 +     from cygnusx.application.services.mas.mas_room_service import subscribe_room
+104 |     from cygnusx.infrastructure.database.session import get_session_factory
+    -     from cygnusx.application.services.mas.mas_room_service import subscribe_room
+105 |
+    |
+
+UP041 [*] Replace aliased errors with `TimeoutError`
+   --> src/cygnusx/api/v1/mas_rooms.py:116:24
+    |
+114 |                     cursor = max(cursor, int(item.get("seq") or 0))
+115 |                     yield f"data: {json.dumps(item, ensure_ascii=False)}\n\n"
+116 |                 except asyncio.TimeoutError:
+    |                        ^^^^^^^^^^^^^^^^^^^^
+117 |                     pass
+118 |                 async with get_session_factory()() as session:
+    |
+help: Replace `asyncio.TimeoutError` with builtin `TimeoutError`
+    |
+115 |                     yield f"data: {json.dumps(item, ensure_ascii=False)}\n\n"
+    -                 except asyncio.TimeoutError:
+116 +                 except TimeoutError:
+117 |                     pass
+    |
+
+F841 Local variable `unsubscribe_room` is assigned to but never used
+   --> src/cygnusx/api/v1/mas_rooms.py:128:13
+    |
+126 |             raise
+127 |         finally:
+128 |             unsubscribe_room = None
+    |             ^^^^^^^^^^^^^^^^
+129 |             # 进程内广播退订
+130 |             from cygnusx.application.services.mas.mas_room_service import unsubscribe_room as _unsub
+    |
+help: Remove assignment to unused variable `unsubscribe_room`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/api/v1/plot_stats.py:3:1
+   |
+ 1 |   """Statistical helpers for interactive plotting tools."""
+ 2 |
+ 3 | / from itertools import combinations
+ 4 | | from typing import Literal
+ 5 | |
+ 6 | | import numpy as np
+ 7 | | from fastapi import APIRouter
+ 8 | | from pydantic import BaseModel, Field, model_validator
+ 9 | | import scikit_posthocs as sp
+10 | | from statsmodels.stats.multicomp import pairwise_tukeyhsd
+11 | | from statsmodels.stats.multitest import multipletests
+12 | |
+13 | | from cygnusx.api.deps import CurrentUserId
+   | |__________________________________________^
+14 |
+15 |   router = APIRouter()
+   |
+help: Organize imports
+   |
+6  | import numpy as np
+7  + import scikit_posthocs as sp
+8  | from fastapi import APIRouter
+9  | from pydantic import BaseModel, Field, model_validator
+   - import scikit_posthocs as sp
+10 | from statsmodels.stats.multicomp import pairwise_tukeyhsd
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/api/v1/router.py:3:1
+   |
+ 1 |   """API v1 路由汇总"""
+ 2 |
+ 3 | / from fastapi import APIRouter
+ 4 | |
+ 5 | | from cygnusx.api.v1 import (
+ 6 | |     agent_tools,
+ 7 | |     agents,
+ 8 | |     agentteams,
+ 9 | |     ai,
+10 | |     announcements,
+11 | |     auth,
+12 | |     biothings,
+13 | |     chat,
+14 | |     cookies,
+15 | |     datasets,
+16 | |     docs,
+17 | |     downloads,
+18 | |     festival,
+19 | |     files,
+20 | |     flows,
+21 | |     goals,
+22 | |     llm,
+23 | |     mas,
+24 | |     mas_rooms,
+25 | |     mcp,
+26 | |     mcp_builder,
+27 | |     modules,
+28 | |     notification,
+29 | |     pipelines,
+30 | |     platform_config,
+31 | |     plot_stats,
+32 | |     projects,
+33 | |     prompts,
+34 | |     reminders,
+35 | |     reports,
+36 | |     research_data,
+37 | |     research_agent,
+38 | |     research_claims,
+39 | |     research_delivery,
+40 | |     research_plans,
+41 | |     runs,
+42 | |     sandbox,
+43 | |     schedules,
+44 | |     site_content,
+45 | |     site_settings,
+46 | |     stats,
+47 | |     studio,
+48 | |     tasks,
+49 | |     teams,
+50 | |     terminal,
+51 | |     users,
+52 | |     workflow_monitor,
+53 | | )
+54 | | from cygnusx.api.v1.admin import admin_cookies
+55 | | from cygnusx.api.v1.admin import agents as admin_agents
+56 | | from cygnusx.api.v1.admin import agentteams_bridge as admin_agentteams_bridge
+57 | | from cygnusx.api.v1.admin import ai_metrics as admin_ai_metrics
+58 | | from cygnusx.api.v1.admin import ai_providers as admin_ai_providers
+59 | | from cygnusx.api.v1.admin import assistants as admin_assistants
+60 | | from cygnusx.api.v1.admin import database as admin_database
+61 | | from cygnusx.api.v1.admin import festival as admin_festival
+62 | | from cygnusx.api.v1.admin import knowledge_bases as admin_knowledge_bases
+63 | | from cygnusx.api.v1.admin import platform_config as admin_platform_config
+64 | | from cygnusx.api.v1.admin import search_providers as admin_search_providers
+65 | | from cygnusx.api.v1.admin import session_logs as admin_session_logs
+66 | | from cygnusx.api.v1.admin import skills as admin_skills
+67 | | from cygnusx.api.v1.admin import stats as admin_stats
+68 | | from cygnusx.api.v1.admin import storage as admin_storage
+69 | | from cygnusx.api.v1.admin import terminals as admin_terminals
+70 | | from cygnusx.api.v1.admin import users as admin_users
+71 | | from cygnusx.api.v1.admin import workspace_archive as admin_workspace_archive
+72 | | from cygnusx.reference_genomes.api import router as reference_genomes_router
+73 | | from cygnusx.tools import register_tool_routers
+   | |_______________________________________________^
+74 |
+75 |   api_router = APIRouter()
+   |
+help: Organize imports
+   |
+35 |     reports,
+   -     research_data,
+36 |     research_agent,
+37 |     research_claims,
+38 +     research_data,
+39 |     research_delivery,
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/api/v1/runs.py:3:1
+   |
+ 1 |   """Unified Run read/confirm endpoints (Snakemake MVP)."""
+ 2 |
+ 3 | / from typing import Annotated
+ 4 | | from uuid import UUID
+ 5 | |
+ 6 | | from fastapi import APIRouter, Depends, Query
+ 7 | | from pydantic import BaseModel
+ 8 | |
+ 9 | | from cygnusx.api.deps import CurrentUserId, DbSession
+10 | | from cygnusx.application.schemas.run_plan import SnakemakePlanSubmit, SnakemakePlanView
+11 | | from cygnusx.application.services.tool_confirmation_service import (
+12 | |     ConfirmationError,
+13 | |     get_tool_confirmation_service,
+14 | | )
+15 | | from cygnusx.core.exceptions import ValidationError
+16 | | from cygnusx.application.services.run_plan_service import RunPlanService
+   | |________________________________________________________________________^
+17 |
+18 |   router = APIRouter()
+   |
+help: Organize imports
+   |
+10 | from cygnusx.application.schemas.run_plan import SnakemakePlanSubmit, SnakemakePlanView
+11 + from cygnusx.application.services.run_plan_service import RunPlanService
+12 | from cygnusx.application.services.tool_confirmation_service import (
+--------------------------------------------------------------------------------
+16 | from cygnusx.core.exceptions import ValidationError
+   - from cygnusx.application.services.run_plan_service import RunPlanService
+17 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> src/cygnusx/application/schemas/run_plan.py:3:1
+  |
+1 |   """Bounded platform Run plan contracts."""
+2 |
+3 | / from datetime import datetime
+4 | | from typing import Any, Literal
+5 | | from uuid import UUID
+6 | |
+7 | | from pydantic import Field, ConfigDict
+8 | |
+9 | | from cygnusx.application.schemas.base import CygnusXBaseSchema
+  | |______________________________________________________________^
+help: Organize imports
+  |
+6 |
+  - from pydantic import Field, ConfigDict
+7 + from pydantic import ConfigDict, Field
+8 |
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/agentteams_data_tool_service.py:3:1
+   |
+ 1 |   """Read-only evidence tools used by AgentTeams consultations."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import hashlib
+ 6 | | import json
+ 7 | | from pathlib import Path, PurePosixPath
+ 8 | | from typing import Any
+ 9 | | from urllib.parse import urlparse
+10 | |
+11 | | from cygnusx.application.schemas.tool_invocation import ToolInvocationContext
+12 | | from cygnusx.application.services.agentteams_service import AgentTeamsService
+13 | | from cygnusx.application.services.agentteams_service import ROOM_NAMESPACE_ID_PREFIX
+14 | | from cygnusx.application.services.agentteams_service import room_namespace_case_id
+15 | | from cygnusx.application.services.agentteams_consultation_telemetry_service import (
+16 | |     AgentTeamsConsultationTelemetryService,
+17 | | )
+18 | | from cygnusx.application.services.flow_registry import get_flow_registry
+19 | | from cygnusx.application.services.pipeline_result_service import PipelineResultService
+20 | | from cygnusx.core.config import get_settings
+21 | | from cygnusx.core.exceptions import BusinessError, ValidationError
+22 | | from cygnusx.infrastructure.storage import get_path_factory
+23 | | from cygnusx.infrastructure.storage.minio_store import MinioStore
+24 | | from cygnusx.infrastructure.database.models.chat import (
+25 | |     AgentTeamsRoomMemberModel,
+26 | |     AgentTeamsRoomModel,
+27 | |     AgentTeamsTurnRecordModel,
+28 | | )
+29 | | from sqlalchemy import select
+   | |_____________________________^
+30 |
+31 |   # Bridge 事件流为 oldest-first 游标分页（平台侧单页上限 100）。房间命名空间流里
+   |
+help: Organize imports
+   |
+10 |
+11 + from sqlalchemy import select
+12 +
+13 | from cygnusx.application.schemas.tool_invocation import ToolInvocationContext
+   - from cygnusx.application.services.agentteams_service import AgentTeamsService
+   - from cygnusx.application.services.agentteams_service import ROOM_NAMESPACE_ID_PREFIX
+   - from cygnusx.application.services.agentteams_service import room_namespace_case_id
+14 | from cygnusx.application.services.agentteams_consultation_telemetry_service import (
+15 |     AgentTeamsConsultationTelemetryService,
+16 | )
+17 + from cygnusx.application.services.agentteams_service import (
+18 +     ROOM_NAMESPACE_ID_PREFIX,
+19 +     AgentTeamsService,
+20 +     room_namespace_case_id,
+21 + )
+22 | from cygnusx.application.services.flow_registry import get_flow_registry
+23 | from cygnusx.application.services.pipeline_result_service import PipelineResultService
+24 | from cygnusx.core.config import get_settings
+25 | from cygnusx.core.exceptions import BusinessError, ValidationError
+   - from cygnusx.infrastructure.storage import get_path_factory
+   - from cygnusx.infrastructure.storage.minio_store import MinioStore
+26 | from cygnusx.infrastructure.database.models.chat import (
+--------------------------------------------------------------------------------
+30 | )
+   - from sqlalchemy import select
+31 + from cygnusx.infrastructure.storage import get_path_factory
+32 + from cygnusx.infrastructure.storage.minio_store import MinioStore
+33 |
+   |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/agentteams_data_tool_service.py:263:28
+    |
+261 |           from cygnusx.infrastructure.config.storage_config import get_storage_config
+262 |
+263 |           destination_root = Path(
+    |  ____________________________^
+264 | |             str(
+265 | |                 context.extra.get("workdir")
+266 | |                 or get_storage_config().data_root
+267 | |                 / "output"
+268 | |                 / "agentteams"
+269 | |                 / case_id
+270 | |                 / "downloads"
+271 | |             )
+272 | |         ).resolve()
+    | |_________________^
+273 |           requested_name = dest_name or PurePosixPath(artifact_ref.replace("\\", "/")).name
+274 |           if not requested_name or Path(requested_name).name != requested_name:
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/agentteams_interruption_coordinator.py:3:1
+   |
+ 1 |   """Coordinate safe, auditable change requests for running domain work."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | from typing import Any
+ 6 | |
+ 7 | | from cygnusx.application.services.agent_consultation_service import AgentConsultationService
+ 8 | | from cygnusx.application.services.agentteams_service import CASE_LEVEL_WORK_ITEM_ID, AgentTeamsService
+   | |______________________________________________________________________________________________________^
+ 9 |
+10 |   _RUNNING_STATUSES = {"claimed", "running", "in_progress", "awaiting_approval", "planning_running"}
+   |
+help: Organize imports
+   |
+7  | from cygnusx.application.services.agent_consultation_service import AgentConsultationService
+   - from cygnusx.application.services.agentteams_service import CASE_LEVEL_WORK_ITEM_ID, AgentTeamsService
+8  + from cygnusx.application.services.agentteams_service import (
+9  +     CASE_LEVEL_WORK_ITEM_ID,
+10 +     AgentTeamsService,
+11 + )
+12 |
+   |
+
+UP012 [*] Unnecessary UTF-8 `encoding` argument to `encode`
+   --> src/cygnusx/application/services/agentteams_qc_verification_service.py:137:39
+    |
+135 |         row = QcVerificationCheckModel(
+136 |             case_id=case_id,
+137 |             claim_hash=hashlib.sha256(f"degraded\x00{reason}".encode("utf-8")).hexdigest(),
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+138 |             verdict="inconclusive",
+139 |             evidence_event_id=None,
+    |
+help: Remove unnecessary `encoding` argument
+    |
+136 |             case_id=case_id,
+    -             claim_hash=hashlib.sha256(f"degraded\x00{reason}".encode("utf-8")).hexdigest(),
+137 +             claim_hash=hashlib.sha256(f"degraded\x00{reason}".encode()).hexdigest(),
+138 |             verdict="inconclusive",
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/agentteams_room_service.py:15:1
+   |
+13 |   """
+14 |
+15 | / from __future__ import annotations
+16 | |
+17 | | import asyncio
+18 | | import contextlib
+19 | | import hmac
+20 | | import json
+21 | | import re
+22 | | import secrets
+23 | | from collections.abc import AsyncIterator
+24 | | from datetime import UTC, datetime, timedelta
+25 | | from typing import Any
+26 | | from uuid import UUID, uuid4
+27 | |
+28 | | from loguru import logger
+29 | | from sqlalchemy import delete, select, update
+30 | | from sqlalchemy.ext.asyncio import AsyncSession
+31 | |
+32 | | from cygnusx.application.services.agentteams_audit_events import (
+33 | |     event_stream_sort_key,
+34 | |     redact_confirm_token,
+35 | | )
+36 | | from cygnusx.application.services.agentteams_capability_registry import (
+37 | |     get_agentteams_capability_registry,
+38 | | )
+39 | | from cygnusx.application.services.agentteams_service import (
+40 | |     CASE_LEVEL_WORK_ITEM_ID,
+41 | |     AgentTeamsService,
+42 | |     matrix_identity_for_requester,
+43 | |     room_namespace_case_id,
+44 | | )
+45 | | from cygnusx.application.services.flow_registry import get_flow_registry
+46 | | from cygnusx.application.services.project_service import ProjectService
+47 | | from cygnusx.core.config import get_settings
+48 | | from cygnusx.core.exceptions import AuthorizationError, BusinessError
+49 | | from cygnusx.application.services.notification_service import NotificationService
+50 | | from cygnusx.infrastructure.database.models.chat import (
+51 | |     AgentTeamsRoomMemberModel,
+52 | |     AgentTeamsRoomModel,
+53 | |     AgentTeamsTurnRecordModel,
+54 | | )
+55 | | from cygnusx.infrastructure.database.models.notification import NotificationModel
+56 | | from cygnusx.infrastructure.database.models.user import UserModel
+57 | | from cygnusx.infrastructure.database.repositories.notification_repository import (
+58 | |     SqlAlchemyNotificationRepository,
+59 | | )
+60 | | from cygnusx.infrastructure.storage.minio_store import MinioStore
+   | |_________________________________________________________________^
+61 |
+62 |   # 立项确认卡房间级事件类型：payload 契约见 build_room_proposal / _emit_case_proposal。
+   |
+help: Organize imports
+   |
+45 | from cygnusx.application.services.flow_registry import get_flow_registry
+46 + from cygnusx.application.services.notification_service import NotificationService
+47 | from cygnusx.application.services.project_service import ProjectService
+48 | from cygnusx.core.config import get_settings
+49 | from cygnusx.core.exceptions import AuthorizationError, BusinessError
+   - from cygnusx.application.services.notification_service import NotificationService
+50 | from cygnusx.infrastructure.database.models.chat import (
+   |
+
+F401 [*] `sqlalchemy.delete` imported but unused
+  --> src/cygnusx/application/services/agentteams_room_service.py:29:24
+   |
+28 | from loguru import logger
+29 | from sqlalchemy import delete, select, update
+   |                        ^^^^^^
+30 | from sqlalchemy.ext.asyncio import AsyncSession
+   |
+help: Remove unused import: `sqlalchemy.delete`
+   |
+28 | from loguru import logger
+   - from sqlalchemy import delete, select, update
+29 + from sqlalchemy import select, update
+30 | from sqlalchemy.ext.asyncio import AsyncSession
+   |
+
+B007 Loop control variable `event` not used within loop body
+   --> src/cygnusx/application/services/agentteams_room_service.py:802:13
+    |
+800 |         if not targets:
+801 |             return
+802 |         for event, inner, stream_id in targets:
+    |             ^^^^^
+803 |             calls = tool_events.get(stream_id)
+804 |             if calls and not inner.get("tool_calls"):
+    |
+help: Rename unused `event` to `_event`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/agentteams_usage_service.py:14:1
+   |
+12 |   """
+13 |
+14 | / from __future__ import annotations
+15 | |
+16 | | from datetime import UTC, datetime
+17 | | from typing import TYPE_CHECKING, Any
+18 | | from uuid import UUID, uuid4
+19 | |
+20 | | from loguru import logger
+21 | | from sqlalchemy import select
+22 | | from sqlalchemy.exc import IntegrityError
+23 | | from sqlalchemy.ext.asyncio import AsyncSession
+24 | |
+25 | | from cygnusx.application.services.cookie_service import CookieService
+26 | | from cygnusx.application.services.agentteams_title import derive_agentteams_case_title
+27 | | from cygnusx.core.config import get_settings
+28 | | from cygnusx.infrastructure.ai_provider.openai_compatible import normalize_token_usage
+29 | | from cygnusx.infrastructure.database.models.chat import ChatMessageModel, ChatSessionModel
+   | |__________________________________________________________________________________________^
+30 |
+31 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+   |
+24 |
+25 + from cygnusx.application.services.agentteams_title import derive_agentteams_case_title
+26 | from cygnusx.application.services.cookie_service import CookieService
+   - from cygnusx.application.services.agentteams_title import derive_agentteams_case_title
+27 | from cygnusx.core.config import get_settings
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/ai_tools.py:3:1
+   |
+ 1 |   """AI Copilot Tool Use 执行器 — submit_task / query_status / list_samples"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import os
+ 6 | | from pathlib import Path
+ 7 | | from typing import Any
+ 8 | | from uuid import UUID
+ 9 | |
+10 | | from pydantic import BaseModel, ValidationError as PydanticValidationError
+11 | | from sqlalchemy.ext.asyncio import AsyncSession
+12 | |
+13 | | from cygnusx.application.schemas.task import TaskSubmitRequest
+14 | | from cygnusx.application.services.task_service import TaskService
+15 | | from cygnusx.core.config import get_settings
+16 | | from cygnusx.domain.ai.value_objects import ToolName
+17 | | from cygnusx.infrastructure.database.repositories.task_repository import TaskRepositoryImpl
+   | |___________________________________________________________________________________________^
+help: Organize imports
+   |
+9  |
+   - from pydantic import BaseModel, ValidationError as PydanticValidationError
+10 + from pydantic import BaseModel
+11 + from pydantic import ValidationError as PydanticValidationError
+12 | from sqlalchemy.ext.asyncio import AsyncSession
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/auth_service.py:3:1
+   |
+ 1 |   """认证应用服务"""
+ 2 |
+ 3 | / import logging
+ 4 | | import uuid
+ 5 | | from dataclasses import dataclass
+ 6 | | from datetime import UTC, datetime
+ 7 | |
+ 8 | | from sqlalchemy.ext.asyncio import AsyncSession
+ 9 | |
+10 | | from cygnusx.application.schemas.auth import UserRegisterRequest
+11 | | from cygnusx.application.services.notification_service import NotificationService
+12 | | from cygnusx.application.services.site_content_service import SiteContentService
+13 | | from cygnusx.application.services.site_settings_service import SiteSettingsService
+14 | | from cygnusx.core.config import get_settings
+15 | | from cygnusx.core.exceptions import (
+16 | |     AuthenticationError,
+17 | |     ConflictError,
+18 | |     NotFoundError,
+19 | |     CygnusXError,
+20 | | )
+21 | | from cygnusx.core.security import (
+22 | |     create_2fa_challenge_token,
+23 | |     create_access_token,
+24 | |     create_refresh_token,
+25 | |     decode_token,
+26 | |     hash_password,
+27 | |     verify_password,
+28 | | )
+29 | | from cygnusx.domain.user.entities import User
+30 | | from cygnusx.domain.user.repositories import IUserRepository
+31 | | from cygnusx.domain.user.value_objects import UserStatus
+32 | | from cygnusx.infrastructure.database.repositories.notification_repository import (
+33 | |     SqlAlchemyNotificationRepository,
+34 | | )
+   | |_^
+35 |
+36 |   logger = logging.getLogger(__name__)
+   |
+help: Organize imports
+   |
+17 |     ConflictError,
+18 +     CygnusXError,
+19 |     NotFoundError,
+   -     CygnusXError,
+20 | )
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/chat/context_compaction.py:3:1
+   |
+ 1 |   """Pure context compaction algorithm for the chat request view."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import hashlib
+ 6 | | import json
+ 7 | | import os
+ 8 | | import re
+ 9 | | import uuid
+10 | | from pathlib import Path
+11 | | from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
+12 | | from dataclasses import dataclass, field
+13 | | from typing import Any
+14 | |
+15 | | from cygnusx.application.services.chat.context_estimate import _chars_to_tokens, estimate_context
+   | |_________________________________________________________________________________________________^
+16 |
+17 |   COMPACTION_NOTE_PREFIX = (
+   |
+help: Organize imports
+   |
+9  | import uuid
+   - from pathlib import Path
+10 | from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
+11 | from dataclasses import dataclass, field
+12 + from pathlib import Path
+13 | from typing import Any
+   |
+
+N818 Exception name `CompactionCancelled` should be named with an Error suffix
+  --> src/cygnusx/application/services/chat/context_compaction.py:59:7
+   |
+59 | class CompactionCancelled(RuntimeError):
+   |       ^^^^^^^^^^^^^^^^^^^
+60 |     pass
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/chat/context_estimate.py:8:1
+   |
+ 6 |   """
+ 7 |
+ 8 | / from __future__ import annotations
+ 9 | |
+10 | | import json
+11 | | import re
+12 | | from dataclasses import dataclass, asdict
+13 | | from collections.abc import Iterable, Mapping, Sequence
+14 | | from typing import Any
+   | |______________________^
+15 |
+16 |   IMAGE_TOKEN_ESTIMATE = 1_024
+   |
+help: Organize imports
+   |
+11 | import re
+   - from dataclasses import dataclass, asdict
+12 | from collections.abc import Iterable, Mapping, Sequence
+13 + from dataclasses import asdict, dataclass
+14 | from typing import Any
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/chat/overdrive_control.py:3:1
+   |
+ 1 |   """Overdrive 聊天会话的审批与运行控制。"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import inspect
+ 6 | | import json
+ 7 | | import re
+ 8 | | import uuid
+ 9 | | from dataclasses import dataclass
+10 | | from datetime import UTC, datetime
+11 | | from pathlib import Path
+12 | | from collections.abc import AsyncIterator, Callable
+13 | | from functools import partial
+14 | | from typing import Any
+15 | |
+16 | | from loguru import logger
+17 | |
+18 | | from cygnusx.application.services.domain_registry import get_domain_registry
+19 | | from cygnusx.application.services.chat.utils import _extract_route_json
+20 | | from cygnusx.application.services.overdrive_plan_constraint_service import (
+21 | |     anchor_ids as overdrive_anchor_ids,
+22 | |     apply_authoritative_plan,
+23 | |     authoritative_rules as overdrive_authoritative_rules,
+24 | |     build_repair_prompt,
+25 | |     format_anchors as format_overdrive_anchors,
+26 | | )
+27 | | from cygnusx.application.services.overdrive_runtime import (
+28 | |     OverdriveManifest,
+29 | |     assignment_waves as build_assignment_waves,
+30 | |     infer_contract_dependencies,
+31 | |     load_overdrive_limits,
+32 | |     normalize_contract_list,
+33 | |     normalize_retry,
+34 | | )
+35 | | from cygnusx.application.services.studio_tools import execute_studio_tool
+36 | | from cygnusx.core.config import get_settings
+37 | | from cygnusx.core.exceptions import ConflictError, NotFoundError
+38 | | from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+39 | | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk, provider_manager
+40 | | from cygnusx.application.services.overdrive_run_service import OverdriveRunService
+   | |__________________________________________________________________________________^
+41 |
+42 |   OVERDRIVE_SUMMARY_SYSTEM_PROMPT = """你是超频协作的 Manager，负责把专家已完成的最终结论整合为面向用户的答案。
+   |
+help: Organize imports
+   |
+8  | import uuid
+9  + from collections.abc import AsyncIterator, Callable
+10 | from dataclasses import dataclass
+11 | from datetime import UTC, datetime
+12 + from functools import partial
+13 | from pathlib import Path
+   - from collections.abc import AsyncIterator, Callable
+   - from functools import partial
+14 | from typing import Any
+15 |
+16 | from loguru import logger
+17 |
+   - from cygnusx.application.services.domain_registry import get_domain_registry
+18 | from cygnusx.application.services.chat.utils import _extract_route_json
+19 + from cygnusx.application.services.domain_registry import get_domain_registry
+20 | from cygnusx.application.services.overdrive_plan_constraint_service import (
+21 |     anchor_ids as overdrive_anchor_ids,
+22 + )
+23 + from cygnusx.application.services.overdrive_plan_constraint_service import (
+24 |     apply_authoritative_plan,
+25 +     build_repair_prompt,
+26 + )
+27 + from cygnusx.application.services.overdrive_plan_constraint_service import (
+28 |     authoritative_rules as overdrive_authoritative_rules,
+   -     build_repair_prompt,
+29 + )
+30 + from cygnusx.application.services.overdrive_plan_constraint_service import (
+31 |     format_anchors as format_overdrive_anchors,
+32 | )
+33 + from cygnusx.application.services.overdrive_run_service import OverdriveRunService
+34 | from cygnusx.application.services.overdrive_runtime import (
+35 |     OverdriveManifest,
+   -     assignment_waves as build_assignment_waves,
+36 |     infer_contract_dependencies,
+--------------------------------------------------------------------------------
+40 | )
+41 + from cygnusx.application.services.overdrive_runtime import (
+42 +     assignment_waves as build_assignment_waves,
+43 + )
+44 | from cygnusx.application.services.studio_tools import execute_studio_tool
+45 | from cygnusx.core.config import get_settings
+46 | from cygnusx.core.exceptions import ConflictError, NotFoundError
+   - from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+47 | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk, provider_manager
+   - from cygnusx.application.services.overdrive_run_service import OverdriveRunService
+48 + from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+49 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/chat/runtimes/direct_chat_runtime.py:3:1
+   |
+ 1 |   """直连模型聊天 Runtime。"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import json
+ 6 | | import uuid
+ 7 | | from collections.abc import AsyncIterator
+ 8 | | from typing import TYPE_CHECKING, Any
+ 9 | |
+10 | | from loguru import logger
+11 | | from sqlalchemy import select
+12 | |
+13 | | from cygnusx.application.services.chat.next_step_suggestions import suggestions_metadata
+14 | | from cygnusx.application.services.artifact_manifest import normalize_tool_artifact_payload
+15 | | from cygnusx.application.services.chat.runtimes.base import ChatRuntime, ChatRuntimeRequest
+16 | | from cygnusx.core.config import get_settings
+17 | | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk, provider_manager
+18 | | from cygnusx.infrastructure.database.models.ai_provider import AIProviderConfigModel
+19 | | from cygnusx.middleware.trace_context import session_id_var
+   | |___________________________________________________________^
+20 |
+21 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+   |
+12 |
+13 + from cygnusx.application.services.artifact_manifest import normalize_tool_artifact_payload
+14 | from cygnusx.application.services.chat.next_step_suggestions import suggestions_metadata
+   - from cygnusx.application.services.artifact_manifest import normalize_tool_artifact_payload
+15 | from cygnusx.application.services.chat.runtimes.base import ChatRuntime, ChatRuntimeRequest
+   |
+
+SIM114 [*] Combine `if` branches using logical `or` operator
+   --> src/cygnusx/application/services/execution_events.py:113:13
+    |
+112 |           if awaiting_continuation:
+113 | /             if event_type in _TOOL_CALL_EVENT_TYPES:
+114 | |                 awaiting_continuation = False
+115 | |             elif event_type in _ASK_USER_EVENT_TYPES:
+116 | |                 awaiting_continuation = False
+    | |_____________________________________________^
+117 |               elif event_type != "agent_turn_continued":
+118 |                   raise EventSequenceError(
+    |
+help: Combine `if` branches
+    |
+112 |         if awaiting_continuation:
+    -             if event_type in _TOOL_CALL_EVENT_TYPES:
+    -                 awaiting_continuation = False
+    -             elif event_type in _ASK_USER_EVENT_TYPES:
+113 +             if event_type in _TOOL_CALL_EVENT_TYPES or event_type in _ASK_USER_EVENT_TYPES:
+114 |                 awaiting_continuation = False
+    |
+
+F401 [*] `langgraph.types.Command` imported but unused
+  --> src/cygnusx/application/services/mas/mas_graph.py:15:29
+   |
+14 | from langgraph.graph import END, START, StateGraph
+15 | from langgraph.types import Command, interrupt
+   |                             ^^^^^^^
+16 |
+17 | from cygnusx.domain.execution.mas_state import FINISH_SENTINEL, MASState
+   |
+help: Remove unused import: `langgraph.types.Command`
+   |
+14 | from langgraph.graph import END, START, StateGraph
+   - from langgraph.types import Command, interrupt
+15 + from langgraph.types import interrupt
+16 |
+   |
+
+F401 [*] `langgraph.types.Command` imported but unused
+   --> src/cygnusx/application/services/mas/mas_room_service.py:262:37
+    |
+260 |     ) -> dict[str, Any]:
+261 |         """人工决议落账本并 resume 图（interrupt 语义对齐 orchestrator 图）。"""
+262 |         from langgraph.types import Command
+    |                                     ^^^^^^^
+263 |
+264 |         from cygnusx.infrastructure.database.session import get_session_factory
+    |
+help: Remove unused import: `langgraph.types.Command`
+    |
+261 |         """人工决议落账本并 resume 图（interrupt 语义对齐 orchestrator 图）。"""
+    -         from langgraph.types import Command
+262 |
+    |
+
+F401 [*] `cygnusx.infrastructure.database.session.get_session_factory` imported but unused
+   --> src/cygnusx/application/services/mas/mas_room_service.py:264:61
+    |
+262 |         from langgraph.types import Command
+263 |
+264 |         from cygnusx.infrastructure.database.session import get_session_factory
+    |                                                             ^^^^^^^^^^^^^^^^^^^
+265 |         from cygnusx.infrastructure.execution.checkpointer import postgres_checkpointer
+    |
+help: Remove unused import: `cygnusx.infrastructure.database.session.get_session_factory`
+    |
+263 |
+    -         from cygnusx.infrastructure.database.session import get_session_factory
+264 |         from cygnusx.infrastructure.execution.checkpointer import postgres_checkpointer
+    |
+
+F401 [*] `cygnusx.infrastructure.execution.checkpointer.postgres_checkpointer` imported but unused
+   --> src/cygnusx/application/services/mas/mas_room_service.py:265:67
+    |
+264 |         from cygnusx.infrastructure.database.session import get_session_factory
+265 |         from cygnusx.infrastructure.execution.checkpointer import postgres_checkpointer
+    |                                                                   ^^^^^^^^^^^^^^^^^^^^^
+266 |
+267 |         await self.update_run_status(run_id, "running")
+    |
+help: Remove unused import: `cygnusx.infrastructure.execution.checkpointer.postgres_checkpointer`
+    |
+264 |         from cygnusx.infrastructure.database.session import get_session_factory
+    -         from cygnusx.infrastructure.execution.checkpointer import postgres_checkpointer
+265 |
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/application/services/mas/mas_room_service.py:281:9
+    |
+279 |       async def _resume_run(self, run_id: str, decision: dict[str, Any]) -> None:
+280 |           """从 checkpoint 恢复挂起的图并继续执行（Command(resume=...)）。"""
+281 | /         from cygnusx.application.services.mas.mas_graph import (
+282 | |             DEFAULT_DEPT_MEMBERS,
+283 | |             build_mas_graph,
+284 | |         )
+285 | |         from langgraph.types import Command
+286 | |         from cygnusx.application.services.mas.mas_supervisor import build_supervisor_llm
+287 | |         from cygnusx.domain.execution.mas_state import FINISH_SENTINEL
+288 | |         from cygnusx.infrastructure.database.session import get_session_factory
+289 | |         from cygnusx.infrastructure.execution.checkpointer import postgres_checkpointer
+    | |_______________________________________________________________________________________^
+290 |
+291 |           room_id = _room_of(run_id)
+    |
+help: Organize imports
+    |
+280 |         """从 checkpoint 恢复挂起的图并继续执行（Command(resume=...)）。"""
+281 +         from langgraph.types import Command
+282 +
+283 |         from cygnusx.application.services.mas.mas_graph import (
+284 |             DEFAULT_DEPT_MEMBERS,
+285 |             build_mas_graph,
+286 |         )
+    -         from langgraph.types import Command
+287 |         from cygnusx.application.services.mas.mas_supervisor import build_supervisor_llm
+    |
+
+F401 [*] `cygnusx.domain.execution.mas_state.FINISH_SENTINEL` imported but unused
+   --> src/cygnusx/application/services/mas/mas_room_service.py:287:56
+    |
+285 |         from langgraph.types import Command
+286 |         from cygnusx.application.services.mas.mas_supervisor import build_supervisor_llm
+287 |         from cygnusx.domain.execution.mas_state import FINISH_SENTINEL
+    |                                                        ^^^^^^^^^^^^^^^
+288 |         from cygnusx.infrastructure.database.session import get_session_factory
+289 |         from cygnusx.infrastructure.execution.checkpointer import postgres_checkpointer
+    |
+help: Remove unused import: `cygnusx.domain.execution.mas_state.FINISH_SENTINEL`
+    |
+286 |         from cygnusx.application.services.mas.mas_supervisor import build_supervisor_llm
+    -         from cygnusx.domain.execution.mas_state import FINISH_SENTINEL
+287 |         from cygnusx.infrastructure.database.session import get_session_factory
+    |
+
+F401 [*] `cygnusx.infrastructure.database.session.get_session_factory` imported but unused
+   --> src/cygnusx/application/services/mas/mas_room_service.py:288:61
+    |
+286 |         from cygnusx.application.services.mas.mas_supervisor import build_supervisor_llm
+287 |         from cygnusx.domain.execution.mas_state import FINISH_SENTINEL
+288 |         from cygnusx.infrastructure.database.session import get_session_factory
+    |                                                             ^^^^^^^^^^^^^^^^^^^
+289 |         from cygnusx.infrastructure.execution.checkpointer import postgres_checkpointer
+    |
+help: Remove unused import: `cygnusx.infrastructure.database.session.get_session_factory`
+    |
+287 |         from cygnusx.domain.execution.mas_state import FINISH_SENTINEL
+    -         from cygnusx.infrastructure.database.session import get_session_factory
+288 |         from cygnusx.infrastructure.execution.checkpointer import postgres_checkpointer
+    |
+
+F841 Local variable `stripped_features` is assigned to but never used
+  --> src/cygnusx/application/services/mas/mas_worker_executor.py:74:13
+   |
+73 |             # 剥离递归/交接特性（Worker 内不允许再派生子 Agent）
+74 |             stripped_features = strip_worker_tools(assembled.features)
+   |             ^^^^^^^^^^^^^^^^^
+75 |
+76 |             chat_service = ChatService(session)
+   |
+help: Remove assignment to unused variable `stripped_features`
+
+SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+   --> src/cygnusx/application/services/mas/mas_worker_executor.py:119:9
+    |
+117 |           logger.exception("MAS worker turn failed agent_id={} room={}", agent_id, room_id)
+118 |           error_text = f"执行出错：{exc}"
+119 | /         try:
+120 | |             await emit(room_id, {"type": "error", "content": error_text})
+121 | |         except Exception:  # pragma: no cover
+122 | |             pass
+    | |________________^
+123 |           return error_text
+    |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/mcp_builder_service.py:10:1
+   |
+ 8 |   """
+ 9 |
+10 | / from __future__ import annotations
+11 | |
+12 | | import json
+13 | | import re
+14 | | import uuid as uuid_mod
+15 | | from datetime import datetime, timedelta, timezone
+16 | | from typing import Any
+17 | | from uuid import UUID
+18 | |
+19 | | from loguru import logger
+20 | | from sqlalchemy import func, select
+21 | | from sqlalchemy.ext.asyncio import AsyncSession
+22 | |
+23 | | from cygnusx.application.schemas.mcp_builder import (
+24 | |     MCPBuildDTO,
+25 | |     SubmitBuildRequest,
+26 | | )
+27 | | from cygnusx.application.services.mcp_service import next_patch_version
+28 | | from cygnusx.core.config import get_settings
+29 | | from cygnusx.core.exceptions import (
+30 | |     AuthorizationError,
+31 | |     ConflictError,
+32 | |     NotFoundError,
+33 | |     ValidationError,
+34 | | )
+35 | | from cygnusx.domain.mcp.entities import MCPServer, MCPToolRegistry
+36 | | from cygnusx.domain.mcp.value_objects import (
+37 | |     BuildStatus,
+38 | |     ReviewStatus,
+39 | |     ServerPool,
+40 | |     ServerStatus,
+41 | |     Transport,
+42 | | )
+43 | | from cygnusx.infrastructure.database.models.mcp_builder import (
+44 | |     MCPBuildModel,
+45 | |     MCPReviewModel,
+46 | |     MCPVersionModel,
+47 | | )
+48 | | from cygnusx.infrastructure.database.models.mcp_log import MCPLogModel
+49 | | from cygnusx.infrastructure.database.repositories.mcp_repository import (
+50 | |     SqlAlchemyMCPServerRepository,
+51 | | )
+52 | | from cygnusx.infrastructure.mcp.builder.doc_generator import (
+53 | |     generate_architecture_doc,
+54 | |     generate_build_doc,
+55 | | )
+56 | | from cygnusx.infrastructure.mcp.builder.generator import MCPCodeGenerator
+57 | | from cygnusx.infrastructure.mcp.builder.safety import StaticSafetyChecker
+58 | | from cygnusx.infrastructure.mcp.client import (
+59 | |     validate_stdio_args,
+60 | |     validate_working_dir,
+61 | | )
+62 | | from cygnusx.infrastructure.mcp.builder.versioning import (
+63 | |     compute_contract_digest,
+64 | |     CONFIG_SNAPSHOT_FIELDS,
+65 | |     determine_version,
+66 | |     extract_config_snapshot,
+67 | |     parse_semver,
+68 | | )
+   | |_^
+69 |
+70 |   _SLUG_RE = re.compile(r"[^a-z0-9]+")
+   |
+help: Organize imports
+   |
+57 | from cygnusx.infrastructure.mcp.builder.safety import StaticSafetyChecker
+   - from cygnusx.infrastructure.mcp.client import (
+   -     validate_stdio_args,
+   -     validate_working_dir,
+   - )
+58 | from cygnusx.infrastructure.mcp.builder.versioning import (
+59 +     CONFIG_SNAPSHOT_FIELDS,
+60 |     compute_contract_digest,
+   -     CONFIG_SNAPSHOT_FIELDS,
+61 |     determine_version,
+62 |     extract_config_snapshot,
+63 |     parse_semver,
+64 | )
+65 + from cygnusx.infrastructure.mcp.client import (
+66 +     validate_stdio_args,
+67 +     validate_working_dir,
+68 + )
+69 |
+   |
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/mcp_builder_service.py:233:37
+    |
+231 |             auto_restart=False,
+232 |             pool=ServerPool.EXPERIMENTAL,
+233 |             expires_at=datetime.now(timezone.utc) + timedelta(hours=ttl_hours),
+    |                                     ^^^^^^^^^^^^
+234 |             created_by=uid,
+235 |             current_version=version,
+    |
+help: Convert to `datetime.UTC` alias
+    |
+14  | import uuid as uuid_mod
+    - from datetime import datetime, timedelta, timezone
+15  + from datetime import datetime, timedelta, timezone, UTC
+16  | from typing import Any
+--------------------------------------------------------------------------------
+232 |             pool=ServerPool.EXPERIMENTAL,
+    -             expires_at=datetime.now(timezone.utc) + timedelta(hours=ttl_hours),
+233 +             expires_at=datetime.now(UTC) + timedelta(hours=ttl_hours),
+234 |             created_by=uid,
+    |
+
+SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+   --> src/cygnusx/application/services/mcp_builder_service.py:379:13
+    |
+377 |                       })
+378 |           finally:
+379 | /             try:
+380 | |                 await studio_sandbox_manager.stop_mcp_server(session_id, sandbox_server_id)
+381 | |             except Exception:  # noqa: BLE001
+382 | |                 pass
+    | |____________________^
+383 |
+384 |           all_passed = bool(cases) and all(c["passed"] for c in cases)
+    |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/mcp_builder_service.py:518:42
+    |
+516 |             raise AuthorizationError("无权操作该实验 MCP")
+517 |         ttl = hours or self._settings.mcp_builder_default_ttl_hours
+518 |         server.expires_at = datetime.now(timezone.utc) + timedelta(hours=ttl)
+    |                                          ^^^^^^^^^^^^
+519 |         if server.status == ServerStatus.OFFLINE and server.is_enabled:
+520 |             server.status = ServerStatus.ONLINE
+    |
+help: Convert to `datetime.UTC` alias
+    |
+14  | import uuid as uuid_mod
+    - from datetime import datetime, timedelta, timezone
+15  + from datetime import datetime, timedelta, timezone, UTC
+16  | from typing import Any
+--------------------------------------------------------------------------------
+517 |         ttl = hours or self._settings.mcp_builder_default_ttl_hours
+    -         server.expires_at = datetime.now(timezone.utc) + timedelta(hours=ttl)
+518 +         server.expires_at = datetime.now(UTC) + timedelta(hours=ttl)
+519 |         if server.status == ServerStatus.OFFLINE and server.is_enabled:
+    |
+
+SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+   --> src/cygnusx/application/services/mcp_builder_service.py:578:13
+    |
+576 |               )
+577 |           finally:
+578 | /             try:
+579 | |                 await studio_sandbox_manager.stop_mcp_server(session_id, started.get("server_id"))
+580 | |             except Exception:  # noqa: BLE001
+581 | |                 pass
+    | |____________________^
+582 |           await self._log(server.id, "info", f"工具调用: {tool}", UUID(str(user_id)))
+583 |           return _clamp_experimental_result(result)
+    |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/mcp_builder_service.py:649:28
+    |
+647 |     async def expire_stale_servers(self) -> int:
+648 |         """Celery 定时任务入口：下线过期实验 MCP。返回处理数量。"""
+649 |         now = datetime.now(timezone.utc)
+    |                            ^^^^^^^^^^^^
+650 |         servers = await self._repo.list_all()
+651 |         count = 0
+    |
+help: Convert to `datetime.UTC` alias
+    |
+14  | import uuid as uuid_mod
+    - from datetime import datetime, timedelta, timezone
+15  + from datetime import datetime, timedelta, timezone, UTC
+16  | from typing import Any
+--------------------------------------------------------------------------------
+648 |         """Celery 定时任务入口：下线过期实验 MCP。返回处理数量。"""
+    -         now = datetime.now(timezone.utc)
+649 +         now = datetime.now(UTC)
+650 |         servers = await self._repo.list_all()
+    |
+
+UP041 [*] Replace aliased errors with `TimeoutError`
+   --> src/cygnusx/application/services/network_request_tool.py:133:16
+    |
+131 |         try:
+132 |             return await asyncio.wait_for(asyncio.to_thread(_resolve_public_hostname, host), timeout=3)
+133 |         except asyncio.TimeoutError:
+    |                ^^^^^^^^^^^^^^^^^^^^
+134 |             return "域名解析超时"
+135 |     return None
+    |
+help: Replace `asyncio.TimeoutError` with builtin `TimeoutError`
+    |
+132 |             return await asyncio.wait_for(asyncio.to_thread(_resolve_public_hostname, host), timeout=3)
+    -         except asyncio.TimeoutError:
+133 +         except TimeoutError:
+134 |             return "域名解析超时"
+    |
+
+F841 Local variable `workspace_rel` is assigned to but never used
+   --> src/cygnusx/application/services/overdrive_execution_service.py:275:9
+    |
+273 |         }
+274 |         workspace = root.parents[3]
+275 |         workspace_rel = factory.relative_to_root(workspace)
+    |         ^^^^^^^^^^^^^
+276 |         required_paths = sorted(
+277 |             {
+    |
+help: Remove assignment to unused variable `workspace_rel`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/overdrive_run_service.py:3:1
+   |
+ 1 |   """Authoritative state machine and event store for overdrive v2 runs."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import hashlib
+ 6 | | import json
+ 7 | | import os
+ 8 | | import re
+ 9 | | import uuid
+10 | | from copy import deepcopy
+11 | | from datetime import UTC, datetime
+12 | | from pathlib import Path
+13 | | from typing import Any, Literal
+14 | | from urllib.parse import quote
+15 | |
+16 | | from loguru import logger
+17 | | from sqlalchemy import select
+18 | | from sqlalchemy.ext.asyncio import AsyncSession
+19 | |
+20 | | from cygnusx.core.exceptions import ValidationError
+21 | | from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+22 | | from cygnusx.infrastructure.storage import get_path_factory, get_storage_backend
+23 | | from cygnusx.infrastructure.database.models.overdrive import (
+24 | |     OverdriveCommandModel,
+25 | |     OverdriveEventModel,
+26 | |     OverdriveRunModel,
+27 | | )
+   | |_^
+28 |
+29 |   RunStatus = Literal[
+   |
+help: Organize imports
+   |
+21 | from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+   - from cygnusx.infrastructure.storage import get_path_factory, get_storage_backend
+22 | from cygnusx.infrastructure.database.models.overdrive import (
+--------------------------------------------------------------------------------
+26 | )
+27 + from cygnusx.infrastructure.storage import get_path_factory, get_storage_backend
+28 |
+   |
+
+B023 Function definition does not bind loop variable `text`
+   --> src/cygnusx/application/services/parallel_subagent_service.py:876:37
+    |
+874 |                         messages=messages,
+875 |                         system_prompt=system_prompt,
+876 |                         output_text=text,
+    |                                     ^^^^
+877 |                         reasoning_text=round_reasoning_text,
+878 |                         tool_calls=tool_calls,
+    |
+
+B023 Function definition does not bind loop variable `round_reasoning_text`
+   --> src/cygnusx/application/services/parallel_subagent_service.py:877:40
+    |
+875 |                         system_prompt=system_prompt,
+876 |                         output_text=text,
+877 |                         reasoning_text=round_reasoning_text,
+    |                                        ^^^^^^^^^^^^^^^^^^^^
+878 |                         tool_calls=tool_calls,
+879 |                         usage=usage,
+    |
+
+B023 Function definition does not bind loop variable `tool_calls`
+   --> src/cygnusx/application/services/parallel_subagent_service.py:878:36
+    |
+876 |                         output_text=text,
+877 |                         reasoning_text=round_reasoning_text,
+878 |                         tool_calls=tool_calls,
+    |                                    ^^^^^^^^^^
+879 |                         usage=usage,
+880 |                         duration_ms=round((time.monotonic() - turn_started) * 1000),
+    |
+
+B023 Function definition does not bind loop variable `usage`
+   --> src/cygnusx/application/services/parallel_subagent_service.py:879:31
+    |
+877 |                         reasoning_text=round_reasoning_text,
+878 |                         tool_calls=tool_calls,
+879 |                         usage=usage,
+    |                               ^^^^^
+880 |                         duration_ms=round((time.monotonic() - turn_started) * 1000),
+881 |                         finish_reason=finish_reason,
+    |
+
+B023 Function definition does not bind loop variable `turn_started`
+   --> src/cygnusx/application/services/parallel_subagent_service.py:880:63
+    |
+878 |                         tool_calls=tool_calls,
+879 |                         usage=usage,
+880 |                         duration_ms=round((time.monotonic() - turn_started) * 1000),
+    |                                                               ^^^^^^^^^^^^
+881 |                         finish_reason=finish_reason,
+882 |                         status="error",
+    |
+
+B023 Function definition does not bind loop variable `finish_reason`
+   --> src/cygnusx/application/services/parallel_subagent_service.py:881:39
+    |
+879 |                         usage=usage,
+880 |                         duration_ms=round((time.monotonic() - turn_started) * 1000),
+881 |                         finish_reason=finish_reason,
+    |                                       ^^^^^^^^^^^^^
+882 |                         status="error",
+883 |                         error=str(exc)[:500],
+    |
+
+B023 Function definition does not bind loop variable `agentteams_token`
+   --> src/cygnusx/application/services/parallel_subagent_service.py:886:24
+    |
+884 |                         deep_thinking=deep_thinking,
+885 |                     )
+886 |                     if agentteams_token is not None:
+    |                        ^^^^^^^^^^^^^^^^
+887 |                         agentteams_ctx_var.reset(agentteams_token)
+888 |                     raise
+    |
+
+B023 Function definition does not bind loop variable `agentteams_token`
+   --> src/cygnusx/application/services/parallel_subagent_service.py:887:50
+    |
+885 |                     )
+886 |                     if agentteams_token is not None:
+887 |                         agentteams_ctx_var.reset(agentteams_token)
+    |                                                  ^^^^^^^^^^^^^^^^
+888 |                     raise
+    |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/pipeline_result_service.py:351:25
+    |
+349 |         if not requested.strip() or relative.is_absolute() or ".." in relative.parts:
+350 |             raise ValidationError("文件路径必须是工作区内的安全相对路径")
+351 |         resolved_root = root.resolve()
+    |                         ^^^^^^^^^^^^
+352 |         current_rel = self._factory.relative_to_root(resolved_root)
+353 |         for part in relative.parts:
+    |
+
+UP017 [*] Use `datetime.UTC` alias
+  --> src/cygnusx/application/services/run_event_service.py:45:38
+   |
+43 |             payload=payload or {},
+44 |             sequence=int(last or 0) + 1,
+45 |             occurred_at=datetime.now(timezone.utc),
+   |                                      ^^^^^^^^^^^^
+46 |         )
+47 |         self._db.add(event)
+   |
+help: Convert to `datetime.UTC` alias
+   |
+2  |
+   - from datetime import datetime, timezone
+3  + from datetime import datetime, timezone, UTC
+4  | from uuid import UUID
+--------------------------------------------------------------------------------
+44 |             sequence=int(last or 0) + 1,
+   -             occurred_at=datetime.now(timezone.utc),
+45 +             occurred_at=datetime.now(UTC),
+46 |         )
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/run_plan_service.py:3:1
+   |
+ 1 |   """Application service for the Snakemake Run plan confirmation boundary."""
+ 2 |
+ 3 | / import hashlib
+ 4 | | import json
+ 5 | | from datetime import datetime, timezone
+ 6 | | from uuid import UUID
+ 7 | |
+ 8 | | from sqlalchemy import select
+ 9 | | from sqlalchemy.ext.asyncio import AsyncSession
+10 | |
+11 | | from cygnusx.application.schemas.run_plan import SnakemakePlanSubmit, SnakemakePlanView
+12 | | from cygnusx.application.schemas.task import TaskSubmitRequest
+13 | | from cygnusx.application.services.flow_service import FlowService
+14 | | from cygnusx.application.services.task_service import TaskService
+15 | | from cygnusx.core.exceptions import ConflictError, NotFoundError, ValidationError
+16 | | from cygnusx.domain.task.value_objects import ExecutionMode
+17 | | from cygnusx.infrastructure.database.models.run import RunModel
+18 | | from cygnusx.infrastructure.database.models.run_event import RunEventModel
+19 | | from cygnusx.infrastructure.database.models.file import FileRecordModel
+   | |_______________________________________________________________________^
+help: Organize imports
+   |
+16 | from cygnusx.domain.task.value_objects import ExecutionMode
+17 + from cygnusx.infrastructure.database.models.file import FileRecordModel
+18 | from cygnusx.infrastructure.database.models.run import RunModel
+19 | from cygnusx.infrastructure.database.models.run_event import RunEventModel
+   - from cygnusx.infrastructure.database.models.file import FileRecordModel
+20 |
+   |
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/run_plan_service.py:107:41
+    |
+105 |         run.task_id = task.id
+106 |         run.status = "queued"
+107 |         run.confirmed_at = datetime.now(timezone.utc)
+    |                                         ^^^^^^^^^^^^
+108 |         from cygnusx.application.services.run_event_service import RunEventService
+    |
+help: Convert to `datetime.UTC` alias
+    |
+4   | import json
+    - from datetime import datetime, timezone
+5   + from datetime import datetime, timezone, UTC
+6   | from uuid import UUID
+--------------------------------------------------------------------------------
+106 |         run.status = "queued"
+    -         run.confirmed_at = datetime.now(timezone.utc)
+107 +         run.confirmed_at = datetime.now(UTC)
+108 |         from cygnusx.application.services.run_event_service import RunEventService
+    |
+
+F401 [*] `sqlalchemy.Select` imported but unused
+  --> src/cygnusx/application/services/schedule_service.py:10:24
+   |
+ 9 | from dateutil.rrule import rrulestr
+10 | from sqlalchemy import Select, select, update
+   |                        ^^^^^^
+11 | from sqlalchemy.ext.asyncio import AsyncSession
+   |
+help: Remove unused import: `sqlalchemy.Select`
+   |
+9  | from dateutil.rrule import rrulestr
+   - from sqlalchemy import Select, select, update
+10 + from sqlalchemy import select, update
+11 | from sqlalchemy.ext.asyncio import AsyncSession
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/schedule_tool_service.py:3:1
+   |
+ 1 |   """ToolBridge adapter that derives all ownership from ToolInvocationContext."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | from datetime import UTC, datetime, timedelta
+ 6 | | import re
+ 7 | | from typing import Any
+ 8 | | from uuid import UUID
+ 9 | | from zoneinfo import ZoneInfo
+10 | |
+11 | | from cygnusx.application.schemas.schedule import ScheduleCreateRequest, ScheduleUpdateRequest
+12 | | from cygnusx.application.schemas.tool_invocation import ToolInvocationContext
+13 | | from cygnusx.application.services.schedule_service import ScheduleService
+14 | | from cygnusx.core.exceptions import ValidationError
+   | |___________________________________________________^
+help: Organize imports
+  |
+4 |
+5 + import re
+6 | from datetime import UTC, datetime, timedelta
+  - import re
+7 | from typing import Any
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/search_provider_service.py:3:1
+   |
+ 1 |   """联网搜索服务商配置与执行服务。"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import time
+ 6 | | from typing import Any
+ 7 | |
+ 8 | | from sqlalchemy import select, update
+ 9 | | from sqlalchemy.ext.asyncio import AsyncSession
+10 | |
+11 | | from cygnusx.application.schemas.search_provider import (
+12 | |     SearchProviderAvailabilityDTO,
+13 | |     SearchProviderDTO,
+14 | |     SearchProviderTestResponse,
+15 | |     SearchProviderUpdateDTO,
+16 | | )
+17 | | from cygnusx.core.exceptions import BusinessError, NotFoundError
+18 | | from cygnusx.core.security import decrypt_value, encrypt_value
+19 | | from cygnusx.infrastructure.database.models.search_provider import SearchProviderConfigModel
+20 | | from cygnusx.infrastructure.web_search.service import WebSearchResult, WebSearchService
+21 | | from loguru import logger
+   | |_________________________^
+22 |
+23 |   MASKED_API_KEY = "********"
+   |
+help: Organize imports
+   |
+7  |
+8  + from loguru import logger
+9  | from sqlalchemy import select, update
+--------------------------------------------------------------------------------
+21 | from cygnusx.infrastructure.web_search.service import WebSearchResult, WebSearchService
+   - from loguru import logger
+22 |
+   |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/skill_import_service.py:192:12
+    |
+190 |     ) -> list[SkillMarketplaceItemDTO]:
+191 |         items: list[SkillMarketplaceItemDTO] = []
+192 |         if market_dir.is_dir():
+    |            ^^^^^^^^^^^^^^^^^
+193 |             category_map = _builtin_category_map(market_dir) if source == "builtin" else {}
+194 |             folders: list[tuple[Path, ParsedSkill]] = []
+    |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/skill_import_service.py:195:34
+    |
+193 |             category_map = _builtin_category_map(market_dir) if source == "builtin" else {}
+194 |             folders: list[tuple[Path, ParsedSkill]] = []
+195 |             for folder in sorted(market_dir.iterdir()):
+    |                                  ^^^^^^^^^^^^^^^^^^
+196 |                 skill_md = folder / "SKILL.md"
+197 |                 if not folder.is_dir() or not skill_md.is_file():
+    |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/skill_import_service.py:232:44
+    |
+230 |         folder = (market_dir / skill_id).resolve()
+231 |         if (
+232 |             not str(folder).startswith(str(market_dir.resolve()))
+    |                                            ^^^^^^^^^^^^^^^^^^
+233 |             or not (folder / "SKILL.md").is_file()
+234 |         ):
+    |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/skill_import_service.py:269:13
+    |
+267 |         cache_dir = Path(settings.aliyun_skills_cache_dir)
+268 |         try:
+269 |             cache_dir.mkdir(parents=True, exist_ok=True)
+    |             ^^^^^^^^^^^^^^^
+270 |         except OSError as exc:
+271 |             return self._aliyun_cache_error_status(cache_dir, exc)
+    |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/skill_import_service.py:308:24
+    |
+306 |                 raise SkillParseError(f"仓库 {repo} 中未找到包含 SKILL.md 的技能目录")
+307 |             # 成功后才整体替换缓存
+308 |             for sub in cache_dir.iterdir():
+    |                        ^^^^^^^^^^^^^^^^^
+309 |                 if sub.is_dir():
+310 |                     shutil.rmtree(sub, ignore_errors=True)
+    |
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/skill_import_service.py:327:47
+    |
+325 |                     "branch": branch,
+326 |                     "commit": latest,
+327 |                     "synced_at": datetime.now(timezone.utc).isoformat(),
+    |                                               ^^^^^^^^^^^^
+328 |                     "count": len(skills),
+329 |                     "extractor_version": ALIYUN_SKILL_EXTRACTOR_VERSION,
+    |
+help: Convert to `datetime.UTC` alias
+    |
+15  | import zipfile
+    - from datetime import datetime, timezone
+16  + from datetime import datetime, timezone, UTC
+17  | from pathlib import Path
+--------------------------------------------------------------------------------
+326 |                     "commit": latest,
+    -                     "synced_at": datetime.now(timezone.utc).isoformat(),
+327 +                     "synced_at": datetime.now(UTC).isoformat(),
+328 |                     "count": len(skills),
+    |
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/skill_import_service.py:341:54
+    |
+339 |             # 同步失败不清缓存：manifest 追加错误信息供前端空态展示
+340 |             manifest["last_error"] = str(exc)
+341 |             manifest["last_error_at"] = datetime.now(timezone.utc).isoformat()
+    |                                                      ^^^^^^^^^^^^
+342 |             manifest.setdefault("repo", repo)
+343 |             manifest.setdefault("branch", branch)
+    |
+help: Convert to `datetime.UTC` alias
+    |
+15  | import zipfile
+    - from datetime import datetime, timezone
+16  + from datetime import datetime, timezone, UTC
+17  | from pathlib import Path
+--------------------------------------------------------------------------------
+340 |             manifest["last_error"] = str(exc)
+    -             manifest["last_error_at"] = datetime.now(timezone.utc).isoformat()
+341 +             manifest["last_error_at"] = datetime.now(UTC).isoformat()
+342 |             manifest.setdefault("repo", repo)
+    |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/skill_import_service.py:355:13
+    |
+353 |         cache_dir = Path(settings.aliyun_skills_cache_dir)
+354 |         try:
+355 |             cache_dir.mkdir(parents=True, exist_ok=True)
+    |             ^^^^^^^^^^^^^^^
+356 |         except OSError as exc:
+357 |             return self._aliyun_cache_error_status(cache_dir, exc)
+    |
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/skill_import_service.py:371:47
+    |
+369 |                     "branch": settings.aliyun_skills_region_id,
+370 |                     "commit": "",
+371 |                     "synced_at": datetime.now(timezone.utc).isoformat(),
+    |                                               ^^^^^^^^^^^^
+372 |                     "count": len(catalog),
+373 |                     "items": catalog,
+    |
+help: Convert to `datetime.UTC` alias
+    |
+15  | import zipfile
+    - from datetime import datetime, timezone
+16  + from datetime import datetime, timezone, UTC
+17  | from pathlib import Path
+--------------------------------------------------------------------------------
+370 |                     "commit": "",
+    -                     "synced_at": datetime.now(timezone.utc).isoformat(),
+371 +                     "synced_at": datetime.now(UTC).isoformat(),
+372 |                     "count": len(catalog),
+    |
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/skill_import_service.py:379:54
+    |
+377 |         except Exception as exc:
+378 |             manifest["last_error"] = str(exc)
+379 |             manifest["last_error_at"] = datetime.now(timezone.utc).isoformat()
+    |                                                      ^^^^^^^^^^^^
+380 |             manifest.setdefault("provider", "agentexplorer_api")
+381 |             manifest.setdefault("repo", "AgentExplorer OpenAPI")
+    |
+help: Convert to `datetime.UTC` alias
+    |
+15  | import zipfile
+    - from datetime import datetime, timezone
+16  + from datetime import datetime, timezone, UTC
+17  | from pathlib import Path
+--------------------------------------------------------------------------------
+378 |             manifest["last_error"] = str(exc)
+    -             manifest["last_error_at"] = datetime.now(timezone.utc).isoformat()
+379 +             manifest["last_error_at"] = datetime.now(UTC).isoformat()
+380 |             manifest.setdefault("provider", "agentexplorer_api")
+    |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+   --> src/cygnusx/application/services/skill_import_service.py:454:44
+    |
+452 |         folder = (cache_dir / skill_id).resolve()
+453 |         if (
+454 |             not str(folder).startswith(str(cache_dir.resolve()))
+    |                                            ^^^^^^^^^^^^^^^^^
+455 |             or not (folder / "SKILL.md").is_file()
+456 |         ):
+    |
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/skill_import_service.py:603:80
+    |
+601 |         stale = True
+602 |         if synced_at is not None:
+603 |             base = synced_at if synced_at.tzinfo else synced_at.replace(tzinfo=timezone.utc)
+    |                                                                                ^^^^^^^^^^^^
+604 |             stale = (datetime.now(timezone.utc) - base).total_seconds() > settings.aliyun_skills_cache_ttl
+605 |         return AliyunMarketplaceStatusDTO(
+    |
+help: Convert to `datetime.UTC` alias
+    |
+15  | import zipfile
+    - from datetime import datetime, timezone
+16  + from datetime import datetime, timezone, UTC
+17  | from pathlib import Path
+--------------------------------------------------------------------------------
+602 |         if synced_at is not None:
+    -             base = synced_at if synced_at.tzinfo else synced_at.replace(tzinfo=timezone.utc)
+603 +             base = synced_at if synced_at.tzinfo else synced_at.replace(tzinfo=UTC)
+604 |             stale = (datetime.now(timezone.utc) - base).total_seconds() > settings.aliyun_skills_cache_ttl
+    |
+
+UP017 [*] Use `datetime.UTC` alias
+   --> src/cygnusx/application/services/skill_import_service.py:604:35
+    |
+602 |         if synced_at is not None:
+603 |             base = synced_at if synced_at.tzinfo else synced_at.replace(tzinfo=timezone.utc)
+604 |             stale = (datetime.now(timezone.utc) - base).total_seconds() > settings.aliyun_skills_cache_ttl
+    |                                   ^^^^^^^^^^^^
+605 |         return AliyunMarketplaceStatusDTO(
+606 |             available=count > 0,
+    |
+help: Convert to `datetime.UTC` alias
+    |
+15  | import zipfile
+    - from datetime import datetime, timezone
+16  + from datetime import datetime, timezone, UTC
+17  | from pathlib import Path
+--------------------------------------------------------------------------------
+603 |             base = synced_at if synced_at.tzinfo else synced_at.replace(tzinfo=timezone.utc)
+    -             stale = (datetime.now(timezone.utc) - base).total_seconds() > settings.aliyun_skills_cache_ttl
+604 +             stale = (datetime.now(UTC) - base).total_seconds() > settings.aliyun_skills_cache_ttl
+605 |         return AliyunMarketplaceStatusDTO(
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/stats_service.py:7:1
+   |
+ 5 |   """
+ 6 |
+ 7 | / from __future__ import annotations
+ 8 | |
+ 9 | | from datetime import UTC, date, datetime, timedelta
+10 | | from decimal import ROUND_HALF_UP, Decimal
+11 | | from typing import Any
+12 | | from uuid import UUID
+13 | |
+14 | | from sqlalchemy import select
+15 | | from sqlalchemy.ext.asyncio import AsyncSession
+16 | |
+17 | | from cygnusx.application.services.flow_service import FlowService
+18 | | from cygnusx.application.services.cookie_service import CookieService
+19 | | from cygnusx.core.config import get_settings
+20 | | from cygnusx.domain.task.value_objects import TaskStatus
+21 | | from cygnusx.infrastructure.cache.stats_cache import cached_json
+22 | | from cygnusx.infrastructure.ai_provider.openai_compatible import normalize_token_usage
+23 | | from cygnusx.infrastructure.database.models.chat import ChatMessageModel, ChatSessionModel
+24 | | from cygnusx.infrastructure.database.models.task import TaskModel
+25 | | from cygnusx.infrastructure.database.models.user import UserModel
+26 | | from cygnusx.infrastructure.database.repositories.file_repository import (
+27 | |     SampleRepositoryImpl,
+28 | | )
+29 | | from cygnusx.infrastructure.database.repositories.task_repository import (
+30 | |     TaskRepositoryImpl,
+31 | | )
+32 | | from cygnusx.infrastructure.database.repositories.user_repository import (
+33 | |     SqlAlchemyUserRepository,
+34 | | )
+   | |_^
+35 |
+36 |   # 各类缓存 TTL（秒）
+   |
+help: Organize imports
+   |
+16 |
+17 + from cygnusx.application.services.cookie_service import CookieService
+18 | from cygnusx.application.services.flow_service import FlowService
+   - from cygnusx.application.services.cookie_service import CookieService
+19 | from cygnusx.core.config import get_settings
+20 | from cygnusx.domain.task.value_objects import TaskStatus
+21 + from cygnusx.infrastructure.ai_provider.openai_compatible import normalize_token_usage
+22 | from cygnusx.infrastructure.cache.stats_cache import cached_json
+   - from cygnusx.infrastructure.ai_provider.openai_compatible import normalize_token_usage
+23 | from cygnusx.infrastructure.database.models.chat import ChatMessageModel, ChatSessionModel
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/studio_loop_guard.py:3:1
+   |
+ 1 |   """Studio Agent 单轮工具调用循环护栏。"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | from dataclasses import dataclass
+ 6 | | from datetime import UTC, datetime
+ 7 | | from typing import Any, Awaitable, Callable
+ 8 | |
+ 9 | | from cygnusx.application.services.execution_events import execution_metadata
+10 | | from cygnusx.infrastructure.config.studio_loader import StudioLoopControlConfig
+11 | | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
+   | |__________________________________________________________________________^
+help: Organize imports
+   |
+9  | from cygnusx.application.services.execution_events import execution_metadata
+10 + from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
+11 | from cygnusx.infrastructure.config.studio_loader import StudioLoopControlConfig
+   - from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
+12 |
+   |
+
+UP035 [*] Import from `collections.abc` instead: `Awaitable`, `Callable`
+ --> src/cygnusx/application/services/studio_loop_guard.py:7:1
+  |
+5 | from dataclasses import dataclass
+6 | from datetime import UTC, datetime
+7 | from typing import Any, Awaitable, Callable
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+8 |
+9 | from cygnusx.application.services.execution_events import execution_metadata
+  |
+help: Import from `collections.abc`
+  |
+6 | from datetime import UTC, datetime
+  - from typing import Any, Awaitable, Callable
+7 + from typing import Any
+8 + from collections.abc import Awaitable, Callable
+9 |
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/studio_skill_service.py:3:1
+   |
+ 1 |   """从 Studio 工作区脚本提炼可复用 Skill。"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import re
+ 6 | | from pathlib import Path
+ 7 | |
+ 8 | | from cygnusx.application.schemas.skill import CreateSkillDTO, SkillDTO
+ 9 | | from cygnusx.application.schemas.studio import ExtractStudioSkillRequest
+10 | | from cygnusx.application.services.skill_service import SkillService
+11 | | from cygnusx.infrastructure.config.prompt_loader import render_prompt
+12 | | from cygnusx.core.exceptions import BusinessError
+13 | | from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+14 | | from cygnusx.infrastructure.studio.manager import studio_sandbox_manager
+15 | | from cygnusx.infrastructure.studio.paths import PathEscapeError, resolve_workspace_path
+   | |_______________________________________________________________________________________^
+16 |
+17 |   _ALLOWED_EXTENSIONS = {".py", ".r", ".R", ".sh", ".bash"}
+   |
+help: Organize imports
+   |
+10 | from cygnusx.application.services.skill_service import SkillService
+11 + from cygnusx.core.exceptions import BusinessError
+12 | from cygnusx.infrastructure.config.prompt_loader import render_prompt
+   - from cygnusx.core.exceptions import BusinessError
+13 | from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+   |
+
+UP012 [*] Unnecessary UTF-8 `encoding` argument to `encode`
+  --> src/cygnusx/application/services/studio_task_service.py:66:9
+   |
+64 |     """
+65 |     digest = hashlib.sha256(
+66 |         f"{language}\x00{code}\x00{timeout_sec}\x00{image or ''}".encode("utf-8")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+67 |     ).hexdigest()[:16]
+68 |     return f"studio:{user_id}:{session_id}:{digest}"
+   |
+help: Remove unnecessary `encoding` argument
+   |
+65 |     digest = hashlib.sha256(
+   -         f"{language}\x00{code}\x00{timeout_sec}\x00{image or ''}".encode("utf-8")
+66 +         f"{language}\x00{code}\x00{timeout_sec}\x00{image or ''}".encode()
+67 |     ).hexdigest()[:16]
+   |
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> src/cygnusx/application/services/studio_task_service.py:132:13
+    |
+130 |               key = base_key
+131 |               existing = await repo.get_by_idempotency_key(key) if key else None
+132 | /             if existing is not None and command_id is None:
+133 | |                 # 派生键命中终态 job：视为"同内容再跑一次"，抬升 attempt 生成新 job；
+134 | |                 # 显式 command_id 则保持纯幂等语义（同键永远返回同一 job）。
+135 | |                 if existing.status in STUDIO_JOB_TERMINAL_STATUSES:
+    | |___________________________________________________________________^
+136 |                       key = f"{base_key}:a{await repo.count_attempts_by_key_prefix(base_key) + 2}"
+137 |                       existing = await repo.get_by_idempotency_key(key)
+    |
+help: Combine `if` statements using `and`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/application/services/workspace_references.py:3:1
+   |
+ 1 |   """Controlled Session workspace references for files, uploads, and user directories."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import os
+ 6 | | import re
+ 7 | | import time
+ 8 | | import uuid
+ 9 | | from dataclasses import asdict, dataclass
+10 | | from datetime import UTC, datetime
+11 | | from pathlib import Path
+12 | | from typing import Any, Literal
+13 | |
+14 | | from loguru import logger
+15 | | from sqlalchemy import select
+16 | | from sqlalchemy.ext.asyncio import AsyncSession
+17 | |
+18 | | from cygnusx.application.services.studio_context_service import import_datahub_file
+19 | | from cygnusx.core.config import get_settings
+20 | | from cygnusx.core.exceptions import BusinessError, NotFoundError, CygnusXError
+21 | | from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+22 | | from cygnusx.infrastructure.database.models.file import DirectoryModel
+23 | | from cygnusx.infrastructure.storage import get_path_factory
+24 | | from cygnusx.infrastructure.studio.manager import studio_sandbox_manager
+25 | | from cygnusx.infrastructure.studio.workspace import link_platform_directory
+   | |___________________________________________________________________________^
+26 |
+27 |   _UPLOAD_REF_RE = re.compile(r"^upload://[a-fA-F0-9]{16,128}$")
+   |
+help: Organize imports
+   |
+19 | from cygnusx.core.config import get_settings
+   - from cygnusx.core.exceptions import BusinessError, NotFoundError, CygnusXError
+20 + from cygnusx.core.exceptions import BusinessError, CygnusXError, NotFoundError
+21 | from cygnusx.infrastructure.database.models.chat import ChatSessionModel
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> src/cygnusx/core/agentteams_context.py:3:1
+  |
+1 |   """Request-local AgentTeams execution context used by process-record capture."""
+2 |
+3 | / from __future__ import annotations
+4 | |
+5 | | from contextvars import ContextVar
+6 | | from typing import Any
+  | |______________________^
+help: Organize imports
+  |
+7 |
+  -
+8 | agentteams_ctx_var: ContextVar[dict[str, Any] | None] = ContextVar(
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/core/ai_metrics.py:98:5
+    |
+ 97 |   async def _insert(batch: list[dict[str, Any]]) -> None:
+ 98 | /     from cygnusx.infrastructure.database.models.ai_metric import AiCallMetricModel
+ 99 | |     from cygnusx.infrastructure.database.session import create_unpooled_engine
+100 | |     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+    | |_______________________________________________________________________^
+101 |
+102 |       engine = create_unpooled_engine()
+    |
+help: Organize imports
+    |
+97  | async def _insert(batch: list[dict[str, Any]]) -> None:
+98  +     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+99  +
+100 |     from cygnusx.infrastructure.database.models.ai_metric import AiCallMetricModel
+101 |     from cygnusx.infrastructure.database.session import create_unpooled_engine
+    -     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+102 |
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/core/telemetry.py:181:17
+    |
+179 |         if settings.span_store_enabled:
+180 |             try:
+181 |                 from cygnusx.core.span_store import JsonlSpanExporter, CygnusXSpanProcessor
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+182 |
+183 |                 tracer_provider.add_span_processor(CygnusXSpanProcessor())
+    |
+help: Organize imports
+    |
+180 |             try:
+    -                 from cygnusx.core.span_store import JsonlSpanExporter, CygnusXSpanProcessor
+181 +                 from cygnusx.core.span_store import CygnusXSpanProcessor, JsonlSpanExporter
+182 |
+    |
+
+UP042 Class RoleType inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/ai/value_objects.py:6:7
+  |
+6 | class RoleType(str, Enum):
+  |       ^^^^^^^^
+7 |     """消息角色"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ToolCallStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/ai/value_objects.py:15:7
+   |
+15 | class ToolCallStatus(str, Enum):
+   |       ^^^^^^^^^^^^^^
+16 |     """工具调用状态"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ToolName inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/ai/value_objects.py:24:7
+   |
+24 | class ToolName(str, Enum):
+   |       ^^^^^^^^
+25 |     """AI Copilot 内置工具（Tool Use 协议）"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class TransactionType inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/cookie/value_objects.py:6:7
+  |
+6 | class TransactionType(str, Enum):
+  |       ^^^^^^^^^^^^^^^
+7 |     """交易类型"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class AccountStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/cookie/value_objects.py:17:7
+   |
+17 | class AccountStatus(str, Enum):
+   |       ^^^^^^^^^^^^^
+18 |     """账户状态"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class PricingType inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/cookie/value_objects.py:25:7
+   |
+25 | class PricingType(str, Enum):
+   |       ^^^^^^^^^^^
+26 |     """定价类型"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class PricingUnit inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/cookie/value_objects.py:34:7
+   |
+34 | class PricingUnit(str, Enum):
+   |       ^^^^^^^^^^^
+35 |     """计价单位"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class BillingItem inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/cookie/value_objects.py:47:7
+   |
+47 | class BillingItem(str, Enum):
+   |       ^^^^^^^^^^^
+48 |     """消费明细项"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class FileType inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/file/value_objects.py:6:7
+  |
+6 | class FileType(str, Enum):
+  |       ^^^^^^^^
+7 |     """文件类型"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class FileSource inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/file/value_objects.py:21:7
+   |
+21 | class FileSource(str, Enum):
+   |       ^^^^^^^^^^
+22 |     """文件来源 — 标识产生该文件的模块"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class OwnerScope inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/file/value_objects.py:39:7
+   |
+39 | class OwnerScope(str, Enum):
+   |       ^^^^^^^^^^
+40 |     """文件权属范围"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class LifecycleStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/file/value_objects.py:46:7
+   |
+46 | class LifecycleStatus(str, Enum):
+   |       ^^^^^^^^^^^^^^^
+47 |     """文件生命周期状态"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class UploadStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/file/value_objects.py:54:7
+   |
+54 | class UploadStatus(str, Enum):
+   |       ^^^^^^^^^^^^
+55 |     """上传状态"""
+   |
+help: Inherit from `enum.StrEnum`
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> src/cygnusx/domain/flow/condition.py:126:13
+    |
+125 |               # 检查条件
+126 | /             if param.condition is not None:
+127 | |                 if not ConditionEvaluator.evaluate(param.condition, form_values):
+    | |_________________________________________________________________________________^
+128 |                       return  # 条件不满足，参数不可见
+    |
+help: Combine `if` statements using `and`
+
+F841 Local variable `merged` is assigned to but never used
+   --> src/cygnusx/domain/flow/condition.py:189:25
+    |
+187 |                         if not isinstance(item, dict):
+188 |                             continue
+189 |                         merged = {
+    |                         ^^^^^^
+190 |                             **form_values,
+191 |                             **{sp.name: item.get(sp.name) for sp in param.group_config.parameters},
+    |
+help: Remove assignment to unused variable `merged`
+
+F841 Local variable `cycle_start` is assigned to but never used
+   --> src/cygnusx/domain/flow/services.py:135:17
+    |
+133 |             if color[node] == 1:
+134 |                 # 找到环：从 stack 中提取环
+135 |                 cycle_start = stack.index(node)
+    |                 ^^^^^^^^^^^
+136 |                 return True
+137 |             if color[node] == 2:
+    |
+help: Remove assignment to unused variable `cycle_start`
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> src/cygnusx/domain/flow/services.py:152:13
+    |
+151 |           for name in param_names:
+152 | /             if color[name] == 0:
+153 | |                 if dfs(name):
+    | |_____________________________^
+154 |                       # stack 中已包含环（最后一个节点重复出现时被截断）
+155 |                       # 重新跑一遍以准确截取环
+    |
+help: Combine `if` statements using `and`
+
+F841 Local variable `service` is assigned to but never used
+   --> src/cygnusx/domain/flow/services.py:184:5
+    |
+182 |         YAMLConfigError: 校验失败
+183 |     """
+184 |     service = FlowDomainService()
+    |     ^^^^^^^
+185 |     # 临时构造 parameters list 用于 DAG 检测
+186 |     try:
+    |
+help: Remove assignment to unused variable `service`
+
+UP042 Class ParameterTypeEnum inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/flow/value_objects.py:20:7
+   |
+20 | class ParameterTypeEnum(str, Enum):
+   |       ^^^^^^^^^^^^^^^^^
+21 |     """参数类型枚举 — 前端据此选择渲染组件"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ConditionOperatorEnum inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/flow/value_objects.py:33:7
+   |
+33 | class ConditionOperatorEnum(str, Enum):
+   |       ^^^^^^^^^^^^^^^^^^^^^
+34 |     """条件运算符枚举"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class FileAcceptType inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/flow/value_objects.py:49:7
+   |
+49 | class FileAcceptType(str, Enum):
+   |       ^^^^^^^^^^^^^^
+50 |     """文件上传接受的 MIME 类型分组"""
+   |
+help: Inherit from `enum.StrEnum`
+
+F821 Undefined name `Parameter`
+   --> src/cygnusx/domain/flow/value_objects.py:130:22
+    |
+128 |     item_label: str = Field(default="条目", description="单组显示标签")
+129 |     add_button_text: str = Field(default="+ 添加", description="添加按钮文案")
+130 |     parameters: list[Parameter] = Field(  # type: ignore[name-defined]
+    |                      ^^^^^^^^^
+131 |         default=[], description="组内参数定义（递归）"
+132 |     )
+    |
+
+F821 Undefined name `Parameter`
+   --> src/cygnusx/domain/flow/value_objects.py:144:22
+    |
+142 |     default_expanded: bool = Field(default=False, description="默认展开")
+143 |     description: str = Field(default="", description="区域说明")
+144 |     parameters: list[Parameter] = Field(  # type: ignore[name-defined]
+    |                      ^^^^^^^^^
+145 |         default=[], description="区域内参数定义（递归）"
+146 |     )
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/domain/mas/__init__.py:37:1
+   |
+35 |       "classify_error",
+36 |   ]
+37 | / from .quality_gate import (
+38 | |     QCOverrideRequest as QCOverrideRequest,
+39 | |     QualityGateResult as QualityGateResult,
+40 | |     QualityGateStatus as QualityGateStatus,
+41 | |     apply_qc_override as apply_qc_override,
+42 | |     evaluate_mapping_rate as evaluate_mapping_rate,
+43 | | )
+   | |_^
+help: Organize imports
+   |
+38 |     QCOverrideRequest as QCOverrideRequest,
+39 + )
+40 + from .quality_gate import (
+41 |     QualityGateResult as QualityGateResult,
+42 + )
+43 + from .quality_gate import (
+44 |     QualityGateStatus as QualityGateStatus,
+45 + )
+46 + from .quality_gate import (
+47 |     apply_qc_override as apply_qc_override,
+48 + )
+49 + from .quality_gate import (
+50 |     evaluate_mapping_rate as evaluate_mapping_rate,
+   |
+
+UP042 Class Transport inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/mcp/value_objects.py:6:7
+  |
+6 | class Transport(str, Enum):
+  |       ^^^^^^^^^
+7 |     """MCP 传输模式"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ServerStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/mcp/value_objects.py:15:7
+   |
+15 | class ServerStatus(str, Enum):
+   |       ^^^^^^^^^^^^
+16 |     """MCP Server 状态"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ServerPool inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/mcp/value_objects.py:24:7
+   |
+24 | class ServerPool(str, Enum):
+   |       ^^^^^^^^^^
+25 |     """MCP Server 所属池（MCP Builder 引入）"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class BuildStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/mcp/value_objects.py:32:7
+   |
+32 | class BuildStatus(str, Enum):
+   |       ^^^^^^^^^^^
+33 |     """MCP 构建记录状态机"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ReviewStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/mcp/value_objects.py:45:7
+   |
+45 | class ReviewStatus(str, Enum):
+   |       ^^^^^^^^^^^^
+46 |     """MCP Server 审核状态"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ReviewDecision inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/mcp/value_objects.py:54:7
+   |
+54 | class ReviewDecision(str, Enum):
+   |       ^^^^^^^^^^^^^^
+55 |     """审核决定"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class AccessLevel inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/mcp/value_objects.py:62:7
+   |
+62 | class AccessLevel(str, Enum):
+   |       ^^^^^^^^^^^
+63 |     """用户级 MCP 可见性"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class SandboxStatus inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/sandbox/value_objects.py:6:7
+  |
+6 | class SandboxStatus(str, Enum):
+  |       ^^^^^^^^^^^^^
+7 |     """沙盒会话状态"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ExecutionStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/sandbox/value_objects.py:18:7
+   |
+18 | class ExecutionStatus(str, Enum):
+   |       ^^^^^^^^^^^^^^^
+19 |     """代码执行状态"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class TaskStatus inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/task/value_objects.py:6:7
+  |
+6 | class TaskStatus(str, Enum):
+  |       ^^^^^^^^^^
+7 |     """任务状态机"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class ExecutionMode inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/task/value_objects.py:17:7
+   |
+17 | class ExecutionMode(str, Enum):
+   |       ^^^^^^^^^^^^^
+18 |     """执行模式"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class LogLevel inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/task/value_objects.py:24:7
+   |
+24 | class LogLevel(str, Enum):
+   |       ^^^^^^^^
+25 |     """日志级别"""
+   |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class TeamRole inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/team/value_objects.py:6:7
+  |
+6 | class TeamRole(str, Enum):
+  |       ^^^^^^^^
+7 |     """团队成员在团队空间中的权限角色"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class TerminalStatus inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/terminal/value_objects.py:6:7
+  |
+6 | class TerminalStatus(str, Enum):
+  |       ^^^^^^^^^^^^^^
+7 |     """终端会话状态"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class Role inherits from both `str` and `enum.Enum`
+ --> src/cygnusx/domain/user/value_objects.py:6:7
+  |
+6 | class Role(str, Enum):
+  |       ^^^^
+7 |     """用户角色"""
+  |
+help: Inherit from `enum.StrEnum`
+
+UP042 Class UserStatus inherits from both `str` and `enum.Enum`
+  --> src/cygnusx/domain/user/value_objects.py:13:7
+   |
+13 | class UserStatus(str, Enum):
+   |       ^^^^^^^^^^
+14 |     """用户状态"""
+   |
+help: Inherit from `enum.StrEnum`
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/infrastructure/celery_app/tasks/mas.py:179:5
+    |
+178 |   async def _run_rnaflow_node(run_id: UUID, node_key: str) -> dict[str, str]:
+179 | /     from cygnusx.application.services.a2a_event_service import A2AEventService
+180 | |     from cygnusx.application.services.artifact_service import ArtifactService
+181 | |     from cygnusx.core.config import get_settings
+182 | |     from cygnusx.domain.mas.models import (
+183 | |         A2AEvent,
+184 | |         A2AEventType,
+185 | |         AgentRecipient,
+186 | |         AgentSender,
+187 | |         ArtifactKind,
+188 | |         ArtifactPointer,
+189 | |         MASArtifact,
+190 | |         NodeState,
+191 | |     )
+192 | |     from cygnusx.domain.mas.workspace import WorkspaceLayout
+193 | |     from cygnusx.infrastructure.database.repositories.mas_repository import MASRepository
+194 | |     from cygnusx.infrastructure.database.session import get_session_factory
+195 | |     from cygnusx.infrastructure.mas.apptainer import build_rnaflow_command
+196 | |     from cygnusx.infrastructure.mas.qc_metrics import QCMetricsError, extract_median_mapping_rate
+197 | |     from cygnusx.infrastructure.mas.rnaflow import RNAFlowPreflightError, validate_mas_rnaflow_config
+    | |_____________________________________________________________________________________________________^
+198 |
+199 |       async with get_session_factory()() as session:
+    |
+help: Organize imports
+    |
+196 |     from cygnusx.infrastructure.mas.qc_metrics import QCMetricsError, extract_median_mapping_rate
+    -     from cygnusx.infrastructure.mas.rnaflow import RNAFlowPreflightError, validate_mas_rnaflow_config
+197 +     from cygnusx.infrastructure.mas.rnaflow import (
+198 +         RNAFlowPreflightError,
+199 +         validate_mas_rnaflow_config,
+200 +     )
+201 |
+    |
+
+F401 [*] `cygnusx.domain.mas.models.ArtifactKind` imported but unused
+   --> src/cygnusx/infrastructure/celery_app/tasks/mas.py:187:9
+    |
+185 |         AgentRecipient,
+186 |         AgentSender,
+187 |         ArtifactKind,
+    |         ^^^^^^^^^^^^
+188 |         ArtifactPointer,
+189 |         MASArtifact,
+    |
+help: Remove unused import
+    |
+186 |         AgentSender,
+    -         ArtifactKind,
+187 |         ArtifactPointer,
+    -         MASArtifact,
+188 |         NodeState,
+    |
+
+F401 [*] `cygnusx.domain.mas.models.MASArtifact` imported but unused
+   --> src/cygnusx/infrastructure/celery_app/tasks/mas.py:189:9
+    |
+187 |         ArtifactKind,
+188 |         ArtifactPointer,
+189 |         MASArtifact,
+    |         ^^^^^^^^^^^
+190 |         NodeState,
+191 |     )
+    |
+help: Remove unused import
+    |
+186 |         AgentSender,
+    -         ArtifactKind,
+187 |         ArtifactPointer,
+    -         MASArtifact,
+188 |         NodeState,
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/infrastructure/celery_app/tasks/mas.py:643:5
+    |
+642 |   async def _run_quality_gate_node(run_id: UUID, node_key: str) -> dict[str, str]:
+643 | /     from cygnusx.application.services.a2a_event_service import A2AEventService
+644 | |     from cygnusx.application.services.artifact_service import ArtifactService
+645 | |     from cygnusx.core.config import get_settings
+646 | |     from cygnusx.domain.mas.models import (
+647 | |         A2AEvent,
+648 | |         A2AEventType,
+649 | |         AgentRecipient,
+650 | |         AgentSender,
+651 | |         ArtifactPointer,
+652 | |         NodeState,
+653 | |     )
+654 | |     from cygnusx.domain.mas.quality_gate import QCOverrideRequest, apply_qc_override, evaluate_mapping_rate
+655 | |     from cygnusx.domain.mas.workspace import WorkspaceLayout
+656 | |     from cygnusx.infrastructure.database.repositories.mas_repository import MASRepository
+657 | |     from cygnusx.infrastructure.database.session import get_session_factory
+    | |___________________________________________________________________________^
+658 |
+659 |       async with get_session_factory()() as session:
+    |
+help: Organize imports
+    |
+653 |     )
+    -     from cygnusx.domain.mas.quality_gate import QCOverrideRequest, apply_qc_override, evaluate_mapping_rate
+654 +     from cygnusx.domain.mas.quality_gate import (
+655 +         QCOverrideRequest,
+656 +         apply_qc_override,
+657 +         evaluate_mapping_rate,
+658 +     )
+659 |     from cygnusx.domain.mas.workspace import WorkspaceLayout
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/infrastructure/celery_app/tasks/mas.py:806:5
+    |
+805 |   async def _run_ebi_download_node(run_id: UUID, node_key: str) -> dict[str, str]:
+806 | /     from cygnusx.application.services.a2a_event_service import A2AEventService
+807 | |     from cygnusx.application.services.artifact_service import ArtifactService
+808 | |     from cygnusx.core.config import get_settings
+809 | |     from cygnusx.domain.mas.models import (
+810 | |         A2AEvent,
+811 | |         A2AEventType,
+812 | |         AgentRecipient,
+813 | |         AgentSender,
+814 | |         ArtifactPointer,
+815 | |         NodeState,
+816 | |     )
+817 | |     from cygnusx.domain.mas.workspace import WorkspaceLayout
+818 | |     from cygnusx.infrastructure.database.repositories.mas_repository import MASRepository
+819 | |     from cygnusx.infrastructure.database.session import get_session_factory
+820 | |     from cygnusx.infrastructure.mas.ebi import EBIDownloadError, build_ebi_download_command, write_download_manifest
+    | |____________________________________________________________________________________________________________________^
+821 |
+822 |       async with get_session_factory()() as session:
+    |
+help: Organize imports
+    |
+819 |     from cygnusx.infrastructure.database.session import get_session_factory
+    -     from cygnusx.infrastructure.mas.ebi import EBIDownloadError, build_ebi_download_command, write_download_manifest
+820 +     from cygnusx.infrastructure.mas.ebi import (
+821 +         EBIDownloadError,
+822 +         build_ebi_download_command,
+823 +         write_download_manifest,
+824 +     )
+825 |
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/infrastructure/celery_app/tasks/mas.py:973:5
+    |
+972 |   async def _run_scanpy_qc_node(run_id: UUID, node_key: str) -> dict[str, str]:
+973 | /     from cygnusx.application.services.a2a_event_service import A2AEventService
+974 | |     from cygnusx.application.services.artifact_service import ArtifactService
+975 | |     from cygnusx.core.config import get_settings
+976 | |     from cygnusx.domain.mas.models import A2AEvent, A2AEventType, AgentRecipient, AgentSender, ArtifactPointer, NodeState
+977 | |     from cygnusx.domain.mas.workspace import WorkspaceLayout
+978 | |     from cygnusx.infrastructure.database.repositories.mas_repository import MASRepository
+979 | |     from cygnusx.infrastructure.database.session import get_session_factory
+980 | |     from cygnusx.infrastructure.mas.scanpy import ScanpyQCError, build_scanpy_qc_command
+    | |________________________________________________________________________________________^
+981 |
+982 |       async with get_session_factory()() as session:
+    |
+help: Organize imports
+    |
+975 |     from cygnusx.core.config import get_settings
+    -     from cygnusx.domain.mas.models import A2AEvent, A2AEventType, AgentRecipient, AgentSender, ArtifactPointer, NodeState
+976 +     from cygnusx.domain.mas.models import (
+977 +         A2AEvent,
+978 +         A2AEventType,
+979 +         AgentRecipient,
+980 +         AgentSender,
+981 +         ArtifactPointer,
+982 +         NodeState,
+983 +     )
+984 |     from cygnusx.domain.mas.workspace import WorkspaceLayout
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/infrastructure/celery_app/tasks/schedules.py:3:1
+   |
+ 1 |   """Database-backed schedule scanner and idempotent reminder delivery tasks."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import asyncio
+ 6 | | import json
+ 7 | | from datetime import UTC, datetime, timedelta
+ 8 | | from typing import Any
+ 9 | | from uuid import UUID
+10 | |
+11 | | from celery import shared_task
+12 | | from sqlalchemy import select, update
+13 | |
+14 | | from cygnusx.core.config import get_settings
+15 | | from cygnusx.application.services.schedule_service import ScheduleService
+16 | | from cygnusx.infrastructure.cache.redis_client import get_redis
+17 | | from cygnusx.infrastructure.database.models.notification import NotificationModel
+18 | | from cygnusx.infrastructure.database.models.schedule import (
+19 | |     ReminderDeliveryModel,
+20 | |     ScheduleModel,
+21 | |     ScheduleOccurrenceModel,
+22 | | )
+23 | | from cygnusx.infrastructure.database.session import get_session_factory
+   | |_______________________________________________________________________^
+24 |
+25 |   _LEASE_KEY = "cygnusx:schedules:scan:lease"
+   |
+help: Organize imports
+   |
+13 |
+14 + from cygnusx.application.services.schedule_service import ScheduleService
+15 | from cygnusx.core.config import get_settings
+   - from cygnusx.application.services.schedule_service import ScheduleService
+16 | from cygnusx.infrastructure.cache.redis_client import get_redis
+   |
+
+F401 [*] `sqlalchemy.update` imported but unused
+  --> src/cygnusx/infrastructure/celery_app/tasks/schedules.py:12:32
+   |
+11 | from celery import shared_task
+12 | from sqlalchemy import select, update
+   |                                ^^^^^^
+13 |
+14 | from cygnusx.core.config import get_settings
+   |
+help: Remove unused import: `sqlalchemy.update`
+   |
+11 | from celery import shared_task
+   - from sqlalchemy import select, update
+12 + from sqlalchemy import select
+13 |
+   |
+
+UP035 [*] Import from `collections.abc` instead: `Mapping`
+ --> src/cygnusx/infrastructure/config/runtime_image_loader.py:6:1
+  |
+5 | from pathlib import Path
+6 | from typing import Any, Literal, Mapping
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 |
+8 | import yaml
+  |
+help: Import from `collections.abc`
+  |
+5 | from pathlib import Path
+  - from typing import Any, Literal, Mapping
+6 + from typing import Any, Literal
+7 + from collections.abc import Mapping
+8 |
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/infrastructure/database/models/blast.py:3:1
+   |
+ 1 |   """BLAST 工具 ORM 模型"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import uuid
+ 6 | | from datetime import datetime
+ 7 | |
+ 8 | | from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+ 9 | | from sqlalchemy.dialects.postgresql import UUID
+10 | | from sqlalchemy.orm import Mapped, mapped_column
+11 | |
+12 | | from cygnusx.infrastructure.database.base import Base, TimestampMixin
+   | |_____________________________________________________________________^
+help: Organize imports
+   |
+7  |
+   - from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+8  + from sqlalchemy import (
+9  +     Boolean,
+10 +     DateTime,
+11 +     Float,
+12 +     ForeignKey,
+13 +     Index,
+14 +     Integer,
+15 +     String,
+16 +     Text,
+17 +     UniqueConstraint,
+18 + )
+19 | from sqlalchemy.dialects.postgresql import UUID
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/infrastructure/database/models/mas.py:3:1
+   |
+ 1 |   """Persistent models for multi-agent orchestration runs."""
+ 2 |
+ 3 | / import uuid
+ 4 | | from datetime import datetime
+ 5 | | from typing import Any
+ 6 | |
+ 7 | | from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+ 8 | | from sqlalchemy.dialects.postgresql import JSONB
+ 9 | | from sqlalchemy.dialects.postgresql import UUID
+10 | | from sqlalchemy.orm import Mapped, mapped_column
+11 | |
+12 | | from cygnusx.infrastructure.database.base import Base, TimestampMixin
+   | |_____________________________________________________________________^
+help: Organize imports
+   |
+6  |
+   - from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+   - from sqlalchemy.dialects.postgresql import JSONB
+   - from sqlalchemy.dialects.postgresql import UUID
+7  + from sqlalchemy import (
+8  +     BigInteger,
+9  +     DateTime,
+10 +     ForeignKey,
+11 +     Index,
+12 +     Integer,
+13 +     String,
+14 +     Text,
+15 +     UniqueConstraint,
+16 + )
+17 + from sqlalchemy.dialects.postgresql import JSONB, UUID
+18 | from sqlalchemy.orm import Mapped, mapped_column
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/infrastructure/database/models/mas_room.py:8:1
+   |
+ 6 |   """
+ 7 |
+ 8 | / import uuid
+ 9 | | from datetime import datetime
+10 | | from typing import Any
+11 | |
+12 | | from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, func
+13 | | from sqlalchemy.dialects.postgresql import JSONB
+14 | | from sqlalchemy.dialects.postgresql import UUID
+15 | | from sqlalchemy.orm import Mapped, mapped_column
+16 | |
+17 | | from cygnusx.infrastructure.database.base import Base, TimestampMixin
+   | |_____________________________________________________________________^
+help: Organize imports
+   |
+12 | from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, func
+   - from sqlalchemy.dialects.postgresql import JSONB
+   - from sqlalchemy.dialects.postgresql import UUID
+13 + from sqlalchemy.dialects.postgresql import JSONB, UUID
+14 | from sqlalchemy.orm import Mapped, mapped_column
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/infrastructure/database/models/mcp_builder.py:6:1
+   |
+ 4 |   """
+ 5 |
+ 6 | / import uuid
+ 7 | | from datetime import datetime
+ 8 | | from typing import Any
+ 9 | |
+10 | | from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+11 | | from sqlalchemy.dialects.postgresql import UUID as PGUUID
+12 | | from sqlalchemy.orm import Mapped, mapped_column
+13 | |
+14 | | from cygnusx.infrastructure.database.base import Base, TimestampMixin
+   | |_____________________________________________________________________^
+help: Organize imports
+   |
+9  |
+   - from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+10 + from sqlalchemy import (
+11 +     JSON,
+12 +     Boolean,
+13 +     DateTime,
+14 +     ForeignKey,
+15 +     Index,
+16 +     Integer,
+17 +     String,
+18 +     Text,
+19 +     UniqueConstraint,
+20 + )
+21 | from sqlalchemy.dialects.postgresql import UUID as PGUUID
+   |
+
+SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+  --> src/cygnusx/infrastructure/database/retry.py:39:13
+   |
+37 |               if attempt + 1 >= attempts or not _is_connection_closed(exc):
+38 |                   raise
+39 | /             try:
+40 | |                 await session.rollback()
+41 | |             except Exception:  # noqa: BLE001 - the connection is already dead
+42 | |                 pass
+   | |____________________^
+43 |       raise RuntimeError("unreachable")
+   |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`
+
+N818 Exception name `ProgressKeyTimeout` should be named with an Error suffix
+  --> src/cygnusx/infrastructure/download/progress_crypto.py:17:7
+   |
+17 | class ProgressKeyTimeout(TimeoutError):
+   |       ^^^^^^^^^^^^^^^^^^
+18 |     """progress.key 在超时时间内未出现"""
+   |
+
+ASYNC109 Async function definition with a `timeout` parameter
+  --> src/cygnusx/infrastructure/download/progress_crypto.py:59:50
+   |
+59 | async def load_progress_key_async(work_dir: str, timeout: float = 15.0) -> bytes:
+   |                                                  ^^^^^^^^^^^^^^^^^^^^^
+60 |     """异步版本的 load_progress_key，避免阻塞事件循环。"""
+61 |     return await asyncio.to_thread(load_progress_key, work_dir, timeout)
+   |
+help: Use `asyncio.timeout` instead
+
+F401 [*] `pathlib.Path` imported but unused
+ --> src/cygnusx/infrastructure/mas/rnaflow.py:5:21
+  |
+3 | from __future__ import annotations
+4 |
+5 | from pathlib import Path, PurePosixPath
+  |                     ^^^^
+6 | from uuid import UUID
+  |
+help: Remove unused import: `pathlib.Path`
+  |
+4 |
+  - from pathlib import Path, PurePosixPath
+5 + from pathlib import PurePosixPath
+6 | from uuid import UUID
+  |
+
+B905 `zip()` without an explicit `strict=` parameter
+  --> src/cygnusx/infrastructure/mas/volcano.py:66:27
+   |
+64 |         points = [(x, y) for x, y, point_group in processed if point_group == group]
+65 |         if points:
+66 |             axis.scatter(*zip(*points), s=10, alpha=0.65, c=colors[group], label=group)
+   |                           ^^^^^^^^^^^^
+67 |     axis.axhline(-math.log10(pvalue_cutoff), color="#6b7280", linestyle="--", linewidth=0.8)
+68 |     axis.axvline(log2fc_cutoff, color="#6b7280", linestyle="--", linewidth=0.8)
+   |
+help: Add explicit value for parameter `strict=`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/infrastructure/mcp/builder/__init__.py:14:1
+   |
+12 |   """
+13 |
+14 | / from .safety import SafetyReport, StaticSafetyChecker
+15 | | from .versioning import determine_version, is_valid_semver
+   | |__________________________________________________________^
+16 |
+17 |   # Lazy imports for modules with heavy dependencies
+   |
+help: Organize imports
+   |
+16 |
+17 +
+18 | # Lazy imports for modules with heavy dependencies
+   |
+
+F401 `.generator.GenerationResult` imported but unused
+  --> src/cygnusx/infrastructure/mcp/builder/__init__.py:21:32
+   |
+19 |     """Lazy import for generator and doc_generator modules."""
+20 |     if name in ("GenerationResult", "MCPCodeGenerator", "extract_python_code"):
+21 |         from .generator import GenerationResult, MCPCodeGenerator, extract_python_code
+   |                                ^^^^^^^^^^^^^^^^
+22 |         return locals()[name]
+23 |     elif name in ("generate_build_doc", "generate_architecture_doc"):
+   |
+help: Remove unused import
+
+F401 `.generator.MCPCodeGenerator` imported but unused
+  --> src/cygnusx/infrastructure/mcp/builder/__init__.py:21:50
+   |
+19 |     """Lazy import for generator and doc_generator modules."""
+20 |     if name in ("GenerationResult", "MCPCodeGenerator", "extract_python_code"):
+21 |         from .generator import GenerationResult, MCPCodeGenerator, extract_python_code
+   |                                                  ^^^^^^^^^^^^^^^^
+22 |         return locals()[name]
+23 |     elif name in ("generate_build_doc", "generate_architecture_doc"):
+   |
+help: Remove unused import
+
+F401 `.generator.extract_python_code` imported but unused
+  --> src/cygnusx/infrastructure/mcp/builder/__init__.py:21:68
+   |
+19 |     """Lazy import for generator and doc_generator modules."""
+20 |     if name in ("GenerationResult", "MCPCodeGenerator", "extract_python_code"):
+21 |         from .generator import GenerationResult, MCPCodeGenerator, extract_python_code
+   |                                                                    ^^^^^^^^^^^^^^^^^^^
+22 |         return locals()[name]
+23 |     elif name in ("generate_build_doc", "generate_architecture_doc"):
+   |
+help: Remove unused import
+
+F401 `.doc_generator.generate_architecture_doc` imported but unused
+  --> src/cygnusx/infrastructure/mcp/builder/__init__.py:24:36
+   |
+22 |         return locals()[name]
+23 |     elif name in ("generate_build_doc", "generate_architecture_doc"):
+24 |         from .doc_generator import generate_architecture_doc, generate_build_doc
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+25 |         return locals()[name]
+26 |     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+   |
+help: Remove unused import
+
+F401 `.doc_generator.generate_build_doc` imported but unused
+  --> src/cygnusx/infrastructure/mcp/builder/__init__.py:24:63
+   |
+22 |         return locals()[name]
+23 |     elif name in ("generate_build_doc", "generate_architecture_doc"):
+24 |         from .doc_generator import generate_architecture_doc, generate_build_doc
+   |                                                               ^^^^^^^^^^^^^^^^^^
+25 |         return locals()[name]
+26 |     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+   |
+help: Remove unused import
+
+B905 `zip()` without an explicit `strict=` parameter
+   --> src/cygnusx/infrastructure/mcp/builder/safety.py:471:36
+    |
+469 |             if not isinstance(value, (ast.Tuple, ast.List)):
+470 |                 return
+471 |             for target, element in zip(targets, value.elts):
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+472 |                 bind(target, element)
+    |
+help: Add explicit value for parameter `strict=`
+
+SIM114 [*] Combine `if` branches using logical `or` operator
+   --> src/cygnusx/infrastructure/mcp/builder/safety.py:482:13
+    |
+480 |                           node.value,
+481 |                       )
+482 | /             elif isinstance(node, ast.AnnAssign) and node.value is not None:
+483 | |                 bind(node.target, node.value)
+484 | |             elif isinstance(node, ast.NamedExpr):
+485 | |                 bind(node.target, node.value)
+    | |_____________________________________________^
+486 |               elif isinstance(node, (ast.For, ast.AsyncFor)) and isinstance(
+487 |                   node.target, ast.Name
+    |
+help: Combine `if` branches
+    |
+481 |                     )
+    -             elif isinstance(node, ast.AnnAssign) and node.value is not None:
+    -                 bind(node.target, node.value)
+    -             elif isinstance(node, ast.NamedExpr):
+482 +             elif isinstance(node, ast.AnnAssign) and node.value is not None or isinstance(node, ast.NamedExpr):
+483 |                 bind(node.target, node.value)
+    |
+
+ASYNC230 Async functions should not open files with blocking methods like `open`
+   --> src/cygnusx/infrastructure/mcp/presets.py:520:14
+    |
+518 |     lines: list[str] = []
+519 |     try:
+520 |         with open(target, errors="replace") as f:
+    |              ^^^^
+521 |             for i, line in enumerate(f):
+522 |                 if i >= max_lines:
+    |
+
+ASYNC230 Async functions should not open files with blocking methods like `open`
+    --> src/cygnusx/infrastructure/mcp/presets.py:1157:14
+     |
+1155 |     truncated = size > max_bytes
+1156 |     try:
+1157 |         with open(target, encoding="utf-8", errors="replace") as fh:
+     |              ^^^^
+1158 |             content = fh.read(max_bytes)
+1159 |     except OSError as e:
+     |
+
+N806 Variable `BASE_URL` in function should be lowercase
+    --> src/cygnusx/infrastructure/mcp/presets.py:1611:5
+     |
+1609 |     import httpx
+1610 |
+1611 |     BASE_URL = "https://seqout.org/api"
+     |     ^^^^^^^^
+1612 |
+1613 |     def _parse_search_response(data: dict | list, limit: int = 5) -> list[dict]:
+     |
+
+SIM108 Use ternary operator `raw_items = data.get("results", data.get("hits", data)) if isinstance(data, dict) else data` instead of `if`-`else`-block
+    --> src/cygnusx/infrastructure/mcp/presets.py:1615:9
+     |
+1613 |       def _parse_search_response(data: dict | list, limit: int = 5) -> list[dict]:
+1614 |           """解析搜索结果"""
+1615 | /         if isinstance(data, dict):
+1616 | |             raw_items = data.get("results", data.get("hits", data))
+1617 | |         else:
+1618 | |             raw_items = data
+     | |____________________________^
+1619 |
+1620 |           if not isinstance(raw_items, list):
+     |
+help: Replace `if`-`else`-block with `raw_items = data.get("results", data.get("hits", data)) if isinstance(data, dict) else data`
+
+SIM108 Use ternary operator `samples_list = data.get("samples", data.get("data", [])) if isinstance(data, dict) else data` instead of `if`-`else`-block
+    --> src/cygnusx/infrastructure/mcp/presets.py:1637:9
+     |
+1635 |       def _parse_samples_response(data: dict | list, limit: int = 30) -> list[dict]:
+1636 |           """解析样本清单"""
+1637 | /         if isinstance(data, dict):
+1638 | |             samples_list = data.get("samples", data.get("data", []))
+1639 | |         else:
+1640 | |             samples_list = data
+     | |_______________________________^
+1641 |
+1642 |           if not isinstance(samples_list, list):
+     |
+help: Replace `if`-`else`-block with `samples_list = data.get("samples", data.get("data", [])) if isinstance(data, dict) else data`
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1667:1
+     |
+1665 |                 response = await client.get(f"{BASE_URL}{endpoint}", params=params)
+1666 |                 response.raise_for_status()
+1667 |                 
+     | ^^^^^^^^^^^^^^^^
+1668 |                 content_type = response.headers.get("content-type", "").lower()
+1669 |                 if "text/html" in content_type:
+     |
+help: Remove whitespace from blank line
+     |
+1666 |                 response.raise_for_status()
+     -                 
+1667 +
+1668 |                 content_type = response.headers.get("content-type", "").lower()
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1671:1
+     |
+1669 |                 if "text/html" in content_type:
+1670 |                     raise Exception(f"服务端返回 HTML 页面：{response.text[:200]}")
+1671 |                 
+     | ^^^^^^^^^^^^^^^^
+1672 |                 return response.json()
+1673 |             except httpx.HTTPStatusError as e:
+     |
+help: Remove whitespace from blank line
+     |
+1670 |                     raise Exception(f"服务端返回 HTML 页面：{response.text[:200]}")
+     -                 
+1671 +
+1672 |                 return response.json()
+     |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    --> src/cygnusx/infrastructure/mcp/presets.py:1675:21
+     |
+1673 |             except httpx.HTTPStatusError as e:
+1674 |                 if e.response.status_code == 429:
+1675 |                     raise Exception("触发速率限制 (Rate Limit)，请稍后重试")
+     |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1676 |                 raise Exception(f"Seqout API 错误 {e.response.status_code}: {e.response.text[:200]}")
+1677 |             except httpx.TimeoutException:
+     |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    --> src/cygnusx/infrastructure/mcp/presets.py:1676:17
+     |
+1674 |                 if e.response.status_code == 429:
+1675 |                     raise Exception("触发速率限制 (Rate Limit)，请稍后重试")
+1676 |                 raise Exception(f"Seqout API 错误 {e.response.status_code}: {e.response.text[:200]}")
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1677 |             except httpx.TimeoutException:
+1678 |                 raise Exception("请求超时")
+     |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    --> src/cygnusx/infrastructure/mcp/presets.py:1678:17
+     |
+1676 |                 raise Exception(f"Seqout API 错误 {e.response.status_code}: {e.response.text[:200]}")
+1677 |             except httpx.TimeoutException:
+1678 |                 raise Exception("请求超时")
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1679 |             except json.JSONDecodeError:
+1680 |                 raise Exception("响应解析失败：非 JSON 格式")
+     |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    --> src/cygnusx/infrastructure/mcp/presets.py:1680:17
+     |
+1678 |                 raise Exception("请求超时")
+1679 |             except json.JSONDecodeError:
+1680 |                 raise Exception("响应解析失败：非 JSON 格式")
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1681 |
+1682 |     try:
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1686:1
+     |
+1684 | …         data = await _seqout_request("/search", {"q": arguments.get("query", ""), "limit": arguments.get("limit", 5)})
+1685 | …         return {"success": True, "data": _parse_search_response(data, arguments.get("limit", 5))}
+1686 | …     
+     ^^^^^^^^
+1687 | …     elif tool_name == "seqout_search_geo":
+1688 | …         data = await _seqout_request("/search", {"database": "geo", "q": arguments.get("query", ""), "limit": arguments.get("limit…
+     |
+help: Remove whitespace from blank line
+     |
+1685 |             return {"success": True, "data": _parse_search_response(data, arguments.get("limit", 5))}
+     -         
+1686 +
+1687 |         elif tool_name == "seqout_search_geo":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1690:1
+     |
+1688 | …         data = await _seqout_request("/search", {"database": "geo", "q": arguments.get("query", ""), "limit": arguments.get("limit…
+1689 | …         return {"success": True, "data": _parse_search_response(data, arguments.get("limit", 5))}
+1690 | …     
+     ^^^^^^^^
+1691 | …     elif tool_name == "seqout_search_sra":
+1692 | …         data = await _seqout_request("/search", {"database": "sra", "q": arguments.get("query", ""), "limit": arguments.get("limit…
+     |
+help: Remove whitespace from blank line
+     |
+1689 |             return {"success": True, "data": _parse_search_response(data, arguments.get("limit", 5))}
+     -         
+1690 +
+1691 |         elif tool_name == "seqout_search_sra":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1694:1
+     |
+1692 | …         data = await _seqout_request("/search", {"database": "sra", "q": arguments.get("query", ""), "limit": arguments.get("limit…
+1693 | …         return {"success": True, "data": _parse_search_response(data, arguments.get("limit", 5))}
+1694 | …     
+     ^^^^^^^^
+1695 | …     elif tool_name == "seqout_search_structured":
+1696 | …         params = {}
+     |
+help: Remove whitespace from blank line
+     |
+1693 |             return {"success": True, "data": _parse_search_response(data, arguments.get("limit", 5))}
+     -         
+1694 +
+1695 |         elif tool_name == "seqout_search_structured":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1704:1
+     |
+1702 |             data = await _seqout_request("/search/structured", params)
+1703 |             return {"success": True, "data": _parse_search_response(data, arguments.get("limit", 5))}
+1704 |         
+     | ^^^^^^^^
+1705 |         elif tool_name == "seqout_get_project_detail":
+1706 |             data = await _seqout_request(f"/project/{arguments.get('accession', '')}")
+     |
+help: Remove whitespace from blank line
+     |
+1703 |             return {"success": True, "data": _parse_search_response(data, arguments.get("limit", 5))}
+     -         
+1704 +
+1705 |         elif tool_name == "seqout_get_project_detail":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1708:1
+     |
+1706 |             data = await _seqout_request(f"/project/{arguments.get('accession', '')}")
+1707 |             return {"success": True, "data": data}
+1708 |         
+     | ^^^^^^^^
+1709 |         elif tool_name == "seqout_get_project_metadata":
+1710 |             data = await _seqout_request(f"/project/{arguments.get('accession', '')}/metadata")
+     |
+help: Remove whitespace from blank line
+     |
+1707 |             return {"success": True, "data": data}
+     -         
+1708 +
+1709 |         elif tool_name == "seqout_get_project_metadata":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1712:1
+     |
+1710 |             data = await _seqout_request(f"/project/{arguments.get('accession', '')}/metadata")
+1711 |             return {"success": True, "data": data}
+1712 |         
+     | ^^^^^^^^
+1713 |         elif tool_name == "seqout_get_project_citation":
+1714 |             data = await _seqout_request(f"/project/{arguments.get('accession', '')}/citation")
+     |
+help: Remove whitespace from blank line
+     |
+1711 |             return {"success": True, "data": data}
+     -         
+1712 +
+1713 |         elif tool_name == "seqout_get_project_citation":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1716:1
+     |
+1714 |             data = await _seqout_request(f"/project/{arguments.get('accession', '')}/citation")
+1715 |             return {"success": True, "data": data}
+1716 |         
+     | ^^^^^^^^
+1717 |         elif tool_name == "seqout_get_project_enriched":
+1718 |             data = await _seqout_request(f"/project/{arguments.get('accession', '')}/enriched")
+     |
+help: Remove whitespace from blank line
+     |
+1715 |             return {"success": True, "data": data}
+     -         
+1716 +
+1717 |         elif tool_name == "seqout_get_project_enriched":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1720:1
+     |
+1718 |             data = await _seqout_request(f"/project/{arguments.get('accession', '')}/enriched")
+1719 |             return {"success": True, "data": data}
+1720 |         
+     | ^^^^^^^^
+1721 |         elif tool_name == "seqout_get_experiments":
+1722 |             data = await _seqout_request(f"/study/{arguments.get('study_accession', '')}/experiments")
+     |
+help: Remove whitespace from blank line
+     |
+1719 |             return {"success": True, "data": data}
+     -         
+1720 +
+1721 |         elif tool_name == "seqout_get_experiments":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1724:1
+     |
+1722 |             data = await _seqout_request(f"/study/{arguments.get('study_accession', '')}/experiments")
+1723 |             return {"success": True, "data": data}
+1724 |         
+     | ^^^^^^^^
+1725 |         elif tool_name == "seqout_get_runs":
+1726 |             data = await _seqout_request(f"/study/{arguments.get('study_accession', '')}/runs")
+     |
+help: Remove whitespace from blank line
+     |
+1723 |             return {"success": True, "data": data}
+     -         
+1724 +
+1725 |         elif tool_name == "seqout_get_runs":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1728:1
+     |
+1726 |             data = await _seqout_request(f"/study/{arguments.get('study_accession', '')}/runs")
+1727 |             return {"success": True, "data": data}
+1728 |         
+     | ^^^^^^^^
+1729 |         elif tool_name == "seqout_get_run_download":
+1730 |             data = await _seqout_request(f"/run/{arguments.get('run_accession', '')}/download")
+     |
+help: Remove whitespace from blank line
+     |
+1727 |             return {"success": True, "data": data}
+     -         
+1728 +
+1729 |         elif tool_name == "seqout_get_run_download":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1732:1
+     |
+1730 |             data = await _seqout_request(f"/run/{arguments.get('run_accession', '')}/download")
+1731 |             return {"success": True, "data": data}
+1732 |         
+     | ^^^^^^^^
+1733 |         elif tool_name == "seqout_get_sample_metadata":
+1734 |             data = await _seqout_request(f"/sample/{arguments.get('accession', '')}/metadata")
+     |
+help: Remove whitespace from blank line
+     |
+1731 |             return {"success": True, "data": data}
+     -         
+1732 +
+1733 |         elif tool_name == "seqout_get_sample_metadata":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1736:1
+     |
+1734 |             data = await _seqout_request(f"/sample/{arguments.get('accession', '')}/metadata")
+1735 |             return {"success": True, "data": data}
+1736 |         
+     | ^^^^^^^^
+1737 |         elif tool_name == "seqout_get_sample_detail":
+1738 |             data = await _seqout_request(f"/sample/{arguments.get('accession', '')}")
+     |
+help: Remove whitespace from blank line
+     |
+1735 |             return {"success": True, "data": data}
+     -         
+1736 +
+1737 |         elif tool_name == "seqout_get_sample_detail":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1740:1
+     |
+1738 |             data = await _seqout_request(f"/sample/{arguments.get('accession', '')}")
+1739 |             return {"success": True, "data": data}
+1740 |         
+     | ^^^^^^^^
+1741 |         elif tool_name == "seqout_get_sample_manifest":
+1742 |             data = await _seqout_request(f"/geo/{arguments.get('accession', '')}/samples", 
+     |
+help: Remove whitespace from blank line
+     |
+1739 |             return {"success": True, "data": data}
+     -         
+1740 +
+1741 |         elif tool_name == "seqout_get_sample_manifest":
+     |
+
+W291 [*] Trailing whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1742:91
+     |
+1741 |         elif tool_name == "seqout_get_sample_manifest":
+1742 |             data = await _seqout_request(f"/geo/{arguments.get('accession', '')}/samples", 
+     |                                                                                           ^
+1743 |                                          {"max_samples": arguments.get("max_samples", 30)})
+1744 |             return {"success": True, "data": _parse_samples_response(data, arguments.get("max_samples", 30))}
+     |
+help: Remove trailing whitespace
+     |
+1741 |         elif tool_name == "seqout_get_sample_manifest":
+     -             data = await _seqout_request(f"/geo/{arguments.get('accession', '')}/samples", 
+1742 +             data = await _seqout_request(f"/geo/{arguments.get('accession', '')}/samples",
+1743 |                                          {"max_samples": arguments.get("max_samples", 30)})
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1745:1
+     |
+1743 |                                          {"max_samples": arguments.get("max_samples", 30)})
+1744 |             return {"success": True, "data": _parse_samples_response(data, arguments.get("max_samples", 30))}
+1745 |         
+     | ^^^^^^^^
+1746 |         elif tool_name == "seqout_resolve_accession":
+1747 |             data = await _seqout_request(f"/resolve/{arguments.get('accession', '')}")
+     |
+help: Remove whitespace from blank line
+     |
+1744 |             return {"success": True, "data": _parse_samples_response(data, arguments.get("max_samples", 30))}
+     -         
+1745 +
+1746 |         elif tool_name == "seqout_resolve_accession":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1749:1
+     |
+1747 |             data = await _seqout_request(f"/resolve/{arguments.get('accession', '')}")
+1748 |             return {"success": True, "data": data}
+1749 |         
+     | ^^^^^^^^
+1750 |         elif tool_name == "seqout_resolve_prj":
+1751 |             data = await _seqout_request(f"/resolve/prj/{arguments.get('prj_accession', '')}")
+     |
+help: Remove whitespace from blank line
+     |
+1748 |             return {"success": True, "data": data}
+     -         
+1749 +
+1750 |         elif tool_name == "seqout_resolve_prj":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1753:1
+     |
+1751 |             data = await _seqout_request(f"/resolve/prj/{arguments.get('prj_accession', '')}")
+1752 |             return {"success": True, "data": data}
+1753 |         
+     | ^^^^^^^^
+1754 |         elif tool_name == "seqout_get_ontology_term":
+1755 |             data = await _seqout_request(f"/ontology/{arguments.get('term', '')}")
+     |
+help: Remove whitespace from blank line
+     |
+1752 |             return {"success": True, "data": data}
+     -         
+1753 +
+1754 |         elif tool_name == "seqout_get_ontology_term":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1757:1
+     |
+1755 |             data = await _seqout_request(f"/ontology/{arguments.get('term', '')}")
+1756 |             return {"success": True, "data": data}
+1757 |         
+     | ^^^^^^^^
+1758 |         elif tool_name == "seqout_get_organisms":
+1759 |             data = await _seqout_request("/organisms")
+     |
+help: Remove whitespace from blank line
+     |
+1756 |             return {"success": True, "data": data}
+     -         
+1757 +
+1758 |         elif tool_name == "seqout_get_organisms":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1761:1
+     |
+1759 |             data = await _seqout_request("/organisms")
+1760 |             return {"success": True, "data": data}
+1761 |         
+     | ^^^^^^^^
+1762 |         elif tool_name == "seqout_get_common_name":
+1763 |             data = await _seqout_request(f"/organism/{arguments.get('organism_id', '')}/common-name")
+     |
+help: Remove whitespace from blank line
+     |
+1760 |             return {"success": True, "data": data}
+     -         
+1761 +
+1762 |         elif tool_name == "seqout_get_common_name":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1765:1
+     |
+1763 |             data = await _seqout_request(f"/organism/{arguments.get('organism_id', '')}/common-name")
+1764 |             return {"success": True, "data": data}
+1765 |         
+     | ^^^^^^^^
+1766 |         elif tool_name == "seqout_beacon_info":
+1767 |             data = await _seqout_request("/beacon/info")
+     |
+help: Remove whitespace from blank line
+     |
+1764 |             return {"success": True, "data": data}
+     -         
+1765 +
+1766 |         elif tool_name == "seqout_beacon_info":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1769:1
+     |
+1767 |             data = await _seqout_request("/beacon/info")
+1768 |             return {"success": True, "data": data}
+1769 |         
+     | ^^^^^^^^
+1770 |         elif tool_name == "seqout_beacon_runs":
+1771 |             data = await _seqout_request("/beacon/runs")
+     |
+help: Remove whitespace from blank line
+     |
+1768 |             return {"success": True, "data": data}
+     -         
+1769 +
+1770 |         elif tool_name == "seqout_beacon_runs":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1773:1
+     |
+1771 |             data = await _seqout_request("/beacon/runs")
+1772 |             return {"success": True, "data": data}
+1773 |         
+     | ^^^^^^^^
+1774 |         elif tool_name == "seqout_get_stats_growth":
+1775 |             data = await _seqout_request("/stats/growth")
+     |
+help: Remove whitespace from blank line
+     |
+1772 |             return {"success": True, "data": data}
+     -         
+1773 +
+1774 |         elif tool_name == "seqout_get_stats_growth":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1777:1
+     |
+1775 |             data = await _seqout_request("/stats/growth")
+1776 |             return {"success": True, "data": data}
+1777 |         
+     | ^^^^^^^^
+1778 |         elif tool_name == "seqout_get_organism_totals":
+1779 |             data = await _seqout_request("/stats/organism-totals")
+     |
+help: Remove whitespace from blank line
+     |
+1776 |             return {"success": True, "data": data}
+     -         
+1777 +
+1778 |         elif tool_name == "seqout_get_organism_totals":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1781:1
+     |
+1779 |             data = await _seqout_request("/stats/organism-totals")
+1780 |             return {"success": True, "data": data}
+1781 |         
+     | ^^^^^^^^
+1782 |         elif tool_name == "seqout_get_platform_totals":
+1783 |             data = await _seqout_request("/stats/platform-totals")
+     |
+help: Remove whitespace from blank line
+     |
+1780 |             return {"success": True, "data": data}
+     -         
+1781 +
+1782 |         elif tool_name == "seqout_get_platform_totals":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1785:1
+     |
+1783 |             data = await _seqout_request("/stats/platform-totals")
+1784 |             return {"success": True, "data": data}
+1785 |         
+     | ^^^^^^^^
+1786 |         elif tool_name == "seqout_get_download_links":
+1787 |             data = await _seqout_request("/download-links")
+     |
+help: Remove whitespace from blank line
+     |
+1784 |             return {"success": True, "data": data}
+     -         
+1785 +
+1786 |         elif tool_name == "seqout_get_download_links":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1789:1
+     |
+1787 |             data = await _seqout_request("/download-links")
+1788 |             return {"success": True, "data": data}
+1789 |         
+     | ^^^^^^^^
+1790 |         elif tool_name == "seqout_get_metadata_csv":
+1791 |             data = await _seqout_request("/metadata-csv")
+     |
+help: Remove whitespace from blank line
+     |
+1788 |             return {"success": True, "data": data}
+     -         
+1789 +
+1790 |         elif tool_name == "seqout_get_metadata_csv":
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1793:1
+     |
+1791 |             data = await _seqout_request("/metadata-csv")
+1792 |             return {"success": True, "data": data}
+1793 |         
+     | ^^^^^^^^
+1794 |         else:
+1795 |             return {"success": False, "error": f"未知工具：{tool_name}"}
+     |
+help: Remove whitespace from blank line
+     |
+1792 |             return {"success": True, "data": data}
+     -         
+1793 +
+1794 |         else:
+     |
+
+W293 [*] Blank line contains whitespace
+    --> src/cygnusx/infrastructure/mcp/presets.py:1796:1
+     |
+1794 |         else:
+1795 |             return {"success": False, "error": f"未知工具：{tool_name}"}
+1796 |     
+     | ^^^^
+1797 |     except Exception as e:
+1798 |         return {"success": False, "error": str(e)}
+     |
+help: Remove whitespace from blank line
+     |
+1795 |             return {"success": False, "error": f"未知工具：{tool_name}"}
+     -     
+1796 +
+1797 |     except Exception as e:
+     |
+
+UP037 [*] Remove quotes from type annotation
+  --> src/cygnusx/infrastructure/skills/skillmd.py:93:47
+   |
+92 |     @classmethod
+93 |     def from_preview_dict(cls, data: dict) -> "ParsedSkill":
+   |                                               ^^^^^^^^^^^^^
+94 |         files = [
+95 |             SkillFileEntry(
+   |
+help: Remove quotes
+   |
+92 |     @classmethod
+   -     def from_preview_dict(cls, data: dict) -> "ParsedSkill":
+93 +     def from_preview_dict(cls, data: dict) -> ParsedSkill:
+94 |         files = [
+   |
+
+F401 [*] `typing.Any` imported but unused
+  --> src/cygnusx/infrastructure/storage/scratch_volume.py:25:20
+   |
+23 | from dataclasses import dataclass
+24 | from pathlib import Path
+25 | from typing import Any
+   |                    ^^^
+26 | from uuid import UUID
+   |
+help: Remove unused import: `typing.Any`
+   |
+24 | from pathlib import Path
+   - from typing import Any
+25 | from uuid import UUID
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/infrastructure/studio/audit.py:7:1
+   |
+ 5 |   """
+ 6 |
+ 7 | / from __future__ import annotations
+ 8 | |
+ 9 | | from typing import Any
+10 | |
+11 | | from loguru import logger
+   | |_________________________^
+help: Organize imports
+   |
+12 |
+   -
+13 | _SANDBOX_EVENTS = {
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/infrastructure/studio/manager.py:902:13
+    |
+900 |               # 先标记再执行：即使过程异常也保证同一容器生命周期不重复还原。
+901 |               self._env_restore_done[session_id] = handle.container_id
+902 | /             from cygnusx.application.services.workspace_env_restore_service import (
+903 | |                 EnvRestoreResult,
+904 | |                 RESTORE_SKIP_RESEARCH_MODE_OFF,
+905 | |                 build_restore_script,
+906 | |                 detect_restore_file,
+907 | |                 latest_missing_env_snapshot,
+908 | |                 research_restore_gate_enabled,
+909 | |                 restore_timeout_seconds,
+910 | |                 summarize_failure,
+911 | |                 write_restore_audit,
+912 | |             )
+    | |_____________^
+913 |
+914 |               log = logger.bind(session_id=session_id, component="workspace_env_restore")
+    |
+help: Organize imports
+    |
+902 |             from cygnusx.application.services.workspace_env_restore_service import (
+903 +                 RESTORE_SKIP_RESEARCH_MODE_OFF,
+904 |                 EnvRestoreResult,
+    -                 RESTORE_SKIP_RESEARCH_MODE_OFF,
+905 |                 build_restore_script,
+    |
+
+ASYNC109 Async function definition with a `timeout` parameter
+    --> src/cygnusx/infrastructure/studio/manager.py:1334:9
+     |
+1332 |     async def browser_navigate(
+1333 |         self, session_id: str, url: str, wait_until: str = "domcontentloaded",
+1334 |         timeout: int = 30, image: str | None = None, user_id: str | None = None,
+     |         ^^^^^^^^^^^^^^^^^
+1335 |     ) -> dict[str, Any]:
+1336 |         return await self._agent_call(
+     |
+help: Use `asyncio.timeout` instead
+
+ASYNC109 Async function definition with a `timeout` parameter
+    --> src/cygnusx/infrastructure/studio/manager.py:1344:54
+     |
+1342 |     async def browser_screenshot(
+1343 |         self, session_id: str, path: str = "output/browser-screenshot.png",
+1344 |         selector: str = "", full_page: bool = False, timeout: int = 30,
+     |                                                      ^^^^^^^^^^^^^^^^^
+1345 |         image: str | None = None, user_id: str | None = None,
+1346 |     ) -> dict[str, Any]:
+     |
+help: Use `asyncio.timeout` instead
+
+ASYNC109 Async function definition with a `timeout` parameter
+    --> src/cygnusx/infrastructure/studio/manager.py:1355:9
+     |
+1353 |     async def browser_click(
+1354 |         self, session_id: str, selector: str, button: str = "left", click_count: int = 1,
+1355 |         timeout: int = 30, image: str | None = None, user_id: str | None = None,
+     |         ^^^^^^^^^^^^^^^^^
+1356 |     ) -> dict[str, Any]:
+1357 |         return await self._agent_call(
+     |
+help: Use `asyncio.timeout` instead
+
+ASYNC109 Async function definition with a `timeout` parameter
+    --> src/cygnusx/infrastructure/studio/manager.py:1365:9
+     |
+1363 |     async def browser_type(
+1364 |         self, session_id: str, selector: str, text: str, clear: bool = True,
+1365 |         timeout: int = 30, image: str | None = None, user_id: str | None = None,
+     |         ^^^^^^^^^^^^^^^^^
+1366 |     ) -> dict[str, Any]:
+1367 |         return await self._agent_call(
+     |
+help: Use `asyncio.timeout` instead
+
+ASYNC109 Async function definition with a `timeout` parameter
+    --> src/cygnusx/infrastructure/studio/manager.py:1374:57
+     |
+1373 |     async def browser_press(
+1374 |         self, session_id: str, selector: str, key: str, timeout: int = 30,
+     |                                                         ^^^^^^^^^^^^^^^^^
+1375 |         image: str | None = None, user_id: str | None = None,
+1376 |     ) -> dict[str, Any]:
+     |
+help: Use `asyncio.timeout` instead
+
+ASYNC109 Async function definition with a `timeout` parameter
+    --> src/cygnusx/infrastructure/studio/manager.py:1415:9
+     |
+1413 |         path: str,
+1414 |         server_id: str | None = None,
+1415 |         timeout: int | None = None,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1416 |         image: str | None = None,
+1417 |         user_id: str | None = None,
+     |
+help: Use `asyncio.timeout` instead
+
+ASYNC109 Async function definition with a `timeout` parameter
+    --> src/cygnusx/infrastructure/studio/manager.py:1480:9
+     |
+1478 |         tool: str,
+1479 |         arguments: dict[str, Any] | None = None,
+1480 |         timeout: int | None = None,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1481 |         image: str | None = None,
+1482 |         user_id: str | None = None,
+     |
+help: Use `asyncio.timeout` instead
+
+F401 [*] `typing.Annotated` imported but unused
+  --> src/cygnusx/reference_genomes/api.py:12:20
+   |
+10 | from __future__ import annotations
+11 |
+12 | from typing import Annotated
+   |                    ^^^^^^^^^
+13 |
+14 | from fastapi import APIRouter, Depends, Query
+   |
+help: Remove unused import: `typing.Annotated`
+   |
+11 |
+   - from typing import Annotated
+12 |
+   |
+
+F401 [*] `fastapi.Depends` imported but unused
+  --> src/cygnusx/reference_genomes/api.py:14:32
+   |
+12 | from typing import Annotated
+13 |
+14 | from fastapi import APIRouter, Depends, Query
+   |                                ^^^^^^^
+15 | from fastapi.responses import PlainTextResponse
+   |
+help: Remove unused import: `fastapi.Depends`
+   |
+13 |
+   - from fastapi import APIRouter, Depends, Query
+14 + from fastapi import APIRouter, Query
+15 | from fastapi.responses import PlainTextResponse
+   |
+
+F401 [*] `cygnusx.reference_genomes.config.SpeciesConfig` imported but unused
+  --> src/cygnusx/reference_genomes/indexer.py:51:5
+   |
+49 | from cygnusx.reference_genomes.config import (
+50 |     ConfigManager,
+51 |     SpeciesConfig,
+   |     ^^^^^^^^^^^^^
+52 |     VersionConfig,
+53 |     gene_index_path,
+   |
+help: Remove unused import: `cygnusx.reference_genomes.config.SpeciesConfig`
+   |
+50 |     ConfigManager,
+   -     SpeciesConfig,
+51 |     VersionConfig,
+   |
+
+UP015 [*] Unnecessary mode argument
+   --> src/cygnusx/reference_genomes/indexer.py:276:24
+    |
+274 |         inner = zf.open(zf.namelist()[0], "r")
+275 |         return io.TextIOWrapper(inner, encoding="utf-8")
+276 |     return open(fpath, "rt", encoding="utf-8")
+    |                        ^^^^
+help: Remove mode argument
+    |
+275 |         return io.TextIOWrapper(inner, encoding="utf-8")
+    -     return open(fpath, "rt", encoding="utf-8")
+276 +     return open(fpath, encoding="utf-8")
+277 |
+    |
+
+UP015 [*] Unnecessary mode argument
+   --> src/cygnusx/reference_genomes/indexer.py:316:25
+    |
+314 |     feature_map: dict[str, dict[str, list[tuple[int, int]]]] = {}
+315 |
+316 |     with open(gff_path, "r", encoding="utf-8") as f:
+    |                         ^^^
+317 |         for line in f:
+318 |             if line.startswith("#") or not line.strip():
+    |
+help: Remove mode argument
+    |
+315 |
+    -     with open(gff_path, "r", encoding="utf-8") as f:
+316 +     with open(gff_path, encoding="utf-8") as f:
+317 |         for line in f:
+    |
+
+UP015 [*] Unnecessary mode argument
+   --> src/cygnusx/reference_genomes/indexer.py:445:22
+    |
+443 |     annotations: dict[str, str] = {}
+444 |
+445 |     with open(fpath, "r", encoding="utf-8") as f:
+    |                      ^^^
+446 |         header = f.readline()  # skip header
+447 |         for line in f:
+    |
+help: Remove mode argument
+    |
+444 |
+    -     with open(fpath, "r", encoding="utf-8") as f:
+445 +     with open(fpath, encoding="utf-8") as f:
+446 |         header = f.readline()  # skip header
+    |
+
+F841 Local variable `header` is assigned to but never used
+   --> src/cygnusx/reference_genomes/indexer.py:446:9
+    |
+445 |     with open(fpath, "r", encoding="utf-8") as f:
+446 |         header = f.readline()  # skip header
+    |         ^^^^^^
+447 |         for line in f:
+448 |             line = line.rstrip("\n\r")
+    |
+help: Remove assignment to unused variable `header`
+
+SIM114 [*] Combine `if` branches using logical `or` operator
+   --> src/cygnusx/reference_genomes/indexer.py:468:13
+    |
+466 |                   continue
+467 |
+468 | /             if gene_id not in annotations:
+469 | |                 annotations[gene_id] = best
+470 | |             # 同基因多个模型时，如果当前没 curator 但新的有，升级
+471 | |             elif curator and not annotations[gene_id]:
+472 | |                 annotations[gene_id] = best
+    | |___________________________________________^
+473 |
+474 |       # UPDATE genes SET annotation=? WHERE rowid=?
+    |
+help: Combine `if` branches
+    |
+467 |
+    -             if gene_id not in annotations:
+    -                 annotations[gene_id] = best
+    -             # 同基因多个模型时，如果当前没 curator 但新的有，升级
+    -             elif curator and not annotations[gene_id]:
+468 +             if gene_id not in annotations or curator and not annotations[gene_id]:
+469 |                 annotations[gene_id] = best
+    |
+
+UP015 [*] Unnecessary mode argument
+   --> src/cygnusx/reference_genomes/indexer.py:510:22
+    |
+508 |     updates: list[tuple[str, str]] = []  # (symbol, gene_id)
+509 |
+510 |     with open(fpath, "r", encoding="utf-8") as f:
+    |                      ^^^
+511 |         for line in f:
+512 |             line = line.rstrip("\n\r")
+    |
+help: Remove mode argument
+    |
+509 |
+    -     with open(fpath, "r", encoding="utf-8") as f:
+510 +     with open(fpath, encoding="utf-8") as f:
+511 |         for line in f:
+    |
+
+UP015 [*] Unnecessary mode argument
+   --> src/cygnusx/reference_genomes/indexer.py:649:22
+    |
+647 |     count = 0
+648 |
+649 |     with open(fpath, "r", encoding="utf-8") as f:
+    |                      ^^^
+650 |         in_term = False
+651 |         term_id = ""
+    |
+help: Remove mode argument
+    |
+648 |
+    -     with open(fpath, "r", encoding="utf-8") as f:
+649 +     with open(fpath, encoding="utf-8") as f:
+650 |         in_term = False
+    |
+
+UP015 [*] Unnecessary mode argument
+   --> src/cygnusx/reference_genomes/indexer.py:810:22
+    |
+808 |     ko_set: set[str] = set()
+809 |
+810 |     with open(fpath, "r", encoding="utf-8") as f:
+    |                      ^^^
+811 |         for line in f:
+812 |             line = line.rstrip("\n\r")
+    |
+help: Remove mode argument
+    |
+809 |
+    -     with open(fpath, "r", encoding="utf-8") as f:
+810 +     with open(fpath, encoding="utf-8") as f:
+811 |         for line in f:
+    |
+
+UP015 [*] Unnecessary mode argument
+   --> src/cygnusx/reference_genomes/indexer.py:851:22
+    |
+849 |     rows: list[tuple[str, str, str]] = []
+850 |
+851 |     with open(fpath, "r", encoding="utf-8") as f:
+    |                      ^^^
+852 |         for line in f:
+853 |             line = line.rstrip("\n\r")
+    |
+help: Remove mode argument
+    |
+850 |
+    -     with open(fpath, "r", encoding="utf-8") as f:
+851 +     with open(fpath, encoding="utf-8") as f:
+852 |         for line in f:
+    |
+
+UP015 [*] Unnecessary mode argument
+   --> src/cygnusx/reference_genomes/indexer.py:885:22
+    |
+883 |     rows: list[tuple[str, str]] = []
+884 |
+885 |     with open(fpath, "r", encoding="utf-8") as f:
+    |                      ^^^
+886 |         for line in f:
+887 |             line = line.rstrip("\n\r")
+    |
+help: Remove mode argument
+    |
+884 |
+    -     with open(fpath, "r", encoding="utf-8") as f:
+885 +     with open(fpath, encoding="utf-8") as f:
+886 |         for line in f:
+    |
+
+UP017 [*] Use `datetime.UTC` alias
+    --> src/cygnusx/reference_genomes/indexer.py:1048:24
+     |
+1046 |     ).fetchone()[0]
+1047 |
+1048 |     now = datetime.now(timezone.utc).isoformat()
+     |                        ^^^^^^^^^^^^
+1049 |
+1050 |     meta_rows = [
+     |
+help: Convert to `datetime.UTC` alias
+     |
+43   | import zipfile
+     - from datetime import datetime, timezone
+44   + from datetime import datetime, timezone, UTC
+45   | from pathlib import Path
+--------------------------------------------------------------------------------
+1047 |
+     -     now = datetime.now(timezone.utc).isoformat()
+1048 +     now = datetime.now(UTC).isoformat()
+1049 |
+     |
+
+UP015 [*] Unnecessary mode argument
+  --> src/cygnusx/reference_genomes/sequence.py:57:25
+   |
+55 |     """解析 .fai 索引文件为 name→FaiRecord 映射。"""
+56 |     index: dict[str, FaiRecord] = {}
+57 |     with open(fai_path, "r", encoding="utf-8") as f:
+   |                         ^^^
+58 |         for line in f:
+59 |             line = line.rstrip("\n\r")
+   |
+help: Remove mode argument
+   |
+56 |     index: dict[str, FaiRecord] = {}
+   -     with open(fai_path, "r", encoding="utf-8") as f:
+57 +     with open(fai_path, encoding="utf-8") as f:
+58 |         for line in f:
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src/cygnusx/reference_genomes/service.py:8:1
+   |
+ 6 |   """
+ 7 |
+ 8 | / from __future__ import annotations
+ 9 | |
+10 | | import json
+11 | | import re
+12 | | import sqlite3
+13 | | from pathlib import Path
+14 | | from typing import Any
+15 | |
+16 | | from cygnusx.core.exceptions import BusinessError, NotFoundError, ValidationError
+17 | | from cygnusx.reference_genomes.config import (
+18 | |     ConfigManager,
+19 | |     VersionConfig,
+20 | |     config_manager,
+21 | |     gene_index_path,
+22 | |     resolve_file_path,
+23 | | )
+24 | | from cygnusx.reference_genomes.schema import (
+25 | |     BatchAnnotationResponse,
+26 | |     BatchGeneAnnotationDTO,
+27 | |     ChromosomeDTO,
+28 | |     DataFileDTO,
+29 | |     GeneDTO,
+30 | |     GeneDetailDTO,
+31 | |     GeneKeggDTO,
+32 | |     GeneListResponse,
+33 | |     GeneSearchHitDTO,
+34 | |     GeneTypeStatDTO,
+35 | |     GoAnnotationDTO,
+36 | |     GoGeneListResponse,
+37 | |     GoSlimDTO,
+38 | |     GoTermDTO,
+39 | |     GoTermListResponse,
+40 | |     GoTermSearchHitDTO,
+41 | |     KeggKoDTO,
+42 | |     KeggPathwayDTO,
+43 | |     KeggPathwayListResponse,
+44 | |     KeggSearchHitDTO,
+45 | |     MapIdsResponse,
+46 | |     MapIdsResultItem,
+47 | |     PathwayGeneListResponse,
+48 | |     SearchResponse,
+49 | |     SequenceAvailabilityDTO,
+50 | |     SequenceDTO,
+51 | |     SpeciesDTO,
+52 | |     SpeciesListResponse,
+53 | |     SpeciesSearchHitDTO,
+54 | |     TranscriptDTO,
+55 | |     ExonDTO,
+56 | |     VersionDetailDTO,
+57 | |     VersionMappingDTO,
+58 | |     VersionStatsDTO,
+59 | |     GenomeVersionDTO,
+60 | |     ReloadResponse,
+61 | | )
+62 | | from cygnusx.reference_genomes.sequence import (
+63 | |     fetch_kv,
+64 | |     fetch_region,
+65 | |     open_index,
+66 | |     parse_fai,
+67 | | )
+   | |_^
+68 |
+69 |   # 调色板（按序分配给染色体 / 基因类型）
+   |
+help: Organize imports
+   |
+28 |     DataFileDTO,
+29 +     ExonDTO,
+30 +     GeneDetailDTO,
+31 |     GeneDTO,
+   -     GeneDetailDTO,
+32 |     GeneKeggDTO,
+33 |     GeneListResponse,
+34 |     GeneSearchHitDTO,
+35 |     GeneTypeStatDTO,
+36 +     GenomeVersionDTO,
+37 |     GoAnnotationDTO,
+--------------------------------------------------------------------------------
+49 |     PathwayGeneListResponse,
+50 +     ReloadResponse,
+51 |     SearchResponse,
+--------------------------------------------------------------------------------
+57 |     TranscriptDTO,
+   -     ExonDTO,
+58 |     VersionDetailDTO,
+59 |     VersionMappingDTO,
+60 |     VersionStatsDTO,
+   -     GenomeVersionDTO,
+   -     ReloadResponse,
+61 | )
+   |
+
+SIM105 Use `contextlib.suppress(OSError)` instead of `try`-`except`-`pass`
+   --> src/cygnusx/reference_genomes/service.py:221:13
+    |
+219 |           total_bytes = 0
+220 |           for p in kegg_parts:
+221 | /             try:
+222 | |                 total_bytes += Path(p.path).stat().st_size
+223 | |             except OSError:
+224 | |                 pass
+    | |____________________^
+225 |           out["kegg"] = DataFileDTO(
+226 |               type="kegg",
+    |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(OSError): ...`
+
+F841 Local variable `m_path` is assigned to but never used
+   --> src/cygnusx/reference_genomes/service.py:293:17
+    |
+291 |         for ver in sp.versions:
+292 |             for m in ver.id_mapping:
+293 |                 m_path = resolve_file_path(ver, "") if False else None
+    |                 ^^^^^^
+294 |                 # id_mapping path 相对 data_dir
+295 |                 mp = Path(m.path) if m.path else None
+    |
+help: Remove assignment to unused variable `m_path`
+
+SIM118 Use `key in dict` instead of `key in dict.keys()`
+   --> src/cygnusx/reference_genomes/service.py:658:51
+    |
+656 |                     pass
+657 |             features: dict[str, list[list[int]]] = {}
+658 |             features_raw = t["feature_ranges"] if "feature_ranges" in t.keys() else None
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+659 |             if features_raw:
+660 |                 try:
+    |
+help: Remove `.keys()`
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> src/cygnusx/reference_genomes/service.py:852:17
+    |
+850 |                 _, index = open_index(unzipped)
+851 |             except FileNotFoundError:
+852 |                 raise NotFoundError("基因组 FASTA 索引不存在")
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+853 |
+854 |             if seq_type == "promoter":
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> src/cygnusx/reference_genomes/service.py:865:21
+    |
+863 |                     seq = fetch_region(unzipped, index, row["chromosome"], p_start, p_end, row["strand"])
+864 |                 except KeyError:
+865 |                     raise NotFoundError(f"染色体不在 FASTA 索引中：{row['chromosome']}")
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+866 |                 except ValueError:
+867 |                     raise NotFoundError(f"基因 {gene_id} 上游区域越界，无启动子序列")
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> src/cygnusx/reference_genomes/service.py:867:21
+    |
+865 |                     raise NotFoundError(f"染色体不在 FASTA 索引中：{row['chromosome']}")
+866 |                 except ValueError:
+867 |                     raise NotFoundError(f"基因 {gene_id} 上游区域越界，无启动子序列")
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+868 |                 header = (
+869 |                     f"{gene_id} promoter(upstream {upstream}bp) "
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> src/cygnusx/reference_genomes/service.py:883:17
+    |
+881 |                 seq = fetch_region(unzipped, index, row["chromosome"], row["start"], row["end"], row["strand"])
+882 |             except KeyError:
+883 |                 raise NotFoundError(f"染色体不在 FASTA 索引中：{row['chromosome']}")
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+884 |             except ValueError as exc:
+885 |                 raise NotFoundError(f"序列区间无效：{exc}")
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> src/cygnusx/reference_genomes/service.py:885:17
+    |
+883 |                 raise NotFoundError(f"染色体不在 FASTA 索引中：{row['chromosome']}")
+884 |             except ValueError as exc:
+885 |                 raise NotFoundError(f"序列区间无效：{exc}")
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+886 |             header = f"{gene_id} {row['chromosome']}:{row['start']}-{row['end']}({row['strand']})"
+887 |             if fmt == "fasta":
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> src/cygnusx/reference_genomes/service.py:959:9
+    |
+957 |         _, index = open_index(unzipped)
+958 |     except FileNotFoundError:
+959 |         raise NotFoundError("基因组 FASTA 索引不存在")
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+960 |     try:
+961 |         seq = fetch_region(unzipped, index, chrom, start, end, strand)
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> src/cygnusx/reference_genomes/service.py:963:9
+    |
+961 |         seq = fetch_region(unzipped, index, chrom, start, end, strand)
+962 |     except KeyError:
+963 |         raise NotFoundError(f"染色体不在 FASTA 索引中：{chrom}")
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+964 |     except ValueError as exc:
+965 |         raise BusinessError(f"序列区间无效：{exc}")
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+   --> src/cygnusx/reference_genomes/service.py:965:9
+    |
+963 |         raise NotFoundError(f"染色体不在 FASTA 索引中：{chrom}")
+964 |     except ValueError as exc:
+965 |         raise BusinessError(f"序列区间无效：{exc}")
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+966 |     header = f"{chrom}:{start}-{end}({strand})"
+967 |     if fmt == "fasta":
+    |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+  --> src/cygnusx/tools/gsea/api.py:57:12
+   |
+55 |     task_model = result.scalar_one_or_none()
+56 |     path = Path(str((task_model.parameters if task_model else {}).get("result_path", "")))
+57 |     if not path.exists():
+   |            ^^^^^^^^^^^
+58 |         raise NotFoundError("GSEA 结果文件不存在")
+59 |     return FileResponse(path, media_type="text/csv", filename="gsea_result.csv")
+   |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+  --> src/cygnusx/tools/gsea/tasks.py:89:28
+   |
+87 |             curve_path = Path(f"{output_path}.running_scores.json")
+88 |             curve = (
+89 |                 json.loads(curve_path.read_text(encoding="utf-8")) if curve_path.exists() else []
+   |                            ^^^^^^^^^^^^^^^^^^^^
+90 |             )
+91 |             (output_dir / "gsea_manifest.json").write_text(
+   |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+  --> src/cygnusx/tools/gsea/tasks.py:89:71
+   |
+87 |             curve_path = Path(f"{output_path}.running_scores.json")
+88 |             curve = (
+89 |                 json.loads(curve_path.read_text(encoding="utf-8")) if curve_path.exists() else []
+   |                                                                       ^^^^^^^^^^^^^^^^^
+90 |             )
+91 |             (output_dir / "gsea_manifest.json").write_text(
+   |
+
+ASYNC240 Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+  --> src/cygnusx/tools/synteny/api.py:60:12
+   |
+58 |     task_model = result.scalar_one_or_none()
+59 |     path = Path(str((task_model.parameters if task_model else {}).get("result_path", "")))
+60 |     if not path.exists():
+   |            ^^^^^^^^^^^
+61 |         raise NotFoundError("共线性结果文件不存在")
+62 |     return FileResponse(path, media_type="application/json", filename="synteny_result.json")
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/e2e/agentteams/test_default_bridge_e2e.py:3:1
+  |
+1 |   """Default local AgentTeams contract path; no external service or credentials required."""
+2 |
+3 | / from __future__ import annotations
+4 | |
+5 | | import sys
+6 | | from pathlib import Path
+7 | |
+8 | | import httpx
+9 | | import pytest
+  | |_____________^
+help: Organize imports
+   |
+10 |
+   -
+11 | BRIDGE_PACKAGE = Path(__file__).parents[3] / "integrations" / "agentteams" / "bridge"
+   |
+
+E402 Module level import not at top of file
+  --> tests/e2e/agentteams/test_default_bridge_e2e.py:16:1
+   |
+14 |     sys.path.insert(0, str(BRIDGE_PACKAGE))
+15 |
+16 | from cygnusx_agentteams_bridge.app import create_app
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | from cygnusx_agentteams_bridge.config import BridgeSettings
+   |
+help: Move module level imports to top of file
+
+E402 Module level import not at top of file
+  --> tests/e2e/agentteams/test_default_bridge_e2e.py:17:1
+   |
+16 | from cygnusx_agentteams_bridge.app import create_app
+17 | from cygnusx_agentteams_bridge.config import BridgeSettings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: Move module level imports to top of file
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/chat/test_chat_messages_preserve_compaction.py:3:1
+   |
+ 1 |   """R1 contract: context compaction never changes the persisted message view."""
+ 2 |
+ 3 | / from datetime import UTC, datetime
+ 4 | | from types import SimpleNamespace
+ 5 | |
+ 6 | | import pytest
+ 7 | |
+ 8 | | from cygnusx.application.services.chat.session_management import ChatSessionManagement
+ 9 | | from cygnusx.application.services.chat.dto_support import ChatDtoSupport
+10 | | from cygnusx.infrastructure.database.models.chat import ChatMessageEventModel, ChatMessageModel
+   | |_______________________________________________________________________________________________^
+help: Organize imports
+   |
+7  |
+8  + from cygnusx.application.services.chat.dto_support import ChatDtoSupport
+9  | from cygnusx.application.services.chat.session_management import ChatSessionManagement
+   - from cygnusx.application.services.chat.dto_support import ChatDtoSupport
+10 | from cygnusx.infrastructure.database.models.chat import ChatMessageEventModel, ChatMessageModel
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/chat/test_context_compaction.py:1:1
+   |
+ 1 | / from types import SimpleNamespace
+ 2 | | from concurrent.futures import ThreadPoolExecutor
+ 3 | |
+ 4 | | import pytest
+ 5 | |
+ 6 | | from cygnusx.application.services.chat.context_compaction import (
+ 7 | |     CompactionCancelled,
+ 8 | |     HANDOFF_FIELDS,
+ 9 | |     CompactionPolicy,
+10 | |     CompactionResult,
+11 | |     CompactionSummaryError,
+12 | |     compact,
+13 | |     externalize_large_outputs,
+14 | |     load_externalized_output,
+15 | |     _keep_by_tokens,
+16 | |     write_compaction_archive,
+17 | |     segment_messages,
+18 | | )
+19 | | from cygnusx.application.services.chat.context_estimate import ContextEstimate
+20 | | from cygnusx.application.services.chat.runtime_support import ChatRuntimeSupport
+   | |________________________________________________________________________________^
+help: Organize imports
+   |
+1  + from concurrent.futures import ThreadPoolExecutor
+2  | from types import SimpleNamespace
+   - from concurrent.futures import ThreadPoolExecutor
+3  |
+4  | import pytest
+5  |
+6  | from cygnusx.application.services.chat.context_compaction import (
+7  +     HANDOFF_FIELDS,
+8  |     CompactionCancelled,
+   -     HANDOFF_FIELDS,
+9  |     CompactionPolicy,
+10 |     CompactionResult,
+11 |     CompactionSummaryError,
+12 +     _keep_by_tokens,
+13 |     compact,
+14 |     externalize_large_outputs,
+15 |     load_externalized_output,
+   -     _keep_by_tokens,
+16 +     segment_messages,
+17 |     write_compaction_archive,
+   -     segment_messages,
+18 | )
+   |
+
+F841 Local variable `model` is assigned to but never used
+  --> tests/unit/chat/test_context_estimate.py:74:5
+   |
+72 |     )
+73 |     messages = [{"role": "user", "content": "x" * 4000} for _ in range(13)]
+74 |     model = SimpleNamespace(context_window=1000, model="test")
+   |     ^^^^^
+75 |     support = ChatRuntimeSupport()
+76 |     # The old 200K threshold would not trigger this input; the model window does.
+   |
+help: Remove assignment to unused variable `model`
+
+F401 [*] `types.SimpleNamespace` imported but unused
+ --> tests/unit/chat/test_direct_chat_entrypoint.py:6:19
+  |
+5 | from collections.abc import AsyncIterator
+6 | from types import SimpleNamespace
+  |                   ^^^^^^^^^^^^^^^
+7 | from typing import Any
+8 | from uuid import uuid4
+  |
+help: Remove unused import: `types.SimpleNamespace`
+  |
+5 | from collections.abc import AsyncIterator
+  - from types import SimpleNamespace
+6 | from typing import Any
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/chat/test_dual_run.py:3:1
+   |
+ 1 |   """Chat Runtime 双跑比较工具测试。"""
+ 2 |
+ 3 | / import pytest
+ 4 | |
+ 5 | | from cygnusx.application.services.chat.dual_run import (
+ 6 | |     DualRunResult,
+ 7 | |     assert_equivalent,
+ 8 | |     capture_golden_record,
+ 9 | |     compare_golden_record,
+10 | |     compare_streams,
+11 | |     write_report,
+12 | | )
+13 | | from cygnusx.application.services.execution_events import EventSequenceError
+14 | | from cygnusx.application.services.chat.golden_records import save_events
+15 | | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
+   | |__________________________________________________________________________^
+help: Organize imports
+   |
+12 | )
+13 + from cygnusx.application.services.chat.golden_records import save_events
+14 | from cygnusx.application.services.execution_events import EventSequenceError
+   - from cygnusx.application.services.chat.golden_records import save_events
+15 | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
+   |
+
+B905 `zip()` without an explicit `strict=` parameter
+   --> tests/unit/chat/test_langgraph_context_view.py:114:60
+    |
+112 |     assert len(prepare_inputs) == 31
+113 |     assert any(chunk.type == "context_compressed" for chunk in chunks)
+114 |     assert any(len(view) < len(source) for view, source in zip(provider_views, prepare_inputs))
+    |                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+115 |     assert runtime.last_messages[0]["content"] == "中文目标"
+116 |     assert len(runtime.last_messages) == 62
+    |
+help: Add explicit value for parameter `strict=`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/chat/test_runtime_golden_baselines.py:3:1
+   |
+ 1 |   """非受保护 Chat Runtime 的可复现 SSE golden 基线。"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | from collections.abc import AsyncIterator
+ 6 | | from pathlib import Path
+ 7 | |
+ 8 | | import pytest
+ 9 | |
+10 | | from cygnusx.application.services.chat.chat_router_service import ChatRouterService
+11 | | from cygnusx.application.services.chat.dual_run import (
+12 | |     assert_equivalent,
+13 | |     compare_golden_record,
+14 | |     compare_streams,
+15 | | )
+16 | | from cygnusx.application.services.chat.runtimes.base import ChatRuntimeRequest
+17 | | from cygnusx.application.services.chat.runtimes.direct_chat_runtime import DirectChatRuntime
+18 | | from cygnusx.application.services.execution_events import validate_event_sequence
+19 | | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
+   | |__________________________________________________________________________^
+help: Organize imports
+   |
+20 |
+   -
+21 | _GOLDEN_ROOT = Path(__file__).parents[2] / "e2e" / "chat_golden"
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/domain/mas/test_apptainer.py:1:1
+   |
+ 1 | / from pathlib import Path
+ 2 | | from uuid import uuid4
+ 3 | |
+ 4 | | import pytest
+ 5 | |
+ 6 | | from cygnusx.domain.mas.workspace import WorkspaceLayout
+ 7 | | from cygnusx.infrastructure.mas.apptainer import ApptainerExecutionError, build_rnaflow_command
+ 8 | | from cygnusx.infrastructure.mas.rnaflow import RNAFlowPreflightError, validate_mas_rnaflow_config
+ 9 | | from cygnusx.infrastructure.mas.volcano import render_deg_volcano
+10 | | from cygnusx.infrastructure.mas.ebi import build_ebi_download_command, write_download_manifest
+   | |______________________________________________________________________________________________^
+help: Organize imports
+   |
+7  | from cygnusx.infrastructure.mas.apptainer import ApptainerExecutionError, build_rnaflow_command
+8  + from cygnusx.infrastructure.mas.ebi import build_ebi_download_command, write_download_manifest
+9  | from cygnusx.infrastructure.mas.rnaflow import RNAFlowPreflightError, validate_mas_rnaflow_config
+10 | from cygnusx.infrastructure.mas.volcano import render_deg_volcano
+   - from cygnusx.infrastructure.mas.ebi import build_ebi_download_command, write_download_manifest
+11 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/test_agent_context_builder.py:3:1
+   |
+ 1 |   """AgentContextBuilder 的缓存与一次性上下文构建测试。"""
+ 2 |
+ 3 | / from types import SimpleNamespace
+ 4 | | import time
+ 5 | |
+ 6 | | import pytest
+ 7 | | from sqlalchemy import String
+ 8 | | from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+ 9 | |
+10 | | from cygnusx.application.services.agent_context_builder import AgentContextBuilder
+   | |__________________________________________________________________________________^
+help: Organize imports
+  |
+2 |
+3 + import time
+4 | from types import SimpleNamespace
+  - import time
+5 |
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/unit/test_annotation_skill_packages.py:3:1
+  |
+1 |   """内置单细胞注释 Skill 包校验。"""
+2 |
+3 | / from pathlib import Path
+4 | |
+5 | | import pytest
+6 | |
+7 | | from cygnusx.infrastructure.skills.skillmd import parse_skill_folder
+8 | | from cygnusx.application.services.skill_import_service import _builtin_category_map
+  | |___________________________________________________________________________________^
+help: Organize imports
+  |
+6 |
+7 + from cygnusx.application.services.skill_import_service import _builtin_category_map
+8 | from cygnusx.infrastructure.skills.skillmd import parse_skill_folder
+  - from cygnusx.application.services.skill_import_service import _builtin_category_map
+9 |
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/test_domain_pack_regression.py:3:1
+   |
+ 1 |   """Domain Pack 重构前后的调度认知层行为回归。"""
+ 2 |
+ 3 | / import pytest
+ 4 | |
+ 5 | | import cygnusx.application.services.chat_service as chat_module
+ 6 | | import cygnusx.application.services.chat.overdrive_control as overdrive_module
+ 7 | | from cygnusx.application.services.chat.overdrive_control import (
+ 8 | |     _analysis_intake_questions,
+ 9 | |     _default_overdrive_assignments,
+10 | |     _extract_overdrive_intake_slots,
+11 | |     _filter_overdrive_questions,
+12 | |     _is_overdrive_planning_request,
+13 | |     _overdrive_capability_profile,
+14 | |     _overdrive_preflight_questions,
+15 | | )
+16 | | from cygnusx.application.services.domain_registry import DomainRegistry
+17 | | from cygnusx.application.services.overdrive_plan_constraint_service import validate_plan
+   | |________________________________________________________________________________________^
+18 |
+19 |   CATALOG = [
+   |
+help: Organize imports
+  |
+4 |
+5 + import cygnusx.application.services.chat.overdrive_control as overdrive_module
+6 | import cygnusx.application.services.chat_service as chat_module
+  - import cygnusx.application.services.chat.overdrive_control as overdrive_module
+7 | from cygnusx.application.services.chat.overdrive_control import (
+  |
+
+F401 [*] `cygnusx.application.services.chat_service` imported but unused
+ --> tests/unit/test_domain_pack_regression.py:5:53
+  |
+3 | import pytest
+4 |
+5 | import cygnusx.application.services.chat_service as chat_module
+  |                                                     ^^^^^^^^^^^
+6 | import cygnusx.application.services.chat.overdrive_control as overdrive_module
+7 | from cygnusx.application.services.chat.overdrive_control import (
+  |
+help: Remove unused import: `cygnusx.application.services.chat_service`
+  |
+4 |
+  - import cygnusx.application.services.chat_service as chat_module
+5 | import cygnusx.application.services.chat.overdrive_control as overdrive_module
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/test_export_agentteams_evidence.py:3:1
+   |
+ 1 |   """scripts/export_agentteams_evidence.py 序列化逻辑的单元测试。"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import json
+ 6 | | from pathlib import Path
+ 7 | | from unittest.mock import AsyncMock, Mock
+ 8 | |
+ 9 | | import pytest
+10 | |
+11 | | from scripts.export_agentteams_evidence import export_case_evidence
+   | |___________________________________________________________________^
+help: Organize imports
+   |
+9  | import pytest
+   -
+10 | from scripts.export_agentteams_evidence import export_case_evidence
+   |
+
+F541 [*] f-string without any placeholders
+  --> tests/unit/test_export_agentteams_evidence.py:35:13
+   |
+33 |     async def fake_request(path: str, **kwargs):
+34 |         return {
+35 |             f"/v1/cases/case-abc/events": {
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+36 |                 "events": [
+37 |                     {"event_id": "e1", "event_type": "approval.requested", "payload": {}},
+   |
+help: Remove extraneous `f` prefix
+   |
+34 |         return {
+   -             f"/v1/cases/case-abc/events": {
+35 +             "/v1/cases/case-abc/events": {
+36 |                 "events": [
+   |
+
+F541 [*] f-string without any placeholders
+  --> tests/unit/test_export_agentteams_evidence.py:43:13
+   |
+41 |                 ]
+42 |             },
+43 |             f"/v1/cases/case-abc/manifest": {"case_id": "case-abc", "manifest": "ok"},
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+44 |             f"/v1/tasks/task-1": {"task_id": "task-1", "status": "completed"},
+45 |             f"/v1/tasks/task-1/events": {"events": [{"event_id": "te1", "event_type": "omic_task.completed"}]},
+   |
+help: Remove extraneous `f` prefix
+   |
+42 |             },
+   -             f"/v1/cases/case-abc/manifest": {"case_id": "case-abc", "manifest": "ok"},
+43 +             "/v1/cases/case-abc/manifest": {"case_id": "case-abc", "manifest": "ok"},
+44 |             f"/v1/tasks/task-1": {"task_id": "task-1", "status": "completed"},
+   |
+
+F541 [*] f-string without any placeholders
+  --> tests/unit/test_export_agentteams_evidence.py:44:13
+   |
+42 |             },
+43 |             f"/v1/cases/case-abc/manifest": {"case_id": "case-abc", "manifest": "ok"},
+44 |             f"/v1/tasks/task-1": {"task_id": "task-1", "status": "completed"},
+   |             ^^^^^^^^^^^^^^^^^^^
+45 |             f"/v1/tasks/task-1/events": {"events": [{"event_id": "te1", "event_type": "omic_task.completed"}]},
+46 |             f"/v1/tasks/task-1/artifacts": {"artifacts": [{"name": "report.html"}]},
+   |
+help: Remove extraneous `f` prefix
+   |
+43 |             f"/v1/cases/case-abc/manifest": {"case_id": "case-abc", "manifest": "ok"},
+   -             f"/v1/tasks/task-1": {"task_id": "task-1", "status": "completed"},
+44 +             "/v1/tasks/task-1": {"task_id": "task-1", "status": "completed"},
+45 |             f"/v1/tasks/task-1/events": {"events": [{"event_id": "te1", "event_type": "omic_task.completed"}]},
+   |
+
+F541 [*] f-string without any placeholders
+  --> tests/unit/test_export_agentteams_evidence.py:45:13
+   |
+43 |             f"/v1/cases/case-abc/manifest": {"case_id": "case-abc", "manifest": "ok"},
+44 |             f"/v1/tasks/task-1": {"task_id": "task-1", "status": "completed"},
+45 |             f"/v1/tasks/task-1/events": {"events": [{"event_id": "te1", "event_type": "omic_task.completed"}]},
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+46 |             f"/v1/tasks/task-1/artifacts": {"artifacts": [{"name": "report.html"}]},
+47 |             "/v1/metrics": {"cases": 5, "events": 42},
+   |
+help: Remove extraneous `f` prefix
+   |
+44 |             f"/v1/tasks/task-1": {"task_id": "task-1", "status": "completed"},
+   -             f"/v1/tasks/task-1/events": {"events": [{"event_id": "te1", "event_type": "omic_task.completed"}]},
+45 +             "/v1/tasks/task-1/events": {"events": [{"event_id": "te1", "event_type": "omic_task.completed"}]},
+46 |             f"/v1/tasks/task-1/artifacts": {"artifacts": [{"name": "report.html"}]},
+   |
+
+F541 [*] f-string without any placeholders
+  --> tests/unit/test_export_agentteams_evidence.py:46:13
+   |
+44 |             f"/v1/tasks/task-1": {"task_id": "task-1", "status": "completed"},
+45 |             f"/v1/tasks/task-1/events": {"events": [{"event_id": "te1", "event_type": "omic_task.completed"}]},
+46 |             f"/v1/tasks/task-1/artifacts": {"artifacts": [{"name": "report.html"}]},
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+47 |             "/v1/metrics": {"cases": 5, "events": 42},
+48 |         }[path]
+   |
+help: Remove extraneous `f` prefix
+   |
+45 |             f"/v1/tasks/task-1/events": {"events": [{"event_id": "te1", "event_type": "omic_task.completed"}]},
+   -             f"/v1/tasks/task-1/artifacts": {"artifacts": [{"name": "report.html"}]},
+46 +             "/v1/tasks/task-1/artifacts": {"artifacts": [{"name": "report.html"}]},
+47 |             "/v1/metrics": {"cases": 5, "events": 42},
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/test_knowledge_search_chat.py:3:1
+   |
+ 1 |   """普通聊天挂载 knowledge_search 知识库检索的单元测试"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | from typing import Any
+ 6 | | from unittest.mock import AsyncMock
+ 7 | |
+ 8 | | import pytest
+ 9 | |
+10 | | from cygnusx.application.services.chat_service import (
+11 | |     KNOWLEDGE_SEARCH_SYSTEM_PROMPT_SUFFIX,
+12 | |     KNOWLEDGE_SEARCH_TOOL,
+13 | |     ChatService,
+14 | | )
+15 | | from cygnusx.application.services.studio_tools import _knowledge_search
+16 | | from cygnusx.application.services.vector_retrieval_service import KnowledgeCitation, VectorRetrievalService
+   | |___________________________________________________________________________________________________________^
+help: Organize imports
+   |
+15 | from cygnusx.application.services.studio_tools import _knowledge_search
+   - from cygnusx.application.services.vector_retrieval_service import KnowledgeCitation, VectorRetrievalService
+16 + from cygnusx.application.services.vector_retrieval_service import (
+17 +     KnowledgeCitation,
+18 +     VectorRetrievalService,
+19 + )
+20 |
+   |
+
+UP017 [*] Use `datetime.UTC` alias
+  --> tests/unit/test_mas_plan_approval_gate.py:54:33
+   |
+52 |         version=1,
+53 |         context_summary={},
+54 |         created_at=datetime.now(timezone.utc),
+   |                                 ^^^^^^^^^^^^
+55 |         finished_at=None,
+56 |     )
+   |
+help: Convert to `datetime.UTC` alias
+   |
+13 |
+   - from datetime import datetime, timezone
+14 + from datetime import datetime, timezone, UTC
+15 | from types import SimpleNamespace
+--------------------------------------------------------------------------------
+53 |         context_summary={},
+   -         created_at=datetime.now(timezone.utc),
+54 +         created_at=datetime.now(UTC),
+55 |         finished_at=None,
+   |
+
+F401 [*] `uuid` imported but unused
+  --> tests/unit/test_mcp_builder_approval_and_safety.py:16:8
+   |
+14 | from __future__ import annotations
+15 |
+16 | import uuid
+   |        ^^^^
+17 | from types import SimpleNamespace
+18 | from unittest.mock import AsyncMock, MagicMock
+   |
+help: Remove unused import: `uuid`
+   |
+15 |
+   - import uuid
+16 | from types import SimpleNamespace
+   |
+
+F401 [*] `uuid.UUID` imported but unused
+  --> tests/unit/test_mcp_builder_approval_and_safety.py:19:18
+   |
+17 | from types import SimpleNamespace
+18 | from unittest.mock import AsyncMock, MagicMock
+19 | from uuid import UUID, uuid4
+   |                  ^^^^
+20 |
+21 | import pytest
+   |
+help: Remove unused import: `uuid.UUID`
+   |
+18 | from unittest.mock import AsyncMock, MagicMock
+   - from uuid import UUID, uuid4
+19 + from uuid import uuid4
+20 |
+   |
+
+F541 [*] f-string without any placeholders
+   --> tests/unit/test_mcp_builder_approval_and_safety.py:215:12
+    |
+213 |   def test_forged_marker_comment_is_violation():
+214 |       """旧版子串匹配可被注释/字符串里的标记文本绕过，按行精确匹配后必须拦截。"""
+215 |       code = f'''#!/usr/bin/env python3
+    |  ____________^
+216 | | # 规范要求：__exp_mcp_generated__ = True  # 伪造注释
+217 | | NOTE = "__exp_mcp_generated__ = True"
+218 | |
+219 | | from mcp.server import Server
+220 | |
+221 | | server = Server("test")
+222 | |
+223 | | @server.list_tools()
+224 | | async def list_tools() -> list:
+225 | |     return []
+226 | |
+227 | | @server.call_tool()
+228 | | async def call_tool(name: str, arguments: dict) -> list:
+229 | |     return []
+230 | | '''
+    | |___^
+231 |       report = StaticSafetyChecker().analyze(code)
+232 |       assert report.passed is False
+    |
+help: Remove extraneous `f` prefix
+    |
+214 |     """旧版子串匹配可被注释/字符串里的标记文本绕过，按行精确匹配后必须拦截。"""
+    -     code = f'''#!/usr/bin/env python3
+215 +     code = '''#!/usr/bin/env python3
+216 | # 规范要求：__exp_mcp_generated__ = True  # 伪造注释
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/test_overdrive_chat.py:3:1
+   |
+ 1 |   """超频模式第一期的编排与容错契约测试。"""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import inspect
+ 6 | | import json
+ 7 | | from types import SimpleNamespace
+ 8 | | from unittest.mock import AsyncMock, MagicMock
+ 9 | |
+10 | | import pytest
+11 | | from sqlalchemy.ext.asyncio import AsyncSession
+12 | |
+13 | | import cygnusx.application.services.chat_service as chat_module
+14 | | from cygnusx.application.services.chat_service import (
+15 | |     ChatService,
+16 | |     _extract_route_json,
+17 | | )
+18 | | from cygnusx.application.services.chat.overdrive_control import (
+19 | |     _build_overdrive_followup_assignments,
+20 | |     _default_overdrive_assignments,
+21 | |     _effective_overdrive,
+22 | |     _extract_overdrive_intake_slots,
+23 | |     _filter_overdrive_questions,
+24 | |     _normalize_overdrive_assignments,
+25 | |     _overdrive_assignment_waves,
+26 | |     _overdrive_capability_profile,
+27 | |     _overdrive_followup_choices,
+28 | |     _overdrive_preflight_questions,
+29 | |     _overdrive_summary_exposes_internal_instructions,
+30 | |     _resolve_overdrive_keyword_toggle,
+31 | |     _resolve_overdrive_router_toggle,
+32 | | )
+33 | | from cygnusx.application.services.domain_registry import get_domain_registry
+34 | | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
+   | |__________________________________________________________________________^
+35 |
+36 |   legacy_preconfirmation_execution = pytest.mark.skip(
+   |
+help: Organize imports
+   |
+13 | import cygnusx.application.services.chat_service as chat_module
+   - from cygnusx.application.services.chat_service import (
+   -     ChatService,
+   -     _extract_route_json,
+   - )
+14 | from cygnusx.application.services.chat.overdrive_control import (
+--------------------------------------------------------------------------------
+28 | )
+29 + from cygnusx.application.services.chat_service import (
+30 +     ChatService,
+31 +     _extract_route_json,
+32 + )
+33 | from cygnusx.application.services.domain_registry import get_domain_registry
+   |
+
+F401 [*] `cygnusx.reference_genomes.config.gene_index_path` imported but unused
+  --> tests/unit/test_reference_genomes_indexer.py:19:61
+   |
+18 | from cygnusx.reference_genomes import indexer
+19 | from cygnusx.reference_genomes.config import VersionConfig, gene_index_path
+   |                                                             ^^^^^^^^^^^^^^^
+20 | from cygnusx.reference_genomes.sequence import fetch_kv
+   |
+help: Remove unused import: `cygnusx.reference_genomes.config.gene_index_path`
+   |
+18 | from cygnusx.reference_genomes import indexer
+   - from cygnusx.reference_genomes.config import VersionConfig, gene_index_path
+19 + from cygnusx.reference_genomes.config import VersionConfig
+20 | from cygnusx.reference_genomes.sequence import fetch_kv
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/test_security_round2.py:3:1
+   |
+ 1 |   """第二轮安全修复单元测试 — 覆盖本轮审计新增的关键修复。"""
+ 2 |
+ 3 | / from pathlib import Path
+ 4 | | from uuid import uuid4
+ 5 | |
+ 6 | | import pytest
+ 7 | | from pydantic import ValidationError
+ 8 | |
+ 9 | | from cygnusx.application.schemas.task import TaskSubmitRequest
+10 | | from cygnusx.application.services.ai_tools import AIToolExecutor
+11 | | from cygnusx.application.services.chat_service import ChatService
+12 | | from cygnusx.core.security import create_access_token, decode_token
+13 | | from cygnusx.core.config import Settings
+14 | | from cygnusx.infrastructure.mcp.client import (
+15 | |     validate_stdio_args,
+16 | |     validate_stdio_command,
+17 | |     validate_working_dir,
+18 | | )
+19 | | from cygnusx.middleware.login_rate_limit import _client_ip
+   | |__________________________________________________________^
+help: Organize imports
+   |
+11 | from cygnusx.application.services.chat_service import ChatService
+12 + from cygnusx.core.config import Settings
+13 | from cygnusx.core.security import create_access_token, decode_token
+   - from cygnusx.core.config import Settings
+14 | from cygnusx.infrastructure.mcp.client import (
+   |
+
+F401 [*] `pathlib.Path` imported but unused
+ --> tests/unit/test_security_round2.py:3:21
+  |
+1 | """第二轮安全修复单元测试 — 覆盖本轮审计新增的关键修复。"""
+2 |
+3 | from pathlib import Path
+  |                     ^^^^
+4 | from uuid import uuid4
+  |
+help: Remove unused import: `pathlib.Path`
+  |
+2 |
+  - from pathlib import Path
+3 | from uuid import uuid4
+  |
+
+F841 Local variable `executor` is assigned to but never used
+   --> tests/unit/test_security_round2.py:134:9
+    |
+133 |     def test_submit_task_accepts_valid_arguments(self):
+134 |         executor = object.__new__(AIToolExecutor)
+    |         ^^^^^^^^
+135 |         # 只校验 schema，不实际提交（无 DB）
+136 |         try:
+    |
+help: Remove assignment to unused variable `executor`
+
+F401 [*] `shutil` imported but unused
+ --> tests/unit/test_skill_candidate_promote.py:6:8
+  |
+5 | import json
+6 | import shutil
+  |        ^^^^^^
+7 | from pathlib import Path
+  |
+help: Remove unused import: `shutil`
+  |
+5 | import json
+  - import shutil
+6 | from pathlib import Path
+  |
+
+F401 [*] `yaml` imported but unused
+  --> tests/unit/test_skill_candidate_promote.py:10:8
+   |
+ 9 | import pytest
+10 | import yaml
+   |        ^^^^
+11 |
+12 | from cygnusx.infrastructure.skills.skillmd import SkillParseError
+   |
+help: Remove unused import: `yaml`
+   |
+9  | import pytest
+   - import yaml
+10 |
+   |
+
+F401 [*] `cygnusx.infrastructure.skills.skillmd.SkillParseError` imported but unused
+  --> tests/unit/test_skill_candidate_promote.py:12:51
+   |
+10 | import yaml
+11 |
+12 | from cygnusx.infrastructure.skills.skillmd import SkillParseError
+   |                                                   ^^^^^^^^^^^^^^^
+13 |
+14 | PROMOTE_SCRIPT = Path("scripts/promote_skill_candidate.py")
+   |
+help: Remove unused import: `cygnusx.infrastructure.skills.skillmd.SkillParseError`
+   |
+11 |
+   - from cygnusx.infrastructure.skills.skillmd import SkillParseError
+12 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/unit/test_web_search_service.py:3:1
+   |
+ 1 |   """联网搜索适配器的离线契约测试。"""
+ 2 |
+ 3 | / from types import SimpleNamespace
+ 4 | | from itertools import count
+ 5 | | from unittest.mock import AsyncMock, MagicMock
+ 6 | | from uuid import uuid4
+ 7 | |
+ 8 | | import pytest
+ 9 | |
+10 | | from cygnusx.application.schemas import tool_invocation
+11 | | from cygnusx.application.services import chat_service, search_provider_service
+12 | | from cygnusx.application.services.agent_service import AgentContext, AgentService
+13 | | from cygnusx.application.services.chat_service import ChatService
+14 | | from cygnusx.application.services.search_provider_service import SearchProviderService
+15 | | from cygnusx.core.exceptions import BusinessError
+16 | | from cygnusx.infrastructure.ai_provider.openai_compatible import ChatChunk
+17 | | from cygnusx.infrastructure.web_search.service import WebSearchService
+   | |______________________________________________________________________^
+help: Organize imports
+  |
+2 |
+3 + from itertools import count
+4 | from types import SimpleNamespace
+  - from itertools import count
+5 | from unittest.mock import AsyncMock, MagicMock
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests/unit/tools/test_enrichment_examples.py:3:1
+  |
+1 |   """GO / KEGG 富集工具示例数据契约测试。"""
+2 |
+3 | / from __future__ import annotations
+4 | |
+5 | | import csv
+6 | | from pathlib import Path
+  | |________________________^
+help: Organize imports
+  |
+7 |
+  -
+8 | EXAMPLES_DIR = Path(__file__).resolve().parents[3] / "tool_configs" / "enrichments" / "examples"
+  |
+
+Found 265 errors.
+[*] 151 fixable with the `--fix` option (50 hidden fixes can be enabled with the `--unsafe-fixes` option).

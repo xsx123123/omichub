@@ -9,6 +9,9 @@ import TreasureOriginalDisplay from '@/components/research/TreasureOriginalDispl
 import { generateId } from '@/utils/id'
 import { shouldGenerateSessionTitle } from '@/utils/sessionTitle'
 
+const props = defineProps<{ entry?: 'new' | 'plan' }>()
+let pendingEntry = props.entry
+const focusDraft = ref(false)
 const capabilities = ref<ResearchCapabilities | null>(null)
 const accessError = ref('')
 const historyError = ref('')
@@ -26,6 +29,7 @@ const sending = ref(false)
 const streamError = ref('')
 const controller = ref<AbortController | null>(null)
 let sessionGeneration = 0
+let focusCheckRevision = 0
 
 function stopCurrentStream() {
   sessionGeneration++
@@ -34,13 +38,13 @@ function stopCurrentStream() {
   sending.value = false
 }
 
-async function loadSessions() {
+async function loadSessions(restoreLatest = true) {
   const generation = sessionGeneration
   const project = selectedProjectId.value
   const restored = await researchAgentApi.listSessions(project || undefined)
   if (generation !== sessionGeneration || project !== selectedProjectId.value) return
   sessions.value = restored
-  if (sessions.value.length && !currentSession.value) await selectSession(sessions.value[0])
+  if (restoreLatest && sessions.value.length && !currentSession.value) await selectSession(sessions.value[0])
 }
 
 async function selectSession(session: ResearchSession) {
@@ -55,7 +59,7 @@ async function selectSession(session: ResearchSession) {
       messages.value = restored
       await workflow.action({ type: 'capabilities.refresh' }, true)
       if (generation !== sessionGeneration) return
-      if (capabilities.value?.prepare_import) void workflow.action({ type: 'records.refresh' }, true)
+      if (workflow.view.allowedTools?.includes('tasks.list_related')) void workflow.action({ type: 'records.refresh' }, true)
     }
   } catch (error) {
     if (generation === sessionGeneration) historyError.value = researchFailure(error)
@@ -92,6 +96,7 @@ async function send(submitted?: string) {
   messages.value.push(assistant)
   sending.value = true
   let hasPlatformTool = false
+  let hasProposal = false
   let streamEnded = false
   try {
     let cursor = 0
@@ -118,7 +123,12 @@ async function send(submitted?: string) {
         const result = await consumeResearchStream(response.body, event => {
           if (generation !== sessionGeneration) return
           applyResearchEvent(assistant, event)
-          if (event.event === 'platform_tool') hasPlatformTool = true
+          if (event.event === 'platform_tool') {
+            hasPlatformTool = true
+            const envelope = event.result as { result?: { proposal_id?: unknown; ingestion_id?: unknown; analysis_proposal_id?: unknown } } | undefined
+            const result = envelope?.result
+            if (result && [result.proposal_id, result.ingestion_id, result.analysis_proposal_id].some(id => typeof id === 'string' && id.length > 0)) hasProposal = true
+          }
           if (event.event === 'error' || event.error) {
             streamError.value = researchFailure({ code: event.code || 'NODE_UNAVAILABLE' })
             assistant.metadata_json.events ??= {}
@@ -164,7 +174,7 @@ async function send(submitted?: string) {
           // Title generation is best-effort and must not affect the completed reply.
         }
       }
-      if (hasPlatformTool && capabilities.value?.prepare_import) void workflow.action({ type: 'records.refresh' }, !workflow.view.open)
+      if (hasPlatformTool && workflow.view.allowedTools?.includes('tasks.list_related')) void workflow.action({ type: 'records.refresh' }, !hasProposal && !workflow.view.open)
     }
     await nextTick()
   }
@@ -213,10 +223,67 @@ async function refreshAccess() {
     if (generation !== sessionGeneration) return
     projects.value = restoredProjects
     loading.value = false
-    await loadSessions()
+    await loadSessions(!pendingEntry)
+    if (generation !== sessionGeneration) return
+    if (pendingEntry && canDiscover.value) {
+      const entry = pendingEntry
+      pendingEntry = undefined
+      draft.value = entry === 'plan' ? '请帮我规划一项研究方案，先和我确认研究问题、研究对象、已有数据与预期目标。' : ''
+      await createSession()
+      if (currentSession.value) focusDraft.value = true
+    }
   } catch (error) {
     if (generation === sessionGeneration) historyError.value = researchFailure(error)
   } finally { if (generation === sessionGeneration) loading.value = false }
+}
+
+function clearPrivateHistory() {
+  stopCurrentStream()
+  sessions.value = []
+  currentSession.value = null
+  messages.value = []
+  historyError.value = ''
+}
+
+async function revalidateAccessOnFocus() {
+  // Initial preflight can restart, but an existing conversation must stay mounted.
+  if (loading.value) { await refreshAccess(); return }
+  const generation = sessionGeneration
+  const revision = ++focusCheckRevision
+  const projectId = selectedProjectId.value
+  const current = () => generation === sessionGeneration && revision === focusCheckRevision
+  try {
+    const access = await researchAgentApi.capabilities()
+    if (!current()) return
+    if (!access.read_sessions) {
+      capabilities.value = access
+      clearPrivateHistory()
+      accessError.value = researchFailure({ code: access.reason_code || 'FEATURE_DISABLED' })
+      return
+    }
+    const availableProjects = await projectsApi.listProjects()
+    if (!current()) return
+    capabilities.value = access
+    projects.value = availableProjects
+    if (projectId && !availableProjects.some(project => project.id === projectId)) {
+      clearPrivateHistory()
+      selectedProjectId.value = null
+      accessError.value = researchFailure({ code: 'PROJECT_FORBIDDEN' })
+      return
+    }
+    if (!access.read_discovery) {
+      if (sending.value) stopCurrentStream()
+      accessError.value = researchFailure({ code: access.reason_code || 'NODE_NOT_CONFIGURED' })
+    } else accessError.value = ''
+  } catch (error) {
+    if (!current()) return
+    const status = (error as { response?: { status?: number } }).response?.status
+    if (status === 401 || status === 403) {
+      capabilities.value = null
+      clearPrivateHistory()
+    }
+    accessError.value = researchFailure(error)
+  }
 }
 async function editSession(id: string, title?: string) {
   const generation = sessionGeneration
@@ -263,18 +330,21 @@ const presentation = computed<Partial<TreasureIslandProps>>(() => ({
   onArchiveSession: id => { void editSession(id) },
   onChangeProject: id => { void changeProject(id) }, onRefresh: () => { void refreshAccess() },
   onRegenerate: regenerate, loadLiterature: literature,
+  loadLeaderboard: researchAgentApi.leaderboard,
+  loadUsage: researchAgentApi.usageStats,
+  updateNickname: researchAgentApi.updateNickname,
   workflow: { ...workflow.view }, onResearchAction: intent => { void handleResearchAction(intent) },
 }))
 onMounted(() => {
   void refreshAccess()
-  window.addEventListener('focus', refreshAccess)
+  window.addEventListener('focus', revalidateAccessOnFocus)
 })
-onUnmounted(() => { stopCurrentStream(); window.removeEventListener('focus', refreshAccess) })
+onUnmounted(() => { stopCurrentStream(); window.removeEventListener('focus', revalidateAccessOnFocus) })
 </script>
 
 <template>
   <main class="treasure-native-module" aria-label="科研寻宝鼠">
-    <TreasureOriginalDisplay mode="app" v-model:draft="draft" :disabled="!canDiscover" :streaming="sending" :project-id="selectedProjectId" :presentation="presentation" @submit="send" @example="draft = $event" @cancel="cancel" />
+    <TreasureOriginalDisplay mode="app" v-model:draft="draft" :focus-draft="focusDraft" :disabled="!canDiscover" :streaming="sending" :project-id="selectedProjectId" :presentation="presentation" @submit="send" @example="draft = $event" @cancel="cancel" />
   </main>
 </template>
 <style scoped>

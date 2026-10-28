@@ -1,0 +1,127 @@
+{
+  "scope": "HOST_READ_ONLY_NOT_WORKER",
+  "status": "VISIBLE_PREREQUISITES_MISSING",
+  "runtime_certified": false,
+  "kernel": {
+    "release": "6.8.0-147-generic",
+    "machine": "x86_64"
+  },
+  "process": {
+    "Uid": "1000\t1000\t1000\t1000",
+    "Gid": "1000\t1000\t1000\t1000",
+    "CapEff": "0000000000000000",
+    "CapBnd": "000001ffffffffff",
+    "NoNewPrivs": "0",
+    "Seccomp": "0"
+  },
+  "capabilities": {
+    "CapEff": {
+      "CAP_SYS_ADMIN": false,
+      "CAP_NET_ADMIN": false,
+      "CAP_BPF": false,
+      "CAP_PERFMON": false
+    },
+    "CapBnd": {
+      "CAP_SYS_ADMIN": true,
+      "CAP_NET_ADMIN": true,
+      "CAP_BPF": true,
+      "CAP_PERFMON": true
+    }
+  },
+  "cgroup": {
+    "v2_visible": true,
+    "current_path": "/user.slice/user-1000.slice/user@1000.service/tmux-spawn-ff2bfad5-5c9d-4bb4-83f8-5937a6388d09.scope",
+    "controllers": [
+      "cpuset",
+      "cpu",
+      "io",
+      "memory",
+      "hugetlb",
+      "pids",
+      "rdma",
+      "misc"
+    ],
+    "root_writable_hint": false,
+    "kill_file_visible": false
+  },
+  "cgroup_root": "/sys/fs/cgroup",
+  "namespaces_visible": {
+    "cgroup": true,
+    "ipc": true,
+    "mnt": true,
+    "net": true,
+    "pid": true,
+    "user": true,
+    "uts": true
+  },
+  "workdir_root": "/tmp",
+  "writable_filesystems": {
+    "/": {
+      "mountpoint": "/",
+      "filesystem": "ext4",
+      "options": [
+        "relatime",
+        "rw"
+      ],
+      "xfs_project_quota_option": false,
+      "supported_project_quota_option": false
+    },
+    "/tmp": {
+      "mountpoint": "/",
+      "filesystem": "ext4",
+      "options": [
+        "relatime",
+        "rw"
+      ],
+      "xfs_project_quota_option": false,
+      "supported_project_quota_option": false
+    }
+  },
+  "visible_preflight": {
+    "checks": {
+      "cgroup_v2": true,
+      "writable_cgroup_subtree_hint": false,
+      "cgroup_kill_visible": false,
+      "network_namespace_visible": true,
+      "workdir_exists_and_writable": true,
+      "workdir_project_quota_mount_option_visible": false
+    },
+    "missing": [
+      "writable_cgroup_subtree_hint",
+      "cgroup_kill_visible",
+      "workdir_project_quota_mount_option_visible"
+    ],
+    "limits": [
+      "visibility and access hints do not prove cgroup delegation or cgroup.kill behavior",
+      "mount options do not prove project quota accounting or hard-limit enforcement",
+      "namespace handles do not prove namespace creation is permitted",
+      "this probe does not test network hooks, atomic RX accounting, process launch or cleanup"
+    ]
+  },
+  "inspection_tools": {
+    "bpftool": "/usr/sbin/bpftool",
+    "nft": "/usr/sbin/nft",
+    "iptables": "/usr/sbin/iptables",
+    "ip": "/usr/sbin/ip",
+    "unshare": "/usr/bin/unshare",
+    "xfs_quota": "/usr/sbin/xfs_quota",
+    "setpriv": "/usr/bin/setpriv"
+  },
+  "docker_socket_visible": true,
+  "worker_control_client": "IMPLEMENTED_UNVERIFIED",
+  "supervisor_server": "NOT_IMPLEMENTED",
+  "host_enforcement_runtime": "NOT_IMPLEMENTED",
+  "network_enforcement": "NOT_TESTED_BY_READ_ONLY_PROBE",
+  "atomic_rx_accounting": "NOT_TESTED",
+  "filesystem_quota": "NOT_TESTED_BY_READ_ONLY_PROBE",
+  "worker_loss_cleanup": "NOT_TESTED",
+  "required_external_dependencies": [
+    "authorized isolated non-production Worker and controlled HTTP origin",
+    "authenticated supervisor independent of Worker with bounded lease",
+    "per-Task cgroup, network/mount namespaces and immutable CLI digest",
+    "unbypassable IPv4/IPv6 egress with atomic ingress byte admission",
+    "per-Task block/inode hard quota covering every writable path",
+    "trusted server admission and durable budget reference resolution",
+    "existing Task/FileRegistry/Dataset reconciliation environment"
+  ]
+}

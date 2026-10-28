@@ -1,0 +1,32 @@
+{
+  "observed_at": "2026-10-27T08:44:23.727226+00:00",
+  "goal_achieved": false,
+  "blocking_condition": "No suitable configured non-production download/analysis execution acceptance environment",
+  "consecutive_goal_turns_with_same_execution_blocker": 3,
+  "current_runtime": {
+    "node_callback_configured": true,
+    "tool_gateway_read_enabled": false,
+    "dataset_discovery_readonly": false,
+    "agent_download_write_enabled": false,
+    "agent_analysis_write_enabled": false,
+    "WRITE_RUNTIME_ACCEPTED": false,
+    "DOWNLOAD_TRANSPORT_RUNTIME_ACCEPTED": false,
+    "download_supervisor_id_configured": false,
+    "download_supervisor_url_configured": false,
+    "download_supervisor_public_key_configured": false,
+    "download_supervisor_ca_configured": false
+  },
+  "host": {
+    "execution_uid": 1000,
+    "cgroup_root_writable": false,
+    "cgroup_kill_visible_at_root": false
+  },
+  "missing_environment": [
+    "Non-production runner with delegated per-task cgroup and enforceable filesystem quota",
+    "Download Supervisor identity, endpoint and service authentication configuration",
+    "Isolated Task/Worker/database/storage targets for real download and analysis acceptance"
+  ],
+  "completed_preparatory_work": "See shared-proposals-verification.json and shared-proposals-browser.json",
+  "scope_limit": "Static/UI/isolated/model verification does not prove real download or analysis execution",
+  "gate_changes_performed": false
+}

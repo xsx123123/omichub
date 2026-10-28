@@ -39,6 +39,91 @@ pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 TEST_KEY = "treasure-native-test-key-only-not-production"
 
 
+@pytest.mark.parametrize("session_id,selected", [("global", False), ("owned", True)])
+@pytest.mark.parametrize("gateway_enabled", [False, True])
+async def test_stream_passes_current_platform_tools_and_project_state(
+    env: SimpleNamespace, monkeypatch: pytest.MonkeyPatch,
+    session_id: str, selected: bool, gateway_enabled: bool,
+) -> None:
+    from cygnusx.application.services import agent_tool_delegation, agent_tool_gateway
+
+    settings = research.get_settings()
+    settings.tool_gateway_read_enabled = gateway_enabled
+    monkeypatch.setattr(agent_tool_gateway, "get_settings", lambda: settings)
+    captured: list[dict[str, Any]] = []
+
+    async def delegation(context: Any) -> str:
+        assert context.session_id == session_id
+        assert context.user_id == str(env.owner)
+        return "isolated-delegation"
+
+    async def provider(self: Any, model_id: Any) -> Any:
+        return SimpleNamespace(model="isolated-test-model")
+
+    async def stream(self: Any, **kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        captured.append(kwargs["platform_tools"])
+        yield {"event": "end", "cards": [], "tools": []}
+
+    monkeypatch.setattr(agent_tool_delegation, "issue_delegation", delegation)
+    monkeypatch.setattr(research.ResearchTreasureService, "_provider", provider)
+    monkeypatch.setattr(research.TreasureAgentAdapter, "stream", stream)
+    service = research.ResearchTreasureService(env.db)
+    _ = [event async for event in service.stream_message(
+        str(env.owner), session_id, "can you download?", None, "zh", uuid4(),
+    )]
+    assert len(captured) == 1
+    envelope = captured[0]
+    assert envelope["project_selected"] is selected
+    if gateway_enabled:
+        assert envelope["delegation"] == "isolated-delegation"
+        ids = {item["capability_id"] for item in envelope["catalog"]}
+        assert "downloads.describe_capabilities" in ids
+        assert "downloads.prepare" in ids
+        assert "analysis.prepare" in ids
+        assert "downloads.submit" not in ids
+        assert "analysis.submit" not in ids
+    else:
+        assert envelope == {"catalog": [], "project_selected": selected}
+
+
+async def test_request_usage_snapshots_survive_replay_without_double_counting(
+    env: SimpleNamespace, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    async def provider(self: Any, model_id: Any) -> Any:
+        return SimpleNamespace(model="isolated-test-model")
+
+    async def stream(self: Any, **kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        nonlocal calls
+        calls += 1
+        yield {"event": "usage", "llm_calls": 1, "usage": {
+            "prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12,
+        }}
+        yield {"event": "usage", "llm_calls": 2, "usage": {
+            "prompt_tokens": 30, "completion_tokens": 5, "total_tokens": 35,
+        }}
+        yield {"event": "end", "cards": [], "tools": []}
+
+    monkeypatch.setattr(research.ResearchTreasureService, "_provider", provider)
+    monkeypatch.setattr(research.TreasureAgentAdapter, "stream", stream)
+    service = research.ResearchTreasureService(env.db)
+    request_id = uuid4()
+    first = [event async for event in service.stream_message(
+        str(env.owner), "global", "usage fixture", None, "zh", request_id,
+    )]
+    replay = [event async for event in service.stream_message(
+        str(env.owner), "global", "usage fixture", None, "zh", request_id,
+    )]
+    assert replay == first
+    rows = await service.messages(str(env.owner), "global")
+    assistant = next(row for row in rows if row.role == "assistant"
+                     and row.metadata_json.get("research_request_id") == str(request_id))
+    assert assistant.metadata_json["usage"]["total_tokens"] == 35
+    assert assistant.metadata_json["llm_calls"] == 2
+    assert calls == 1
+
+
 @compiles(JSONB, "sqlite")
 def sqlite_json(element: Any, compiler: Any, **kw: Any) -> str:
     return "JSON"

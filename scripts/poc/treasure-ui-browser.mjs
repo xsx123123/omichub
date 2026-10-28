@@ -93,6 +93,8 @@ try {
   assert.ok(await page.evaluate(()=>events.some(e=>e.event==='submit'&&e.value==='研究问题 GSE12345')));
   await page.locator('.composer-model').selectOption('Alternative model');
   assert.equal(await page.evaluate(()=>props.selectedModel),'Alternative model');
+  assert.equal(await page.getByRole('button',{name:'展开会话列表',exact:true}).count(),1);
+  await page.getByRole('button',{name:'展开会话列表',exact:true}).click();
   await page.getByRole('button',{name:'收起会话列表',exact:true}).click();
   await page.getByRole('button',{name:'展开会话列表',exact:true}).click();
   await page.getByRole('button',{name:'干扰素应答 · RNA-seq / Interferon response datasets',exact:true}).click();

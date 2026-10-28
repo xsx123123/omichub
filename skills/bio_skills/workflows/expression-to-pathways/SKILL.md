@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-expression-to-pathways
 description: 'Orchestrates the full path from differential expression results to redundancy-collapsed functional enrichment: choose ORA vs GSEA, convert gene IDs per method, run enrichGO/enrichKEGG/enrichPathway/enrichWP or gseGO/gseKEGG (clusterProfiler, ReactomePA, rWikiPathways), and visualize. Use when a DESeq2/edgeR/limma result must become enriched GO terms, KEGG/Reactome/WikiPathways pathways, or a GSEA leading edge; when the input is a full ranking for all genes (GSEA, named decreasing vector) or only a pre-selected list (ORA plus a defensible background universe); or when assembling DE-to-pathway end to end. The DE list and ranking statistic come from differential-expression/de-results; per-method nuance lives in the pathway-analysis skills.'
+version: 1.0.0
+display_name: 差异表达到通路富集
+display_name_en: Expression to Pathways
+description_zh: >-
+  从差异表达结果到去冗余功能富集的全流程，涵盖 ORA 与 GSEA 选择、基因 ID 转换、GO/KEGG/Reactome/WikiPathways 富集及可视化，适用于 DESeq2/edgeR/limma 结果的解读。
+description_en: >-
+  Orchestrates the full path from differential expression results to redundancy-collapsed functional enrichment: choose ORA vs GSEA, convert gene IDs per method, run enrichGO/enrichKEGG/enrichPathway/enrichWP or gseGO/gseKEGG (clusterProfiler, ReactomePA, rWikiPathways), and visualize. Use when a DESeq2/edgeR/limma result must become enriched GO terms, KEGG/Reactome/WikiPathways pathways, or a GSEA leading edge; when the input is a full ranking for all genes (GSEA, named decreasing vector) or only a pre-selected list (ORA plus a defensible background universe); or when assembling DE-to-pathway end to end. The DE list and ranking statistic come from differential-expression/de-results; per-method nuance lives in the pathway-analysis skills.
+author: JZHANG
+examples_zh:
+  - "把 DESeq2 差异结果做成 GO 和 KEGG 富集"
+  - "帮我选择 ORA 还是 GSEA"
+  - "生成 GSEA leading edge 和富集图"
+examples_en:
+  - "Turn my DESeq2 results into GO and KEGG enrichment analyses"
+  - "Should I use ORA or GSEA for this gene list?"
+  - "Generate GSEA leading-edge results and enrichment plots"
 tool_type: r
 primary_tool: clusterProfiler
 workflow: true
@@ -72,7 +88,7 @@ A claim conditioned on universe + method + database version (record provenance)
 | Stage | Goal | Owns the nuance |
 |-------|------|-----------------|
 | 0. Decide generation | ORA vs GSEA from the available input | pathway-analysis README (method selection) |
-| 1. Prepare input | Build the gene list AND/OR the named ranked vector; define the universe | differential-expression/de-results (the stat); pathway-analysis/go-enrichment (the universe rule) |
+| 1. Prepare input | Build the gene list AND/OR the named ranked vector; define the universe | differential-expression/de-results (the stat); references/pathway-analysis--go-enrichment.md (the universe rule) |
 | 2. Convert IDs | Map to the form each method needs (OrgDb keyType / kegg-id / ENTREZ) | go-enrichment, kegg-pathways, reactome-pathways |
 | 3a. ORA | Hypergeometric test of the list vs background | go-enrichment, kegg-pathways, reactome-pathways, wikipathways |
 | 3b. GSEA | Running-sum over the full ranking | gsea |
@@ -110,7 +126,7 @@ res <- read.csv('deseq2_results.csv', row.names = 1)
 sig_genes <- rownames(subset(res, padj < 0.05 & abs(log2FoldChange) > 1))
 
 # Background universe = genes that were TESTABLE (entered the DE test), NOT the genome.
-# Using the genome measures expression bias, not enrichment (the universe rule; see pathway-analysis/go-enrichment).
+# Using the genome measures expression bias, not enrichment (the universe rule; see references/pathway-analysis--go-enrichment.md).
 universe_genes <- rownames(res[!is.na(res$pvalue), ])
 
 # GSEA input: a NAMED vector of ALL genes, sorted DECREASING by a signed metric.
@@ -175,7 +191,7 @@ reactome <- enrichPathway(sig_entrez$ENTREZID, universe = bg_entrez$ENTREZID, or
 
 **Goal:** Find gene sets whose genes shift coordinately across the full ranking, without a significance cutoff.
 
-**Approach:** Run on the named decreasing `ranked_list`, fix the permutation seed so p-values are reproducible, then read the leading edge as the interpretable core. clusterProfiler GSEA is preranked / gene-permutation (the inter-gene-correlation-UNcorrected null) - a discovery screen; see pathway-analysis/gsea for the calibration caveat (CAMERA/ROAST).
+**Approach:** Run on the named decreasing `ranked_list`, fix the permutation seed so p-values are reproducible, then read the leading edge as the interpretable core. clusterProfiler GSEA is preranked / gene-permutation (the inter-gene-correlation-UNcorrected null) - a discovery screen; see references/pathway-analysis--gsea.md for the calibration caveat (CAMERA/ROAST).
 
 ```r
 set.seed(123)   # permutation reproducibility; without it p-values drift across runs
@@ -191,7 +207,7 @@ gsea_kegg <- gseKEGG(ranked_list, organism = 'hsa',
 
 **Goal:** Reduce overlapping terms to distinct findings before drawing conclusions, then plot deliberately.
 
-**Approach:** A list of 40 significant GO terms is often a few biological stories told many times (shared genes via the GO true-path rule). Collapse with `simplify`/`pairwise_termsim`, then plot - `emapplot`/`treeplot` require `pairwise_termsim()` first (cnetplot does NOT; it draws the gene-concept network from the `geneID` column directly), and `gseaplot2` is for a gseaResult not an enrichResult. Encoding choice and required pre-steps are owned by pathway-analysis/enrichment-visualization.
+**Approach:** A list of 40 significant GO terms is often a few biological stories told many times (shared genes via the GO true-path rule). Collapse with `simplify`/`pairwise_termsim`, then plot - `emapplot`/`treeplot` require `pairwise_termsim()` first (cnetplot does NOT; it draws the gene-concept network from the `geneID` column directly), and `gseaplot2` is for a gseaResult not an enrichResult. Encoding choice and required pre-steps are owned by references/pathway-analysis--enrichment-visualization.md.
 
 ```r
 library(enrichplot)
@@ -276,10 +292,10 @@ dotplot(cc, showCategory = 10)
 
 ## Related Skills
 
-- pathway-analysis/go-enrichment - GO over-representation, background universe, redundancy reduction, length bias
-- pathway-analysis/gsea - Ranked-list GSEA, named decreasing vector, ranking metric, leading edge, NES
-- pathway-analysis/kegg-pathways - KEGG pathway/module enrichment, live DB, prokaryotes, multi-condition
-- pathway-analysis/reactome-pathways - Reactome curated-pathway ORA and GSEA, ENTREZ IDs, reproducible local DB
-- pathway-analysis/wikipathways - WikiPathways community-pathway enrichment, versioned GMT, broad species
-- pathway-analysis/enrichment-visualization - Dot/bar/cnet/emap/GSEA plots and required pre-steps
+- references/pathway-analysis--go-enrichment.md - GO over-representation, background universe, redundancy reduction, length bias
+- references/pathway-analysis--gsea.md - Ranked-list GSEA, named decreasing vector, ranking metric, leading edge, NES
+- references/pathway-analysis--kegg-pathways.md - KEGG pathway/module enrichment, live DB, prokaryotes, multi-condition
+- references/pathway-analysis--reactome-pathways.md - Reactome curated-pathway ORA and GSEA, ENTREZ IDs, reproducible local DB
+- references/pathway-analysis--wikipathways.md - WikiPathways community-pathway enrichment, versioned GMT, broad species
+- references/pathway-analysis--enrichment-visualization.md - Dot/bar/cnet/emap/GSEA plots and required pre-steps
 - differential-expression/de-results - Source of the gene list and the ranking statistic

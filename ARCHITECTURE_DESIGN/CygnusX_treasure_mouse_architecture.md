@@ -111,6 +111,52 @@ flowchart LR
 
 > 三者共享同一个 Gateway 与同一套业务 Service，是"寻宝鼠与平台 AI 不重复建链"的落地点。
 
+### 3.1 平台能力向模型传递与部署配置
+
+平台 BFF 每轮向受信 Node 入口传递 `platform_tools`，即使共享工具开关关闭，仍包含空
+`catalog` 和认证会话派生的 `project_selected`。开启共享工具后才追加有限委托与权限裁剪后的
+目录。Node 适配器把本轮实际可用工具名、通道是否可用、项目是否选择及
+`write_execution=false` 投影为系统消息中的 `platform_tool_context`；委托凭证不进入模型消息。
+普通独立入口不获得该系统上下文。双语提示词据此区分独立检索、平台预案、人工审批和真实执行，
+避免把平台请求一概回答成“只能提供链接、需要用户本地下载”。
+
+平台 Compose 的 `CYGNUSX_TOOL_CALLBACK_URL` 空值默认解析为固定内网地址
+`http://web:8000/api/v1/agent-tools/delegated/invoke`，允许运维显式覆盖。
+此默认地址不启用共享工具或任何执行能力。只读/预案接入仍需在对应迁移与权限校验通过后
+显式启用 `TOOL_GATEWAY_READ_ENABLED`；Dataset 发现另需 `DATASET_DISCOVERY_READONLY`。
+
+2026-10-27 运行排查：当时 Web 容器的上述两个开关均为 false，Node 回调地址为空；
+Agent 下载/分析写开关也均为 false，且源码写门禁未验收。该环境因此没有平台预案工具，
+也不能执行下载或提交分析。上述状态传递、提示词与 Compose 默认地址修复仅在工作树完成，
+不代表已重建部署或已开放执行。验证覆盖 BFF 真实会话上下文、Node handler 模型请求与
+受限回调的隔离 I/O；未用模型桩或隔离测试证明真实 Worker/传输/分析运行验收。
+
+### 3.2 通用下载与分析预案的页面恢复
+
+`useResearchWorkflow` 现消费共享 Gateway `related[].proposal` 中的 `downloads.prepare` 与
+`analysis.prepare` 记录，和已有 `dataset_import` / `dataset_analysis` 一起投影到同一 React
+工作流面板。通用预案的会话、项目、operation 与 capability 必须匹配当前上下文；Vue 用
+持久记录维护私有审批路由映射，通用预案调用会话 Gateway `approve/reject`，Dataset 预案
+继续调用各自 API。页面仅投影白名单摘要，不传递 confirmation secret、身份字段或执行路径。
+
+恢复与流结束后的刷新按本轮真实目录里的 `tasks.list_related` 判断，不再依赖 Dataset
+导入开关。SSE 提示产生预案后，Vue 从持久 API 恢复并打开面板；不把模型返回文字当作
+可批准预案。审批仍是用户点击动作，不自动创建 Task。会话/项目切换、目录撤权和错误会
+清理私有路由映射，迟到响应不更新新上下文。
+
+父仓 `frontend/treasure-island/ResearchWorkflowPanel.tsx` 是新增的平台展示覆盖层，构建时
+覆盖冻结适配器的同名组件，归档源码保持原样。审批按钮按每条预案的真实 prepare 能力
+判断；过期预案显示 `EXPIRED` 并禁用。浏览器脚本
+`scripts/poc/treasure-platform-proposals-browser.mjs` 使用真实 Vue 工作台与构建后 Island、
+隔离 HTTP，覆盖通用预案的自动提示、人工下载批准/分析拒绝、刷新恢复、过期和撤权。
+证据在 `evidence/treasure-platform-tools-20261027/shared-proposals-browser.json`，不证明真实执行。
+
+实际配置模型另有一次能力问答验证：使用当前 Node 源码、Python 权威目录及真实下载能力
+描述，模型调用 `downloads.describe_capabilities` 并说明预案可用、真实执行受阻；回调为隔离
+适配，未调用真实 Gateway/Worker。结果在同目录 `live-model-download-capability.json`。
+当前数据库只读 schema 对账通过；宿主只读探针仍缺可写 cgroup 子树、可见 cgroup.kill 与
+项目硬配额挂载条件，真实下载/分析运行验收继续未完成。
+
 ---
 
 ## 4. 身份、项目与权限

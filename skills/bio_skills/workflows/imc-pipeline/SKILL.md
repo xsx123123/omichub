@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-imc-pipeline
 description: Orchestrates imaging mass cytometry from raw MCD acquisitions to patient-level spatial analysis, chaining steinbock preprocessing, Mesmer/Cellpose segmentation, single-cell quantification, phenotyping, and squidpy spatial statistics. Use when committing the panel + segmentation frame + pixel size (every per-cell number is a mask-bounded pixel average), compensating channel spillover on PIXELS before segmentation but running REDSEA lateral-spillover on the per-cell table AFTER segmentation, using arcsinh cofactor 1 (not the suspension-CyTOF 5), and aggregating to the PATIENT before any cross-condition test (cells and ROIs from one patient are not independent replicates). Hands mechanism to the imaging-mass-cytometry component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 成像质谱细胞术流程
+display_name_en: Imaging Mass Cytometry Pipeline
+description_zh: >-
+  从原始 MCD 采集到患者层面空间分析的成像质谱细胞术全流程，串联 steinbock 预处理、Mesmer/Cellpose 分割、单细胞定量、表型注释与 squidpy 空间统计。
+description_en: >-
+  Orchestrates imaging mass cytometry from raw MCD acquisitions to patient-level spatial analysis, chaining steinbock preprocessing, Mesmer/Cellpose segmentation, single-cell quantification, phenotyping, and squidpy spatial statistics. Use when committing the panel + segmentation frame + pixel size (every per-cell number is a mask-bounded pixel average), compensating channel spillover on PIXELS before segmentation but running REDSEA lateral-spillover on the per-cell table AFTER segmentation, using arcsinh cofactor 1 (not the suspension-CyTOF 5), and aggregating to the PATIENT before any cross-condition test (cells and ROIs from one patient are not independent replicates). Hands mechanism to the imaging-mass-cytometry component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 IMC 数据做细胞分割、表型和空间分析"
+  - "帮我补偿通道溢漏并生成单细胞表"
+  - "分析肿瘤组织中细胞类型的空间邻接关系"
+examples_en:
+  - "Segment cells, phenotype them, and run spatial analysis on this IMC dataset"
+  - "Compensate channel spillover and build the single-cell table"
+  - "Analyze spatial neighborhoods of cell types in this tumor section"
 tool_type: python
 primary_tool: steinbock
 goal_approach_exempt: true
@@ -314,12 +330,12 @@ sq.gr.nhood_enrichment(adata, cluster_key='cell_type')   # see spatial-analysis 
 
 ## Related Skills
 
-- imaging-mass-cytometry/data-preprocessing - Hot pixel, spillover
-- imaging-mass-cytometry/cell-segmentation - Cellpose/Mesmer details
-- imaging-mass-cytometry/phenotyping - Cluster annotation
-- imaging-mass-cytometry/spatial-analysis - Spatial statistics
-- imaging-mass-cytometry/differential-analysis - Patient-level cross-condition testing
-- imaging-mass-cytometry/interactive-annotation - Manual cell labeling
-- imaging-mass-cytometry/quality-metrics - QC metrics
+- references/imaging-mass-cytometry--data-preprocessing.md - Hot pixel, spillover
+- references/imaging-mass-cytometry--cell-segmentation.md - Cellpose/Mesmer details
+- references/imaging-mass-cytometry--phenotyping.md - Cluster annotation
+- references/imaging-mass-cytometry--spatial-analysis.md - Spatial statistics
+- references/imaging-mass-cytometry--differential-analysis.md - Patient-level cross-condition testing
+- references/imaging-mass-cytometry--interactive-annotation.md - Manual cell labeling
+- references/imaging-mass-cytometry--quality-metrics.md - QC metrics
 - single-cell/clustering - Clustering methods
 - spatial-transcriptomics/spatial-statistics - Related spatial methods

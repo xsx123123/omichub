@@ -62,23 +62,23 @@ Tell your AI agent what you want to do:
 - **Gene-peak links**: Signac LinkPeaks for direct correlation; for full ABC enhancer-gene see atac-seq/enhancer-gene-linking
 - **Cell types**: Annotate using RNA markers primarily; gene activity scores from ATAC are approximate
 - **cellranger-arc vs cellranger-atac**: Multiome (paired) requires cellranger-arc; barcode universes differ
-- **Per-cell TF activity**: chromVAR via `Signac::RunChromVAR` after AddMotifs; see atac-seq/motif-deviation
-- **Cis-regulatory inference**: Cicero on the ATAC assay or ArchR getCoAccessibility; see atac-seq/co-accessibility
+- **Per-cell TF activity**: chromVAR via `Signac::RunChromVAR` after AddMotifs; see references/atac-seq--motif-deviation.md
+- **Cis-regulatory inference**: Cicero on the ATAC assay or ArchR getCoAccessibility; see references/atac-seq--co-accessibility.md
 
 ## Related Skills
 
-- single-cell/data-io - 10X, h5ad, RDS, and h5mu loading
-- single-cell/preprocessing - Per-modality QC and normalization
+- references/single-cell--data-io.md - 10X, h5ad, RDS, and h5mu loading
+- references/single-cell--preprocessing.md - Per-modality QC and normalization
 - single-cell/doublet-detection - RNA-based and hashing doublet removal
-- single-cell/clustering - Cluster validation on the joint graph
+- references/single-cell--clustering.md - Cluster validation on the joint graph
 - single-cell/markers-annotation - Marker discovery and pseudobulk condition DE
 - single-cell/cell-annotation - Reference-based label transfer from the RNA modality
 - single-cell/differential-abundance - Test whether cell-type proportions shifted between conditions
-- single-cell/multimodal-integration - WNN, totalVI/MultiVI, and MOFA details
-- single-cell/scatac-analysis - ATAC-specific processing and AMULET fragment-based doublet detection
+- references/single-cell--multimodal-integration.md - WNN, totalVI/MultiVI, and MOFA details
+- references/single-cell--scatac-analysis.md - ATAC-specific processing and AMULET fragment-based doublet detection
 - differential-expression/deseq2-basics - Pseudobulk condition DE engine for aggregated counts
-- atac-seq/single-cell-atac - Signac / ArchR / SnapATAC2 ecosystem decision
-- atac-seq/co-accessibility - Cicero / ArchR getCoAccessibility for cis-regulatory inference
+- references/atac-seq--single-cell-atac.md - Signac / ArchR / SnapATAC2 ecosystem decision
+- references/atac-seq--co-accessibility.md - Cicero / ArchR getCoAccessibility for cis-regulatory inference
 - atac-seq/enhancer-gene-linking - ABC, ENCODE-rE2G for enhancer-gene mapping
-- atac-seq/motif-deviation - chromVAR for per-cell TF motif activity
+- references/atac-seq--motif-deviation.md - chromVAR for per-cell TF motif activity
 - atac-seq/footprinting - scprinter for single-cell footprinting

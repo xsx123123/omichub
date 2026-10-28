@@ -1,0 +1,21 @@
+ .env.example                                       |   2 +
+ ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md   |  18 +-
+ deploy/docker/docker-compose.yml                   |   2 +-
+ frontend/scripts/build-treasure-island.mjs         |   6 +-
+ frontend/src/api/researchAgent.ts                  |  10 ++
+ frontend/src/types/treasureIsland.d.ts             |   3 +-
+ frontend/src/views/TreasureResearchWorkbench.vue   |   3 +
+ frontend/treasure-island/FullPresentation.tsx      |   4 +-
+ frontend/treasure-island/index.tsx                 |   2 +-
+ frontend/treasure-island/platformStats.ts          |  21 +++
+ pipelines/Treasure-Seeking_Mouse                   |   2 +-
+ scripts/poc/treasure-runtime-usage.mjs             |  67 ++++++++
+ scripts/poc/treasure-stats-browser.mjs             | 120 ++++++++++++++
+ src/cygnusx/api/v1/research_agent.py               |  28 ++++
+ src/cygnusx/application/schemas/research_stats.py  |  71 ++++++++
+ .../application/services/research_stats_service.py | 178 ++++++++++++++++++++
+ .../services/research_treasure_service.py          |  16 ++
+ src/cygnusx/core/config.py                         |   2 +
+ tests/integration/test_research_stats_isolated.py  | 182 +++++++++++++++++++++
+ tests/unit/test_treasure_native_access.py          |  38 +++++
+ 20 files changed, 766 insertions(+), 9 deletions(-)

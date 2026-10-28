@@ -1,0 +1,220 @@
+{
+  "started_at": "2026-10-26T17:51:43.679813+00:00",
+  "base_url": "http://127.0.0.1:8888",
+  "profile": "static",
+  "paths": [
+    "/",
+    "/assets/index-uK8fN8a5.js",
+    "/assets/index-C5OoxyCi.css"
+  ],
+  "think_time_s": 1,
+  "warmup_s": 0.0,
+  "timeout_s": 15,
+  "criteria": {
+    "max_error_rate": 0.01,
+    "max_p95_ms": 1000
+  },
+  "model": "closed-loop: one outstanding request per virtual user",
+  "stages": [
+    {
+      "users": 10,
+      "requested_duration_s": 15.0,
+      "elapsed_s": 15.089,
+      "requests": 157,
+      "successful_requests": 157,
+      "rps": 10.41,
+      "successful_rps": 10.41,
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 157
+      },
+      "errors": {},
+      "latency_ms": {
+        "p50": 3.07,
+        "p95": 46.68,
+        "p99": 95.72,
+        "max": 95.82
+      },
+      "successful_latency_ms": {
+        "p50": 3.07,
+        "p95": 46.68,
+        "p99": 95.72
+      },
+      "generator_event_loop_lag_p99_ms": 1.94,
+      "endpoints": {
+        "/": {
+          "requests": 52,
+          "p95_ms": 33.41,
+          "statuses": {
+            "200": 52
+          }
+        },
+        "/assets/index-uK8fN8a5.js": {
+          "requests": 52,
+          "p95_ms": 51.02,
+          "statuses": {
+            "200": 52
+          }
+        },
+        "/assets/index-C5OoxyCi.css": {
+          "requests": 53,
+          "p95_ms": 33.42,
+          "statuses": {
+            "200": 53
+          }
+        }
+      },
+      "passed": true
+    },
+    {
+      "users": 20,
+      "requested_duration_s": 15.0,
+      "elapsed_s": 15.096,
+      "requests": 311,
+      "successful_requests": 311,
+      "rps": 20.6,
+      "successful_rps": 20.6,
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 311
+      },
+      "errors": {},
+      "latency_ms": {
+        "p50": 2.88,
+        "p95": 43.8,
+        "p99": 97.85,
+        "max": 128.49
+      },
+      "successful_latency_ms": {
+        "p50": 2.88,
+        "p95": 43.8,
+        "p99": 97.85
+      },
+      "generator_event_loop_lag_p99_ms": 1.95,
+      "endpoints": {
+        "/": {
+          "requests": 104,
+          "p95_ms": 32.28,
+          "statuses": {
+            "200": 104
+          }
+        },
+        "/assets/index-uK8fN8a5.js": {
+          "requests": 105,
+          "p95_ms": 58.11,
+          "statuses": {
+            "200": 105
+          }
+        },
+        "/assets/index-C5OoxyCi.css": {
+          "requests": 102,
+          "p95_ms": 33.98,
+          "statuses": {
+            "200": 102
+          }
+        }
+      },
+      "passed": true
+    },
+    {
+      "users": 50,
+      "requested_duration_s": 15.0,
+      "elapsed_s": 15.094,
+      "requests": 771,
+      "successful_requests": 771,
+      "rps": 51.08,
+      "successful_rps": 51.08,
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 771
+      },
+      "errors": {},
+      "latency_ms": {
+        "p50": 2.95,
+        "p95": 59.28,
+        "p99": 145.28,
+        "max": 177.33
+      },
+      "successful_latency_ms": {
+        "p50": 2.95,
+        "p95": 59.28,
+        "p99": 145.28
+      },
+      "generator_event_loop_lag_p99_ms": 1.83,
+      "endpoints": {
+        "/": {
+          "requests": 259,
+          "p95_ms": 40.91,
+          "statuses": {
+            "200": 259
+          }
+        },
+        "/assets/index-C5OoxyCi.css": {
+          "requests": 254,
+          "p95_ms": 47.83,
+          "statuses": {
+            "200": 254
+          }
+        },
+        "/assets/index-uK8fN8a5.js": {
+          "requests": 258,
+          "p95_ms": 72.47,
+          "statuses": {
+            "200": 258
+          }
+        }
+      },
+      "passed": true
+    },
+    {
+      "users": 100,
+      "requested_duration_s": 15.0,
+      "elapsed_s": 15.094,
+      "requests": 1530,
+      "successful_requests": 1530,
+      "rps": 101.36,
+      "successful_rps": 101.36,
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 1530
+      },
+      "errors": {},
+      "latency_ms": {
+        "p50": 2.65,
+        "p95": 60.0,
+        "p99": 149.77,
+        "max": 207.2
+      },
+      "successful_latency_ms": {
+        "p50": 2.65,
+        "p95": 60.0,
+        "p99": 149.77
+      },
+      "generator_event_loop_lag_p99_ms": 1.86,
+      "endpoints": {
+        "/": {
+          "requests": 510,
+          "p95_ms": 49.63,
+          "statuses": {
+            "200": 510
+          }
+        },
+        "/assets/index-C5OoxyCi.css": {
+          "requests": 510,
+          "p95_ms": 54.91,
+          "statuses": {
+            "200": 510
+          }
+        },
+        "/assets/index-uK8fN8a5.js": {
+          "requests": 510,
+          "p95_ms": 78.57,
+          "statuses": {
+            "200": 510
+          }
+        }
+      },
+      "passed": true
+    }
+  ]
+}

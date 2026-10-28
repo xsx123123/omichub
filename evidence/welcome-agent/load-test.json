@@ -1,0 +1,15 @@
+{
+  "requests": 200,
+  "concurrency": 20,
+  "claimed": 1,
+  "suppressed": 199,
+  "errors": 0,
+  "claim_latency_ms": {
+    "p50": 478.1140020058956,
+    "p95": 668.5421139991377,
+    "p99": 834.8390690225642
+  },
+  "impression_accepted": true,
+  "source": "agent_pool",
+  "scope": "isolated PostgreSQL; native JWT auth; simulated Monday business clock; local HTTP server"
+}

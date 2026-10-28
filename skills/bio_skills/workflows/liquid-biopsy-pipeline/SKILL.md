@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-liquid-biopsy-pipeline
 description: Orchestrates the cell-free DNA / liquid-biopsy pipeline from plasma sequencing to tumor monitoring, forking tumor-naive (screening) vs tumor-informed (MRD), and chaining pre-analytic QC, UMI/duplex error-suppression (fgbio), fragment QC, ichorCNA tumor fraction (sWGS) or VarDict low-VAF calling (panel), CHIP subtraction against matched WBC, optional fragmentomics/methylation, and longitudinal tracking. Use when treating pre-analytics as the irreversible sensitivity ceiling (tube/time-to-plasma/hemolysis), running error-suppression BEFORE calling (single-strand consensus does not remove deamination; only duplex does), reporting a VAF only with input genome-equivalents (TF ~ 2x VAF only for clonal-het-diploid), subtracting CHIP before reporting somatic, or keeping tube/panel/pipeline identical across a longitudinal MRD series. Hands mechanism to the liquid-biopsy component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 液体活检分析流程
+display_name_en: Liquid Biopsy Pipeline
+description_zh: >-
+  从血浆测序到肿瘤监测的 cfDNA 与液体活检全流程，区分 tumor-naive 筛查与 tumor-informed MRD，涵盖分析前质控、UMI/双链纠错、片段质控、ichorCNA 肿瘤分数、低 VAF 调用与 CHIP 扣除。
+description_en: >-
+  Orchestrates the cell-free DNA / liquid-biopsy pipeline from plasma sequencing to tumor monitoring, forking tumor-naive (screening) vs tumor-informed (MRD), and chaining pre-analytic QC, UMI/duplex error-suppression (fgbio), fragment QC, ichorCNA tumor fraction (sWGS) or VarDict low-VAF calling (panel), CHIP subtraction against matched WBC, optional fragmentomics/methylation, and longitudinal tracking. Use when treating pre-analytics as the irreversible sensitivity ceiling (tube/time-to-plasma/hemolysis), running error-suppression BEFORE calling (single-strand consensus does not remove deamination; only duplex does), reporting a VAF only with input genome-equivalents (TF ~ 2x VAF only for clonal-het-diploid), subtracting CHIP before reporting somatic, or keeping tube/panel/pipeline identical across a longitudinal MRD series. Hands mechanism to the liquid-biopsy component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 cfDNA 测序估算肿瘤分数"
+  - "帮我搭建 tumor-informed MRD 监测流程"
+  - "对低 VAF 变异做双链纠错并扣除 CHIP"
+examples_en:
+  - "Estimate tumor fraction from my cfDNA sequencing data"
+  - "Set up a tumor-informed MRD monitoring workflow"
+  - "Apply duplex error suppression and subtract CHIP from low-VAF calls"
 tool_type: mixed
 primary_tool: ichorCNA
 goal_approach_exempt: true
@@ -105,7 +121,7 @@ def check_preanalytical_quality(sample_metadata):
 # For UMI-tagged libraries (targeted panels)
 # fgbio pipeline
 
-# Extract UMIs. Read-structure is library-specific; see liquid-biopsy/cfdna-preprocessing.
+# Extract UMIs. Read-structure is library-specific; see references/liquid-biopsy--cfdna-preprocessing.md.
 fgbio ExtractUmisFromBam \
     --input raw.bam \
     --output with_umis.bam \
@@ -181,7 +197,7 @@ def verify_cfdna_quality(bam_path):
 
 ## Step 3a: Tumor Fraction Estimation (sWGS)
 
-ichorCNA is a command-line script (`Rscript scripts/runIchorCNA.R`), NOT an importable `runIchorCNA()` function, and it is preceded by HMMcopy `readCounter` to bin the BAM. The ~3% tumor-fraction floor is an analytical limit of detection; below it, route to fragmentomics or methylation rather than trusting a low value (see liquid-biopsy/analytical-validation and liquid-biopsy/tumor-fraction-estimation).
+ichorCNA is a command-line script (`Rscript scripts/runIchorCNA.R`), NOT an importable `runIchorCNA()` function, and it is preceded by HMMcopy `readCounter` to bin the BAM. The ~3% tumor-fraction floor is an analytical limit of detection; below it, route to fragmentomics or methylation rather than trusting a low value (see references/liquid-biopsy--analytical-validation.md and references/liquid-biopsy--tumor-fraction-estimation.md).
 
 ```bash
 # For shallow WGS data (0.1-1x coverage); GavinHaLab fork
@@ -223,7 +239,7 @@ var2vcf_valid.pl \
 
 ## Step 4: CHIP Filtering
 
-Clonal hematopoiesis (CHIP) is the dominant false-positive source in plasma: ~81.6% of cfDNA variants in controls and ~53.2% in cancer patients trace to white blood cells (Razavi 2019 Nat Med 25:1928). A gene-list filter is a weak fallback; the definitive control is sequencing matched buffy-coat/WBC DNA and subtracting any variant present there. See liquid-biopsy/ctdna-mutation-detection.
+Clonal hematopoiesis (CHIP) is the dominant false-positive source in plasma: ~81.6% of cfDNA variants in controls and ~53.2% in cancer patients trace to white blood cells (Razavi 2019 Nat Med 25:1928). A gene-list filter is a weak fallback; the definitive control is sequencing matched buffy-coat/WBC DNA and subtracting any variant present there. See references/liquid-biopsy--ctdna-mutation-detection.md.
 
 ```python
 CHIP_GENES = ['DNMT3A', 'TET2', 'ASXL1', 'PPM1D', 'JAK2', 'SF3B1', 'SRSF2', 'TP53']
@@ -258,7 +274,7 @@ finaletoolkit mds sample.end_motifs.tsv
 ```
 
 ```python
-from finaletoolkit.frag import delfi  # see liquid-biopsy/fragment-analysis
+from finaletoolkit.frag import delfi  # see references/liquid-biopsy--fragment-analysis.md
 
 def run_fragmentomics(bam_path, chrom_sizes, reference, bins_bed, gap_bed):
     '''GC-corrected DELFI short/long profile (MDS comes from end_motifs().motif_diversity_score()).
@@ -352,12 +368,12 @@ Pipeline-level selection only; mechanism lives in the component skills.
 
 | Situation | Branch | Hand off to |
 |-----------|--------|-------------|
-| Screening / no known tumor / MCED | tumor-NAIVE (fixed panel, sWGS, or methylation) | liquid-biopsy/methylation-based-detection |
-| MRD/recurrence of a KNOWN tumor | tumor-INFORMED bespoke (16-50 clonal variants from tissue WES) | liquid-biopsy/longitudinal-monitoring |
-| Tumor fraction from sWGS (0.1-1x) | ichorCNA (copy-number-based, floor ~3% TF) | liquid-biopsy/tumor-fraction-estimation |
-| Low-VAF mutations from a deep panel | VarDict / smCounter2 on the UMI-consensus BAM | liquid-biopsy/ctdna-mutation-detection |
-| Below mutation LoD, still need signal | fragmentomics (DELFI/end-motifs) or methylation | liquid-biopsy/fragment-analysis |
-| Stating/trusting a sensitivity claim | LoB/LoD/LoD95/LoQ, per-locus vs panel-integrated | liquid-biopsy/analytical-validation |
+| Screening / no known tumor / MCED | tumor-NAIVE (fixed panel, sWGS, or methylation) | references/liquid-biopsy--methylation-based-detection.md |
+| MRD/recurrence of a KNOWN tumor | tumor-INFORMED bespoke (16-50 clonal variants from tissue WES) | references/liquid-biopsy--longitudinal-monitoring.md |
+| Tumor fraction from sWGS (0.1-1x) | ichorCNA (copy-number-based, floor ~3% TF) | references/liquid-biopsy--tumor-fraction-estimation.md |
+| Low-VAF mutations from a deep panel | VarDict / smCounter2 on the UMI-consensus BAM | references/liquid-biopsy--ctdna-mutation-detection.md |
+| Below mutation LoD, still need signal | fragmentomics (DELFI/end-motifs) or methylation | references/liquid-biopsy--fragment-analysis.md |
+| Stating/trusting a sensitivity claim | LoB/LoD/LoD95/LoQ, per-locus vs panel-integrated | references/liquid-biopsy--analytical-validation.md |
 
 Tumor-informed reaches ppm by integrating across 16-50 loci (beats the single-locus Poisson floor) but is BLIND by design to new/resistance variants; tumor-naive sees any panel variant but is CHIP-dominated and error-limited.
 
@@ -382,10 +398,10 @@ Tumor-informed reaches ppm by integrating across 16-50 loci (beats the single-lo
 
 ## Related Skills
 
-- liquid-biopsy/cfdna-preprocessing - UMI/duplex consensus error suppression
-- liquid-biopsy/analytical-validation - molecule-counting limits of detection and honest LoD reporting
-- liquid-biopsy/ctdna-mutation-detection - low-VAF calling and CHIP subtraction
-- liquid-biopsy/tumor-fraction-estimation - ichorCNA tumor fraction from sWGS
-- liquid-biopsy/fragment-analysis - fragmentomics features
-- liquid-biopsy/methylation-based-detection - methylation detection and tissue-of-origin
-- liquid-biopsy/longitudinal-monitoring - serial MRD tracking
+- references/liquid-biopsy--cfdna-preprocessing.md - UMI/duplex consensus error suppression
+- references/liquid-biopsy--analytical-validation.md - molecule-counting limits of detection and honest LoD reporting
+- references/liquid-biopsy--ctdna-mutation-detection.md - low-VAF calling and CHIP subtraction
+- references/liquid-biopsy--tumor-fraction-estimation.md - ichorCNA tumor fraction from sWGS
+- references/liquid-biopsy--fragment-analysis.md - fragmentomics features
+- references/liquid-biopsy--methylation-based-detection.md - methylation detection and tissue-of-origin
+- references/liquid-biopsy--longitudinal-monitoring.md - serial MRD tracking

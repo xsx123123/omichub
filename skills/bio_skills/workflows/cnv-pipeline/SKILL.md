@@ -2,6 +2,22 @@
 name: bio-workflows-cnv-pipeline
 description: >-
   Orchestrates the copy-number pipeline from BAM to segmented, integer-called, annotated CNVs, forking on germline-vs-somatic - CNVkit (somatic exome/panel: coverage -> assay-matched reference/PoN -> fix -> segment -> purity/ploidy-aware call), GATK gCNV (germline rare-CNV cohort), and allele-specific callers (ASCAT/FACETS/PURPLE) for purity/ploidy. Use when committing the build + target/access BED + PoN once (assay-matched), building the reference from normals BEFORE segmenting, fitting purity/ploidy BEFORE integer calls in tumors, centering on the true (non-diploid) mode before GISTIC2 recurrence, or routing cfDNA to ichorCNA. Hands mechanism to the copy-number component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 拷贝数变异分析流程
+display_name_en: Copy Number Variation Pipeline
+description_zh: >-
+  从 BAM 到分段、整数判定与注释 CNV 的拷贝数流程，区分胚系与体细胞：CNVkit 适用于体细胞外显子与 panel，GATK gCNV 适用于胚系罕见 CNV 队列，ASCAT/FACETS/PURPLE 用于等位基因特异分析。
+description_en: >-
+  Orchestrates the copy-number pipeline from BAM to segmented, integer-called, annotated CNVs, forking on germline-vs-somatic - CNVkit (somatic exome/panel: coverage -> assay-matched reference/PoN -> fix -> segment -> purity/ploidy-aware call), GATK gCNV (germline rare-CNV cohort), and allele-specific callers (ASCAT/FACETS/PURPLE) for purity/ploidy. Use when committing the build + target/access BED + PoN once (assay-matched), building the reference from normals BEFORE segmenting, fitting purity/ploidy BEFORE integer calls in tumors, centering on the true (non-diploid) mode before GISTIC2 recurrence, or routing cfDNA to ichorCNA. Hands mechanism to the copy-number component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用肿瘤-正常配对样本做 CNVkit 分析并注释"
+  - "帮我构建与分析类型匹配的 PoN 参考"
+  - "对肿瘤样本拟合纯度和倍性后再做整数拷贝判定"
+examples_en:
+  - "Call and annotate CNVs from my tumor-normal pair with CNVkit"
+  - "Build an assay-matched PoN reference before segmenting"
+  - "Fit purity and ploidy before integer copy-number calling"
 tool_type: mixed
 primary_tool: CNVkit
 goal_approach_exempt: true
@@ -52,19 +68,19 @@ A CNV callset is decided at three seams, not inside the caller.
 
 ```
 BAM (tumor +/- matched normal, OR germline cohort)
-  | fork: germline rare-CNV cohort? --> GATK gCNV  (copy-number/gatk-cnv)
+  | fork: germline rare-CNV cohort? --> GATK gCNV  (references/copy-number--gatk-cnv.md)
   v  else somatic exome/panel:
-  | [1] target/access/antitarget BED (build-matched)   (copy-number/cnvkit-analysis)
+  | [1] target/access/antitarget BED (build-matched)   (references/copy-number--cnvkit-analysis.md)
   v
   | [2] per-sample coverage
   v
   | [3] build reference/PoN from NORMALS first (assay-matched)
   v     ^-- tangent absorbs CNV shared across the PoN
   | [4] fix (bias-correct) -> segment -> call
-  v     ^-- purity/ploidy fitted BEFORE integer call (copy-number/allele-specific-copy-number)
-  | [5] visualize + gene-level annotate            (copy-number/cnv-visualization, cnv-annotation)
+  v     ^-- purity/ploidy fitted BEFORE integer call (references/copy-number--allele-specific-copy-number.md)
+  | [5] visualize + gene-level annotate            (references/copy-number--cnv-visualization.md, references/copy-number--cnv-annotation.md)
   v
-  | [6] (cohort) center on true mode -> GISTIC2 recurrence  (copy-number/recurrent-cnv)
+  | [6] (cohort) center on true mode -> GISTIC2 recurrence  (references/copy-number--recurrent-cnv.md)
   v
 Segmented, integer-called, annotated CNVs
 ```
@@ -93,11 +109,11 @@ Pipeline-level selection only; mechanism lives in the component skills.
 
 | Situation | Lean toward | Hand off to |
 |-----------|-------------|-------------|
-| Exome/targeted panel, somatic (tumor) CNV | CNVkit (target + antitarget bins) | copy-number/cnvkit-analysis |
-| Germline rare-CNV from a cohort of exomes | GATK gCNV (DetermineGermlineContigPloidy -> GermlineCNVCaller -> PostprocessGermlineCNVCalls) | copy-number/gatk-cnv |
-| WGS, need allele-specific CN + purity/ploidy | ASCAT / Sequenza / FACETS / PURPLE | copy-number/allele-specific-copy-number |
-| Relative copy-ratio segments (research) | GATK ModelSegments/CallCopyRatioSegments | copy-number/copy-ratio-segmentation |
-| Cohort recurrent/driver CNV | GISTIC2 (diploid-centered input) | copy-number/recurrent-cnv |
+| Exome/targeted panel, somatic (tumor) CNV | CNVkit (target + antitarget bins) | references/copy-number--cnvkit-analysis.md |
+| Germline rare-CNV from a cohort of exomes | GATK gCNV (DetermineGermlineContigPloidy -> GermlineCNVCaller -> PostprocessGermlineCNVCalls) | references/copy-number--gatk-cnv.md |
+| WGS, need allele-specific CN + purity/ploidy | ASCAT / Sequenza / FACETS / PURPLE | references/copy-number--allele-specific-copy-number.md |
+| Relative copy-ratio segments (research) | GATK ModelSegments/CallCopyRatioSegments | references/copy-number--copy-ratio-segmentation.md |
+| Cohort recurrent/driver CNV | GISTIC2 (diploid-centered input) | references/copy-number--recurrent-cnv.md |
 | cfDNA / low-pass tumor fraction | ichorCNA (NOT CNVkit) | workflows/liquid-biopsy-pipeline |
 
 ## Primary path: CNVkit (somatic exome/panel)
@@ -119,7 +135,7 @@ cnvkit.py segment ${s}.cnr -o ${s}.cns
 cnvkit.py call ${s}.cns --purity 0.6 --ploidy 2 -o ${s}.call.cns   # purity/ploidy from an allele-specific fit
 ```
 
-A runnable somatic CNVkit script (manual target -> coverage -> reference -> fix -> segment -> call path) is in this skill's examples/; germline cohorts use GATK gCNV (copy-number/gatk-cnv), not CNVkit.
+A runnable somatic CNVkit script (manual target -> coverage -> reference -> fix -> segment -> call path) is in this skill's examples/; germline cohorts use GATK gCNV (references/copy-number--gatk-cnv.md), not CNVkit.
 
 ## QC checkpoints between steps
 
@@ -140,18 +156,18 @@ A runnable somatic CNVkit script (manual target -> coverage -> reference -> fix 
 | A real common CNV vanishes | Tangent/pooled PoN absorbed the shared signal | Use a PoN that does not carry the event, or germline-CNV logic |
 | Every integer call shifted / inverted | Default purity/ploidy on an impure/WGD tumor | Fit purity/ploidy (ASCAT/FACETS/PURPLE) BEFORE `call` |
 | Inverted recurrence in the cohort | Uncentered WGD segments into GISTIC2 | Center on the true (non-diploid) mode first |
-| Cohort recurrence looks wrong | Concatenated per-sample `.cns` naively | Feed a diploid-centered `.seg` matrix to GISTIC2 (copy-number/recurrent-cnv) |
+| Cohort recurrence looks wrong | Concatenated per-sample `.cns` naively | Feed a diploid-centered `.seg` matrix to GISTIC2 (references/copy-number--recurrent-cnv.md) |
 | Sequenza install fails | `copynumber` removed from Bioconductor 3.18+ | Use a maintained fork (ShixiangWang/igordot) |
 
 ## Related Skills
 
-- copy-number/cnvkit-analysis - CNVkit coverage/fix/segment/call details
-- copy-number/gatk-cnv - GATK gCNV (germline cohort) and ModelSegments
-- copy-number/copy-ratio-segmentation - segmentation algorithm and depth-bias correction
-- copy-number/allele-specific-copy-number - purity/ploidy and integer allele-specific CN (ASCAT/FACETS/PURPLE)
-- copy-number/cnv-visualization - scatter/diagram/heatmap plotting
-- copy-number/cnv-annotation - gene-level CNV annotation
-- copy-number/recurrent-cnv - cohort recurrent/driver CNV with GISTIC2
+- references/copy-number--cnvkit-analysis.md - CNVkit coverage/fix/segment/call details
+- references/copy-number--gatk-cnv.md - GATK gCNV (germline cohort) and ModelSegments
+- references/copy-number--copy-ratio-segmentation.md - segmentation algorithm and depth-bias correction
+- references/copy-number--allele-specific-copy-number.md - purity/ploidy and integer allele-specific CN (ASCAT/FACETS/PURPLE)
+- references/copy-number--cnv-visualization.md - scatter/diagram/heatmap plotting
+- references/copy-number--cnv-annotation.md - gene-level CNV annotation
+- references/copy-number--recurrent-cnv.md - cohort recurrent/driver CNV with GISTIC2
 - copy-number/hrd-scoring - HRD scar score for PARP eligibility
 - workflows/liquid-biopsy-pipeline - cfDNA tumor-fraction CNV (ichorCNA)
 - workflows/somatic-variant-pipeline - consumes purity/ploidy for VAF-to-CCF

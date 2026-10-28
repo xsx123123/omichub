@@ -1,0 +1,34 @@
+{
+  "base_commit": "51003efa7db3b621898844cdbc747b5709f8f1da",
+  "actual_index_unchanged": true,
+  "proposals": [
+    {
+      "message": "feat(frontend): 美化分析产物 CSV TSV Excel 表格预览",
+      "files": [
+        "ARCHITECTURE_DESIGN/CygnusX_frontend.md",
+        "frontend/src/api/artifactPreview.ts",
+        "frontend/src/components/ai-chat/ArtifactTablePreview.vue",
+        "frontend/src/components/ai-chat/MessageArtifactGallery.vue",
+        "frontend/src/components/ai-chat/__tests__/artifact-preview-transport.test.ts",
+        "frontend/src/components/ai-chat/__tests__/artifact-table-preview.test.ts",
+        "frontend/src/components/ai-chat/__tests__/message-artifact-gallery.test.ts",
+        "frontend/src/components/studio/StudioArtifactsPanel.vue",
+        "frontend/src/utils/artifactTablePreview.ts",
+        "scripts/poc/artifact-table-browser.mjs"
+      ],
+      "patch": "evidence/artifact-table-preview/proposed-table-preview.patch",
+      "sha256": "35d598fffe612bfb308e8e9343c8fae65a2df2390f561ae41b3ea8672b4b17a7"
+    },
+    {
+      "message": "feat(frontend): replace platform header with CygnusX wordmark",
+      "files": [
+        "frontend/public/cygnusx-wordmark.png",
+        "frontend/src/components/brand/PlatformBrandLogo.vue",
+        "frontend/src/layouts/DefaultLayout.vue",
+        "scripts/poc/platform-logo-browser.mjs"
+      ],
+      "patch": "evidence/artifact-table-preview/proposed-platform-logo.patch",
+      "sha256": "62f09d38a5f95f2da009fe8e58a1221ff4dd9a65f8c251a0e250c7f404a4a41e"
+    }
+  ]
+}

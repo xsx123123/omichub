@@ -201,6 +201,40 @@ bash deploy/studio/build.sh
 
 该命令按顺序构建 base、bio、browser-office 三个镜像。部署前应将 `studio.images.*.image` 标签与实际推送的镜像标签同步。
 
+Studio 三层 Dockerfile 的 pip 安装统一消费 `PIP_INDEX_URL`、`PIP_TIMEOUT`、
+`PIP_RETRIES` 构建参数。默认阿里云源，`deploy/studio/build.sh` 仅在识别到 pip 安装进程的
+下载网络/哈希错误时，切换 `PIP_FALLBACK_INDEX_URL`（默认清华）并从 base 重试整条链。每次尝试只用
+一个源，继续保留 pip 哈希校验与 BuildKit 下载缓存；不会用 `extra-index-url` 混合选包。
+任一备用源构建失败仍返回非零退出码。传入空的 `PIP_FALLBACK_INDEX_URL` 可禁用回退，
+便于定位非 PyPI 构建错误；只执行 `docker build` 的调用方需自行控制重试。
+Docker/BuildKit frontend、APT、依赖冲突和安装后的权限错误保持原退出码，不触发换源。
+每层原始日志写入 `logs/studio-build/`（可用 `STUDIO_BUILD_LOG_DIR` 覆盖），主源和备用源
+失败日志均保留，避免后一次错误掩盖首个错误。
+
+```bash
+# 指定源并禁止自动回退；不需要清空整个 Docker/pip 缓存
+PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/ \
+PIP_FALLBACK_INDEX_URL='' make docker-build-studio-sandboxes
+```
+
+2026-10-25 的 `matplotlib-venn` 构建错误中，实际哈希
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+对应空文件，不应通过改预期哈希或关闭校验绕过。随后对三个源的相同 wheel 实测均为
+33,191 字节，SHA-256 与日志预期一致；源故障可恢复，不能仅因稍后下载成功排除当时的空响应。
+
+本轮先以隔离标签 `pipfix-9664dded` 完成三层实际 Docker 构建，再通过默认
+`make docker-build-studio-sandboxes` 重建 `v0.0.2dev` 的三个镜像，未重启主栈。
+生信镜像的 `pip check`、scanpy/anndata/pysam/bioinfokit/matplotlib-venn 导入、
+sandbox-agent 导入及 samtools/bedtools/blast/seqkit 版本探针通过；browser-office 的
+Playwright/docx/pptx 导入与 Chromium/LibreOffice 版本探针通过，两个镜像均以
+`10001:10001`、只读根和禁网运行验证。相关 32 项单测、17 个镜像映射、19 个 Agent
+运行时校验通过。构建失败停止、整链换源、禁止/重复备用源及备用源失败退出码均有离线回归。
+
+重复失败的 BuildKit 历史记录进一步显示：阿里云下的 bio 层已成功，browser-office 的
+首次失败发生在 Dockerfile frontend，错误为 `Unknown frontend grpc server closed unexpectedly`。
+旧版控制脚本对任意构建错误都回退中科大，继而触发空 wheel 错误，掩盖了 frontend 原因；
+现增加了非下载错误不得换源的回归，并将已重复出错的中科大源移出默认备用路径。
+
 ## 6. 后续阶段
 
 1. **Browser MVP**：在 sandbox-agent 添加 URL 校验、导航、截图、点击和填写接口；所有调用先由 Studio 工具路由鉴权并写审计日志。

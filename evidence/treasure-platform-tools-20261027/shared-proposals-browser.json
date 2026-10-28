@@ -1,0 +1,12 @@
+{
+  "status": "PASS_ISOLATED_BROWSER",
+  "scope": "ISOLATED_HTTP_NOT_RUNTIME_ACCEPTANCE",
+  "checks": [
+    "SSE proposal event opens persisted shared proposals without Dataset permissions; no automatic approval",
+    "Human download approval and analysis rejection each call the session Gateway once; no Dataset or Task endpoint",
+    "Reload restores durable approval/rejection without replaying decisions",
+    "Expired shared proposal cannot be approved",
+    "Revoking downloads.prepare removes download proposals and approval bindings"
+  ],
+  "errors": []
+}

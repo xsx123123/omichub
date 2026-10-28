@@ -1,0 +1,12 @@
+{
+  "port": 18313,
+  "pid": 15913,
+  "app_debug": false,
+  "pool_size": 3,
+  "max_overflow": 0,
+  "legacy_wrappers": false,
+  "request_identity_cache": true,
+  "audit_call": "AuditMiddleware.__call__",
+  "cookie_call": "CookieRequiredMiddleware.__call__",
+  "lifecycle": "read-only capacity startup; real routes and request middleware"
+}

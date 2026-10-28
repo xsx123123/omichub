@@ -1,0 +1,18 @@
+{
+  "image": "cygnusx-treasure-mouse-chat:16f2376",
+  "checks": [
+    "Actual image starts",
+    "Trusted endpoint accepts platform identity",
+    "OpenAI SSE usage parsed",
+    "Request-local token telemetry emitted before end"
+  ],
+  "usage": {
+    "event": "usage",
+    "llm_calls": 1,
+    "usage": {
+      "prompt_tokens": 37,
+      "completion_tokens": 5,
+      "total_tokens": 42
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "scope": "same host/container, independent real Web processes; isolated read-only startup",
+  "stages": [
+    {
+      "processes": 8,
+      "exit_code": 0
+    },
+    {
+      "processes": 16,
+      "exit_code": 0
+    }
+  ],
+  "fixed_rate_trials": [
+    {
+      "rate": 1250,
+      "exit_code": 0
+    },
+    {
+      "rate": 1500,
+      "exit_code": 99
+    },
+    {
+      "rate": 2000,
+      "exit_code": 99
+    }
+  ],
+  "gateway_quit_exit_code": 0,
+  "probe_client_exit_codes": [
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130,
+    130
+  ],
+  "gateway_client_exit_code": 0
+}

@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-tcr-pipeline
 description: Orchestrates an end-to-end immune-repertoire pipeline from FASTQ to clonotypes, diversity, overlap, somatic hypermutation and lineages, routing on two forks. Use when deciding bulk vs single-cell (bulk amplicon/RNA-seq -> MiXCR analyze preset -> VDJtools/immunarch depth-normalized diversity and overlap -> figures; 10x paired VDJ -> MiXCR 10x preset or Cell Ranger -> scirpy gene-expression integration, chain QC, clonotype clusters); and TCR vs BCR (TCR -> exact CDR3-nt+V/J clonotypes, VDJtools diversity is fine; BCR -> somatic hypermutation makes exact clonotypes wrong -> Immcantation distToNearest/findThreshold clonal clustering, germline reconstruction, SHM, Dowser lineages); selecting the MiXCR 4.x preset by chemistry and activating its license; downsampling to equal depth before comparing diversity or overlap; and optionally annotating antigen specificity.
+version: 1.0.0
+display_name: 免疫组库分析流程
+display_name_en: Immune Repertoire Pipeline
+description_zh: >-
+  从 FASTQ 到克隆型、多样性、重叠、体细胞高频突变与谱系的免疫组库全流程，先区分 bulk 与单细胞路线：bulk 走 MiXCR 预设加 VDJtools/immunarch，10x 走 MiXCR 10x 或 Cell Ranger 加 scirpy。
+description_en: >-
+  Orchestrates an end-to-end immune-repertoire pipeline from FASTQ to clonotypes, diversity, overlap, somatic hypermutation and lineages, routing on two forks. Use when deciding bulk vs single-cell (bulk amplicon/RNA-seq -> MiXCR analyze preset -> VDJtools/immunarch depth-normalized diversity and overlap -> figures; 10x paired VDJ -> MiXCR 10x preset or Cell Ranger -> scirpy gene-expression integration, chain QC, clonotype clusters); and TCR vs BCR (TCR -> exact CDR3-nt+V/J clonotypes, VDJtools diversity is fine; BCR -> somatic hypermutation makes exact clonotypes wrong -> Immcantation distToNearest/findThreshold clonal clustering, germline reconstruction, SHM, Dowser lineages); selecting the MiXCR 4.x preset by chemistry and activating its license; downsampling to equal depth before comparing diversity or overlap; and optionally annotating antigen specificity.
+author: JZHANG
+examples_zh:
+  - "用 bulk TCR 测序数据做克隆型多样性分析"
+  - "帮我比较两组样本的克隆重叠"
+  - "用 10x VDJ 数据整合基因表达做单细胞组库分析"
+examples_en:
+  - "Analyze clonotype diversity from my bulk TCR sequencing data"
+  - "Compare clonotype overlap between two samples"
+  - "Integrate 10x VDJ data with gene expression for single-cell repertoire analysis"
 tool_type: cli
 primary_tool: MiXCR
 workflow: true
@@ -112,7 +128,7 @@ Preset by chemistry (verify against `mixcr analyze --help` and the built-in pres
 | 10x single-cell V(D)J | `10x-sc-xcr-vdj` |
 | Takara SMARTer | `takara-human-rna-tcr-umi-smarter-v2`, `takara-human-rna-bcr-umi-smarter` |
 | BD Rhapsody | `bd-human-sc-xcr-rhapsody-cdr3` |
-| Full component-skill preset table | tcr-bcr-analysis/mixcr-analysis |
+| Full component-skill preset table | references/tcr-bcr-analysis--mixcr-analysis.md |
 
 ## Stage 1: MiXCR assembly (all branches)
 
@@ -137,7 +153,7 @@ mixcr exportQc chainUsage results/*.clns results/qc_chains.pdf
 
 **QC checkpoint 1 (after align):** amplicon libraries should align at high rate (often >80-90%); a low rate signals wrong species, wrong boundary model, or untrimmed primers. RNA-seq mining legitimately aligns a tiny fraction -- judge it by absolute clonotype yield. chainUsage catches cross-contamination and index hopping (a TRB library showing appreciable IGH).
 
-Detailed alignment, UMI/cell-barcode handling, and export flags: tcr-bcr-analysis/mixcr-analysis.
+Detailed alignment, UMI/cell-barcode handling, and export flags: references/tcr-bcr-analysis--mixcr-analysis.md.
 
 ## Stage 2: Export (branch-specific handoff)
 
@@ -169,7 +185,7 @@ vdjtools CalcPairwiseDistances -m ds/metadata.txt overlap/
 
 **Version caveat (MiXCR 4.x -> VDJtools):** VDJtools is unmaintained for MiXCR 4.x and its parser breaks on raw `exportClones` output (`Unable to parse clonotype string`; 4.x injects commas and renames/moves columns). For a MiXCR 4.7+ cohort, prefer MiXCR's own `mixcr postanalysis individual` / `mixcr postanalysis overlap` (its native 4.x replacement for VDJtools diversity/overlap, with the same downsample-first semantics) over the `vdjtools Convert -S mixcr` route; if VDJtools is required, strip the added contig/target-sequence columns before `Convert`. immunarch (R) is the other modern alternative.
 
-**QC checkpoint 3 (before diversity):** confirm all samples share one depth, and drop any sample whose rarefaction curve is still climbing steeply below that depth (under-sampled -- exclude rather than normalize the cohort down to it). Hold the clonotype match key (nt vs aa, +/-V, +/-J) constant study-wide; aa-level matching inflates apparent sharing via convergent recombination. Report clonality alongside a q=2 Hill number (inverse Simpson) and a rarefaction curve, not alone. immunarch is the modern R alternative with the same normalization semantics: tcr-bcr-analysis/vdjtools-analysis.
+**QC checkpoint 3 (before diversity):** confirm all samples share one depth, and drop any sample whose rarefaction curve is still climbing steeply below that depth (under-sampled -- exclude rather than normalize the cohort down to it). Hold the clonotype match key (nt vs aa, +/-V, +/-J) constant study-wide; aa-level matching inflates apparent sharing via convergent recombination. Report clonality alongside a q=2 Hill number (inverse Simpson) and a rarefaction curve, not alone. immunarch is the modern R alternative with the same normalization semantics: references/tcr-bcr-analysis--vdjtools-analysis.md.
 
 ## Stage 3b: BCR clonal clustering, SHM and lineages (Immcantation)
 
@@ -186,7 +202,7 @@ cl <- hierarchicalClones(dtn, threshold = thr)
 # 3. Reconstruct per-clone germline (CreateGermlines.py --cloned), then observedMutations, then Dowser getTrees
 ```
 
-Cluster clones within an individual only (genotypes and thresholds are private). Diversity for BCR runs on `clone_id`, not exact CDR3. Full germline reconstruction, SHM quantification, BASELINe selection, and IgPhyML/Dowser trees: tcr-bcr-analysis/immcantation-analysis.
+Cluster clones within an individual only (genotypes and thresholds are private). Diversity for BCR runs on `clone_id`, not exact CDR3. Full germline reconstruction, SHM quantification, BASELINe selection, and IgPhyML/Dowser trees: references/tcr-bcr-analysis--immcantation-analysis.md.
 
 ## Stage 3s: Single-cell integration (scirpy)
 
@@ -210,15 +226,15 @@ ir.tl.define_clonotypes(mdata)
 # integrate with the scanpy GEX modality; measure expansion vs cell state
 ```
 
-Filtering multichain/orphan cells before expansion analysis preferentially deletes small clones and inflates apparent expansion -- state the trade-off, do not blindly drop them. CellRanger BCR contigs are not IMGT-numbered and include partial/nonproductive contigs; reannotate with IgBLAST (dandelion/airrflow) before rigorous BCR clustering. GEX side (clustering, annotation): single-cell/preprocessing and single-cell/clustering. Full clonotype-definition decisions: tcr-bcr-analysis/scirpy-analysis.
+Filtering multichain/orphan cells before expansion analysis preferentially deletes small clones and inflates apparent expansion -- state the trade-off, do not blindly drop them. CellRanger BCR contigs are not IMGT-numbered and include partial/nonproductive contigs; reannotate with IgBLAST (dandelion/airrflow) before rigorous BCR clustering. GEX side (clustering, annotation): single-cell/preprocessing and single-cell/clustering. Full clonotype-definition decisions: references/tcr-bcr-analysis--scirpy-analysis.md.
 
 ## Stage 4: Visualization
 
-Spectratype (CDR3-length), V-J usage circos, clonal-space bars, rarefaction curves, and clonal tracking across timepoints. Every figure inherits the depth caveat -- plot rarefaction at a common x, and track clones only after downsampling timepoints to equal depth. Recipes: tcr-bcr-analysis/repertoire-visualization.
+Spectratype (CDR3-length), V-J usage circos, clonal-space bars, rarefaction curves, and clonal tracking across timepoints. Every figure inherits the depth caveat -- plot rarefaction at a common x, and track clones only after downsampling timepoints to equal depth. Recipes: references/tcr-bcr-analysis--repertoire-visualization.md.
 
 ## Stage 5 (optional): Specificity annotation
 
-Annotate or cluster clonotypes by likely antigen (VDJdb/McPAS lookup, or GLIPH2/TCRdist clustering). A database hit is a sequence match to a published antigen-specific receptor, not proof the clone binds that antigen. "Public" clonotypes are enriched for high generation-probability (Pgen), short, low-insertion CDR3s produced independently in many donors by convergent recombination (Venturi 2006 *PNAS* 103:18691-18696) -- publicity is not antigen selection. Treat every specificity call as a hypothesis, condition on Pgen, and validate. Handoff: tcr-bcr-analysis/specificity-annotation.
+Annotate or cluster clonotypes by likely antigen (VDJdb/McPAS lookup, or GLIPH2/TCRdist clustering). A database hit is a sequence match to a published antigen-specific receptor, not proof the clone binds that antigen. "Public" clonotypes are enriched for high generation-probability (Pgen), short, low-insertion CDR3s produced independently in many donors by convergent recombination (Venturi 2006 *PNAS* 103:18691-18696) -- publicity is not antigen selection. Treat every specificity call as a hypothesis, condition on Pgen, and validate. Handoff: references/tcr-bcr-analysis--specificity-annotation.md.
 
 ## Common Errors
 
@@ -236,12 +252,12 @@ Annotate or cluster clonotypes by likely antigen (VDJdb/McPAS lookup, or GLIPH2/
 
 ## Related Skills
 
-- tcr-bcr-analysis/mixcr-analysis - V(D)J alignment and clonotype assembly
-- tcr-bcr-analysis/vdjtools-analysis - Depth-normalized diversity and overlap
-- tcr-bcr-analysis/immcantation-analysis - BCR clonal clustering, SHM and lineages
-- tcr-bcr-analysis/scirpy-analysis - Single-cell VDJ + gene-expression integration
-- tcr-bcr-analysis/repertoire-visualization - Figures for the pipeline outputs
-- tcr-bcr-analysis/specificity-annotation - Optional antigen-specificity annotation
+- references/tcr-bcr-analysis--mixcr-analysis.md - V(D)J alignment and clonotype assembly
+- references/tcr-bcr-analysis--vdjtools-analysis.md - Depth-normalized diversity and overlap
+- references/tcr-bcr-analysis--immcantation-analysis.md - BCR clonal clustering, SHM and lineages
+- references/tcr-bcr-analysis--scirpy-analysis.md - Single-cell VDJ + gene-expression integration
+- references/tcr-bcr-analysis--repertoire-visualization.md - Figures for the pipeline outputs
+- references/tcr-bcr-analysis--specificity-annotation.md - Optional antigen-specificity annotation
 
 ## References
 

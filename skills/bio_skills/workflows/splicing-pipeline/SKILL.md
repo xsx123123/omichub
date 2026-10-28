@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-splicing-pipeline
 description: Orchestrates the end-to-end bulk short-read alternative-splicing pipeline from FASTQ to differential splicing, chaining fastp QC, cohort-consistent STAR 2-pass alignment (one shared junction DB), junction QC, event-level differential splicing (rMATS-turbo + leafcutter, optional MAJIQ V3), parallel isoform-level DTU (Salmon -> tximport dtuScaledTPM -> DRIMSeq/DEXSeq -> stageR), and sashimi visualization. Use when committing the annotation GTF and a shared 2-pass junction database for the whole cohort, keeping the analysis at splice-aware resolution (never collapsing to gene), choosing event-level vs isoform-level DTU and reconciling them, applying the stageR two-stage gene->transcript FDR, or off-ramping to splice-variant / outlier / long-read / single-cell splicing. Hands mechanism to the alternative-splicing component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 可变剪接分析流程
+display_name_en: Alternative Splicing Pipeline
+description_zh: >-
+  从 FASTQ 到差异剪接的体短读长可变剪接全流程，涵盖 fastp 质控、队列一致 STAR 两步比对、连接点质控、rMATS/leafcutter 事件级分析与 Salmon+DRIMSeq/DEXSeq 异构体级 DTU。
+description_en: >-
+  Orchestrates the end-to-end bulk short-read alternative-splicing pipeline from FASTQ to differential splicing, chaining fastp QC, cohort-consistent STAR 2-pass alignment (one shared junction DB), junction QC, event-level differential splicing (rMATS-turbo + leafcutter, optional MAJIQ V3), parallel isoform-level DTU (Salmon -> tximport dtuScaledTPM -> DRIMSeq/DEXSeq -> stageR), and sashimi visualization. Use when committing the annotation GTF and a shared 2-pass junction database for the whole cohort, keeping the analysis at splice-aware resolution (never collapsing to gene), choosing event-level vs isoform-level DTU and reconciling them, applying the stageR two-stage gene->transcript FDR, or off-ramping to splice-variant / outlier / long-read / single-cell splicing. Hands mechanism to the alternative-splicing component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 RNA-seq 数据找差异可变剪接事件"
+  - "帮我用 STAR 两步法建共享 junction 库"
+  - "比较 rMATS 和 leafcutter 的差异剪接结果"
+examples_en:
+  - "Find differential alternative splicing events from my RNA-seq data"
+  - "Build a shared STAR two-pass junction database for the cohort"
+  - "Compare rMATS and leafcutter differential splicing results"
 tool_type: mixed
 primary_tool: rMATS-turbo
 workflow: true
@@ -55,21 +71,21 @@ Splicing quantification is comparative by construction, so the trustworthy resul
 
 ```
 FASTQ (paired)
-  | [1] QC & trim ---------------> fastp                (read-qc/fastp-workflow)
+  | [1] QC & trim ---------------> fastp                (references/read-qc--fastp-workflow.md)
   v
-  | [2] STAR 2-pass -------------> pass1 (all) -> COMBINED SJ.out.tab -> pass2 (all)  (read-alignment/star-alignment)
+  | [2] STAR 2-pass -------------> pass1 (all) -> COMBINED SJ.out.tab -> pass2 (all)  (references/read-alignment--star-alignment.md)
   v     ^-- commitment: annotation GTF + ONE shared junction DB + readLength
-  | [3] Junction QC -------------> saturation plateau, entropy   (alternative-splicing/splicing-qc)
+  | [3] Junction QC -------------> saturation plateau, entropy   (references/alternative-splicing--splicing-qc.md)
   v
   +---------------------------+-----------------------------------+
   | EVENT level               | ISOFORM level (parallel, optional)|
   v                           v
 [4a] rMATS-turbo + leafcutter [4b] Salmon -> tximport dtuScaledTPM(txOut=TRUE)
      (alternative-splicing/       -> DRIMSeq/DEXSeq -> stageR
-      differential-splicing)      (alternative-splicing/isoform-switching)
+      differential-splicing)      (references/alternative-splicing--isoform-switching.md)
   |   ^-- reconcile, don't merge      ^-- gene screen BEFORE transcript q
   v
-[5] Sashimi on top events -----> ggsashimi   (alternative-splicing/sashimi-plots)
+[5] Sashimi on top events -----> ggsashimi   (references/alternative-splicing--sashimi-plots.md)
 ```
 
 ## Made-once commitments
@@ -102,10 +118,10 @@ Pipeline-level selection only; mechanism lives in the component skills.
 
 | Fork | Lean toward | Hand off to |
 |------|-------------|-------------|
-| Event-level vs isoform-level | rMATS/leafcutter (which exon?) vs IsoformSwitchAnalyzeR/DRIMSeq+DEXSeq (which isoform, + NMD/ORF/domain consequences) | alternative-splicing/differential-splicing, alternative-splicing/isoform-switching |
-| rMATS vs leafcutter vs MAJIQ | rMATS (known event types, replicate-based) + leafcutter (annotation-free intron clusters) for concordance; MAJIQ V3 HET for complex/heterogeneous cohorts | alternative-splicing/differential-splicing |
-| DTU import scale | Salmon -> tximport `dtuScaledTPM` + `txOut=TRUE` (the ONLY correct DTU import) | rna-quantification/tximport-workflow |
-| Transcript FDR | stageR two-stage: gene-level screen then transcript confirmation | alternative-splicing/isoform-switching |
+| Event-level vs isoform-level | rMATS/leafcutter (which exon?) vs IsoformSwitchAnalyzeR/DRIMSeq+DEXSeq (which isoform, + NMD/ORF/domain consequences) | references/alternative-splicing--differential-splicing.md, references/alternative-splicing--isoform-switching.md |
+| rMATS vs leafcutter vs MAJIQ | rMATS (known event types, replicate-based) + leafcutter (annotation-free intron clusters) for concordance; MAJIQ V3 HET for complex/heterogeneous cohorts | references/alternative-splicing--differential-splicing.md |
+| DTU import scale | Salmon -> tximport `dtuScaledTPM` + `txOut=TRUE` (the ONLY correct DTU import) | references/rna-quantification--tximport-workflow.md |
+| Transcript FDR | stageR two-stage: gene-level screen then transcript confirmation | references/alternative-splicing--isoform-switching.md |
 
 ## Primary path: STAR 2-pass + rMATS-turbo (+ leafcutter)
 
@@ -146,7 +162,7 @@ txi <- tximport(files, type = 'salmon', txOut = TRUE, countsFromAbundance = 'dtu
 
 # Canonical two-stage FDR route (Love, Soneson & Patro 2018): DRIMSeq/DEXSeq proportion test, then
 # stageR gene-level SCREEN -> transcript-level CONFIRM. This is the "stageR seam" the principle names;
-# mechanism lives in alternative-splicing/isoform-switching.
+# mechanism lives in references/alternative-splicing--isoform-switching.md.
 
 # Alternative route -- IsoformSwitchAnalyzeR adds NMD/ORF/protein-domain consequences. Its gene-level
 # q-value comes from DEXSeq's perGeneQValue (min-p aggregation), NOT the stageR package:
@@ -167,8 +183,8 @@ This pipeline targets **bulk short-read differential splicing between two groups
 | "What is aberrant in this single rare-disease patient?" | alternative-splicing/outlier-splicing-detection (FRASER 2.0, OUTRIDER, DROP) |
 | "Full-isoform analysis from PacBio Iso-Seq / ONT" | alternative-splicing/long-read-splicing (FLAIR, IsoQuant, Bambu, SQANTI3) |
 | "Single-cell splicing analysis" | alternative-splicing/single-cell-splicing (chemistry-first; MARVEL, BRIE2) |
-| "Heterogeneous cohort, n>=10 vs n>=10" | This pipeline + MAJIQ V3 HET (alternative-splicing/differential-splicing) |
-| "Microexon-focused (3-27 nt)" | This pipeline with VAST-TOOLS or MicroExonator (alternative-splicing/splicing-quantification) |
+| "Heterogeneous cohort, n>=10 vs n>=10" | This pipeline + MAJIQ V3 HET (references/alternative-splicing--differential-splicing.md) |
+| "Microexon-focused (3-27 nt)" | This pipeline with VAST-TOOLS or MicroExonator (references/alternative-splicing--splicing-quantification.md) |
 
 ## QC checkpoints between steps
 
@@ -177,7 +193,7 @@ This pipeline targets **bulk short-read differential splicing between two groups
 | QC/trim | Q30 >80%, adapter <5%, reads not over-trimmed | Aggressive trimming below ~75 nt weakens junction-spanning evidence |
 | Alignment | Uniquely-mapped >80%; junction-saturation curves plateau | Still-rising curves = under-sequenced for splicing; deeper reads needed |
 | Differential | \|ΔPSI\| >0.1 / >0.2, FDR <0.05, >=10 junction reads | Low read support = PSI is noise; require the read floor per event |
-| DTU | stageR gene-level screen passed | Transcript q-values are only valid after the gene screen (alternative-splicing/isoform-switching) |
+| DTU | stageR gene-level screen passed | Transcript q-values are only valid after the gene screen (references/alternative-splicing--isoform-switching.md) |
 
 ## Common Errors
 
@@ -191,33 +207,33 @@ This pipeline targets **bulk short-read differential splicing between two groups
 
 ## Pipeline map (hand-offs)
 
-- read-qc/fastp-workflow - QC/trim without over-trimming junction-spanning reads
-- read-alignment/star-alignment - STAR 2-pass cohort-style, the shared junction DB
-- alternative-splicing/splicing-qc - junction saturation/entropy, depth thresholds
-- alternative-splicing/splicing-quantification - PSI computation, event taxonomy, sign conventions
-- alternative-splicing/differential-splicing - rMATS/leafcutter/MAJIQ selection and reconciliation
-- rna-quantification/alignment-free-quant - Salmon transcript quant for the DTU branch
-- rna-quantification/tximport-workflow - dtuScaledTPM + txOut import
-- alternative-splicing/isoform-switching - DTU + stageR + NMD/ORF/domain consequences
-- alternative-splicing/sashimi-plots - ggsashimi/leafviz visualization
+- references/read-qc--fastp-workflow.md - QC/trim without over-trimming junction-spanning reads
+- references/read-alignment--star-alignment.md - STAR 2-pass cohort-style, the shared junction DB
+- references/alternative-splicing--splicing-qc.md - junction saturation/entropy, depth thresholds
+- references/alternative-splicing--splicing-quantification.md - PSI computation, event taxonomy, sign conventions
+- references/alternative-splicing--differential-splicing.md - rMATS/leafcutter/MAJIQ selection and reconciliation
+- references/rna-quantification--alignment-free-quant.md - Salmon transcript quant for the DTU branch
+- references/rna-quantification--tximport-workflow.md - dtuScaledTPM + txOut import
+- references/alternative-splicing--isoform-switching.md - DTU + stageR + NMD/ORF/domain consequences
+- references/alternative-splicing--sashimi-plots.md - ggsashimi/leafviz visualization
 
 The complete runnable script is in this skill's examples/ (`splicing_pipeline.sh`).
 
 ## Related Skills
 
-- read-qc/fastp-workflow - QC/trim options
-- read-alignment/star-alignment - STAR 2-pass cohort-style configuration
-- alternative-splicing/splicing-quantification - PSI computation, event taxonomy, sign conventions
-- alternative-splicing/differential-splicing - Tool selection, MAJIQ V3, leafcutter, reconciliation
-- alternative-splicing/isoform-switching - DTU + NMD/ORF/domain consequences (IsoformSwitchAnalyzeR v2, stageR)
-- alternative-splicing/sashimi-plots - ggsashimi, MAJIQ-VOILA, leafviz visualization
-- alternative-splicing/splicing-qc - STAR 2-pass cohort-style, library prep, depth thresholds
+- references/read-qc--fastp-workflow.md - QC/trim options
+- references/read-alignment--star-alignment.md - STAR 2-pass cohort-style configuration
+- references/alternative-splicing--splicing-quantification.md - PSI computation, event taxonomy, sign conventions
+- references/alternative-splicing--differential-splicing.md - Tool selection, MAJIQ V3, leafcutter, reconciliation
+- references/alternative-splicing--isoform-switching.md - DTU + NMD/ORF/domain consequences (IsoformSwitchAnalyzeR v2, stageR)
+- references/alternative-splicing--sashimi-plots.md - ggsashimi, MAJIQ-VOILA, leafviz visualization
+- references/alternative-splicing--splicing-qc.md - STAR 2-pass cohort-style, library prep, depth thresholds
 - alternative-splicing/single-cell-splicing - 10X chemistry decision; plate-based and long-read SC
 - alternative-splicing/splice-variant-prediction - SpliceAI / Pangolin / MMSplice variant interpretation
 - alternative-splicing/outlier-splicing-detection - FRASER 2.0 / DROP rare-disease workflow
 - alternative-splicing/long-read-splicing - PacBio HiFi / ONT full-isoform analysis
-- rna-quantification/alignment-free-quant - Salmon TPM for SUPPA2 and DTU pipelines
-- rna-quantification/tximport-workflow - dtuScaledTPM + txOut DTU import
+- references/rna-quantification--alignment-free-quant.md - Salmon TPM for SUPPA2 and DTU pipelines
+- references/rna-quantification--tximport-workflow.md - dtuScaledTPM + txOut DTU import
 
 ## References
 

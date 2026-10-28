@@ -60,10 +60,10 @@ Tell your AI agent what you want to do:
 - FinaleToolkit replicates DELFI patterns (DELFI is a methodology and company, not software)
 
 ## Related Skills
-- liquid-biopsy/cfdna-preprocessing - UMI/duplex consensus error suppression
-- liquid-biopsy/analytical-validation - molecule-counting limits of detection
-- liquid-biopsy/ctdna-mutation-detection - low-VAF calling and CHIP subtraction
-- liquid-biopsy/tumor-fraction-estimation - ichorCNA analysis
-- liquid-biopsy/fragment-analysis - Fragmentomics
-- liquid-biopsy/methylation-based-detection - methylation detection and tissue-of-origin
-- liquid-biopsy/longitudinal-monitoring - Serial tracking
+- references/liquid-biopsy--cfdna-preprocessing.md - UMI/duplex consensus error suppression
+- references/liquid-biopsy--analytical-validation.md - molecule-counting limits of detection
+- references/liquid-biopsy--ctdna-mutation-detection.md - low-VAF calling and CHIP subtraction
+- references/liquid-biopsy--tumor-fraction-estimation.md - ichorCNA analysis
+- references/liquid-biopsy--fragment-analysis.md - Fragmentomics
+- references/liquid-biopsy--methylation-based-detection.md - methylation detection and tissue-of-origin
+- references/liquid-biopsy--longitudinal-monitoring.md - Serial tracking

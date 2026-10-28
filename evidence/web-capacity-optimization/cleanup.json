@@ -1,0 +1,16 @@
+{
+  "users_before": 100,
+  "users_after": 0,
+  "revoked_status": 401,
+  "host_tokens_removed": true,
+  "temporary_web_processes_absent": true,
+  "temporary_gateway_absent": true,
+  "nginx_master_count": 1,
+  "services": {
+    "/cygnusx-web": "healthy",
+    "/cygnusx-worker": "healthy",
+    "/cygnusx-nginx": "running",
+    "/cygnusx-db": "healthy",
+    "/cygnusx-cache": "healthy"
+  }
+}

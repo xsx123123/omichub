@@ -65,10 +65,10 @@ pip install mirge3 umi_tools
 
 ## Related Skills
 
-- small-rna-seq/smrna-preprocessing - Adapter, UMI, and 4N handling
-- small-rna-seq/mirdeep2-analysis - Novel miRNA discovery
-- small-rna-seq/mirge3-analysis - Known-miRNA and isomiR quantification
-- small-rna-seq/differential-mirna - Compositionally-aware DE
-- small-rna-seq/target-prediction - Seed prediction filtered by expression
-- small-rna-seq/trf-pirna-profiling - tRF and piRNA profiling
+- references/small-rna-seq--smrna-preprocessing.md - Adapter, UMI, and 4N handling
+- references/small-rna-seq--mirdeep2-analysis.md - Novel miRNA discovery
+- references/small-rna-seq--mirge3-analysis.md - Known-miRNA and isomiR quantification
+- references/small-rna-seq--differential-mirna.md - Compositionally-aware DE
+- references/small-rna-seq--target-prediction.md - Seed prediction filtered by expression
+- references/small-rna-seq--trf-pirna-profiling.md - tRF and piRNA profiling
 - workflow-management/nf-core-pipelines - Run nf-core/smrnaseq as a curated, reproducible pipeline instead of chaining the steps by hand

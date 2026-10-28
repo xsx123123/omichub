@@ -1,0 +1,23 @@
+{
+  "about": [
+    {
+      "label": "GitHub",
+      "href": "https://github.com/CygnusX-Labs",
+      "target": "_blank",
+      "rel": "noopener noreferrer"
+    },
+    {
+      "label": "GitHub",
+      "href": "https://github.com/CygnusX-Labs",
+      "target": "_blank",
+      "rel": "noopener"
+    }
+  ],
+  "flow": {
+    "label": "GitHub 开源代码",
+    "href": "https://github.com/CygnusX-Labs",
+    "target": "_blank",
+    "rel": "noopener noreferrer"
+  },
+  "errors": []
+}

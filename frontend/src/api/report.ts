@@ -1,5 +1,6 @@
 import apiClient from '@/api/client'
-import type { Report, ReportFilter, ReportJob, ReportListResponse, ReportSnapshot, ReportStats } from '@/types/report'
+import type { Report, ReportFilter, ReportJob, ReportListResponse, ReportPreview, ReportSnapshot, ReportStats } from '@/types/report'
+import { ensureReportPreviewContext } from '@/utils/reportPreviewSession'
 
 export const reportApi = {
   getReports: (params: ReportFilter) =>
@@ -13,6 +14,21 @@ export const reportApi = {
 
   previewReport: (id: string) =>
     apiClient.get<string>(`/reports/${id}/preview`),
+
+  getPreviewUrl: (id: string) => {
+    ensureReportPreviewContext()
+    return apiClient.get<ReportPreview>(`/reports/${id}/preview-url`)
+  },
+
+  createCopilotSession: (id: string) =>
+    apiClient.post<{ session_id: string; model_id: string; metadata: Record<string, unknown>; warning?: string | null }>(
+      `/reports/${id}/copilot/session`,
+    ),
+
+  getCopilotSession: (id: string, sessionId: string) =>
+    apiClient.get<{ session_id: string; model_id: string; metadata: Record<string, unknown>; warning?: string | null }>(
+      `/reports/${id}/copilot/session`, { params: { session_id: sessionId } },
+    ),
 
   downloadReport: (reportId: string, fileId: string) =>
     apiClient.get<Blob>(`/reports/${reportId}/files/${fileId}/download`, {

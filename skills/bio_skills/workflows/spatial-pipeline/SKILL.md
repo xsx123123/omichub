@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-spatial-pipeline
 description: Orchestrates the end-to-end spatial transcriptomics pipeline from Space Ranger / vendor output to spatial domains and statistics, branching FIRST on platform class (imaging in-situ Xenium/MERFISH/CosMx vs sequencing/capture Visium/Visium HD/Slide-seq). Use when deciding segmentation-vs-deconvolution and the QC floors from the platform class, committing the coordinate/image-registration frame and panel identity, deconvolving multi-cell spots against an annotated scRNA reference (never relabeling spot clusters as cell types), building the spatial neighbor graph on PHYSICAL not expression space, gating spatially-variable genes on FDR, or using a real domain method (BANKSY/BayesSpace/STAGATE) rather than clustering the spatial graph alone. Hands off deconvolution and cell-cell communication to the component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 空间转录组分析流程
+display_name_en: Spatial Transcriptomics Pipeline
+description_zh: >-
+  从 Space Ranger 或厂商输出到空间域与统计的空间转录组全流程，先按平台类别分流（Xenium/MERFISH/CosMx 与 Visium/Visium HD），再处理分割或去卷积、坐标配准、反卷积、空间域与邻域统计。
+description_en: >-
+  Orchestrates the end-to-end spatial transcriptomics pipeline from Space Ranger / vendor output to spatial domains and statistics, branching FIRST on platform class (imaging in-situ Xenium/MERFISH/CosMx vs sequencing/capture Visium/Visium HD/Slide-seq). Use when deciding segmentation-vs-deconvolution and the QC floors from the platform class, committing the coordinate/image-registration frame and panel identity, deconvolving multi-cell spots against an annotated scRNA reference (never relabeling spot clusters as cell types), building the spatial neighbor graph on PHYSICAL not expression space, gating spatially-variable genes on FDR, or using a real domain method (BANKSY/BayesSpace/STAGATE) rather than clustering the spatial graph alone. Hands off deconvolution and cell-cell communication to the component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 Visium 数据识别空间域并做配体受体分析"
+  - "帮我判断该用分割还是去卷积"
+  - "对 Xenium 数据做细胞邻域和空间统计"
+examples_en:
+  - "Identify spatial domains and run ligand-receptor analysis on my Visium data"
+  - "Should I use segmentation or deconvolution for this platform?"
+  - "Run neighborhood and spatial statistics on my Xenium data"
 tool_type: python
 primary_tool: Squidpy
 goal_approach_exempt: true
@@ -320,13 +336,13 @@ print(f'Results saved to {output_dir}/')
 
 ## Related Skills
 
-- spatial-transcriptomics/spatial-data-io - Loading formats (Visium/imaging; SpatialData)
-- spatial-transcriptomics/spatial-preprocessing - QC floors and normalization by platform
-- spatial-transcriptomics/image-analysis - Cell segmentation for imaging platforms
-- spatial-transcriptomics/spatial-neighbors - Physical-space neighbor graphs
-- spatial-transcriptomics/spatial-statistics - Moran's I, co-occurrence, neighborhood enrichment nulls
-- spatial-transcriptomics/spatial-domains - BANKSY/BayesSpace/STAGATE domain methods
-- spatial-transcriptomics/spatial-deconvolution - Cell-type composition of multi-cell spots
+- references/spatial-transcriptomics--spatial-data-io.md - Loading formats (Visium/imaging; SpatialData)
+- references/spatial-transcriptomics--spatial-preprocessing.md - QC floors and normalization by platform
+- references/spatial-transcriptomics--image-analysis.md - Cell segmentation for imaging platforms
+- references/spatial-transcriptomics--spatial-neighbors.md - Physical-space neighbor graphs
+- references/spatial-transcriptomics--spatial-statistics.md - Moran's I, co-occurrence, neighborhood enrichment nulls
+- references/spatial-transcriptomics--spatial-domains.md - BANKSY/BayesSpace/STAGATE domain methods
+- references/spatial-transcriptomics--spatial-deconvolution.md - Cell-type composition of multi-cell spots
 - spatial-transcriptomics/spatial-communication - Cell-cell communication / ligand-receptor (separate hand-off)
-- spatial-transcriptomics/spatial-visualization - Spatial overlays and figures
+- references/spatial-transcriptomics--spatial-visualization.md - Spatial overlays and figures
 - workflows/scrnaseq-pipeline - Upstream: provides the annotated scRNA reference for deconvolution

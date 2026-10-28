@@ -181,6 +181,7 @@ CygnusX 深色工作台使用五级 Surface 空间层级，替代“页面背景
 - 深色模式下输入区各层保持同一 Surface 体系，避免出现“外框深蓝、内部纯黑”的割裂效果。
 - 工作台页面按钮激活态使用 `--arco-primary` 与 `--arco-primary-light`（历史命名的品牌色别名，见 §2.2）。
 - 输入区的边框、圆角和阴影遵循组件默认值；页面级覆盖只能用于布局尺寸，不得重新引入独立的表面色和阴影体系。
+- 草稿编辑必须保留原生 textarea 的光标和选区。`KimiChatInput`（AI 助手/工作台）只在外部 modelValue 变化时同步本地草稿；寻宝鼠 React Composer 同样只监听外部 value，避免 Vue 下一 tick 回显前用旧值回滚本地输入。全局 `GlobalAiAssistantSidebar` 使用原生 NInput v-model，并保护 composition、keyCode 229 与 compositionend 后 200ms 内的候选确认 Enter。四类入口浏览器编辑回归见 `scripts/poc/chat-input-editing-browser.mjs`（真实组件、隔离业务桩）。
 
 ### 3.4 间距、圆角、阴影与排版
 
@@ -325,8 +326,8 @@ AI 配置、饼干中心及后续同类后台配置页面使用统一的全宽�
 
 #### 可选择卡片协议
 
-- 所有会保留选择结果的卡片使用 `.cygnusx-selectable-card`；已选项同时使用 `.is-selected`，或以 `aria-selected="true"`、`aria-checked="true"`、`data-selected="true"` 表达状态。
-- 共享规则位于 `frontend/src/styles/global.css`：选中态使用完整、连续的主色内描边与左缘短状态线；状态线只用于已选项，hover 仅显示低强调预览。不要用状态线替代完整边框。
+- 所有会保留选择结果的卡片使用 `.cygnusx-selectable-card`；已选项同时使用 `.is-selected`，或以 `aria-selected="true"`、`aria-checked="true"`、`aria-pressed="true"`、`data-selected="true"` 表达状态；兼容已有 `.is-highlighted` / `.active` 等状态类。
+- 共享规则位于 `frontend/src/styles/global.css`：浅色选中背景为 `linear-gradient(135deg,#f5f7ff,#eef1ff)`、1px `#c7d2fe` 边框，`.card-state-arrow` 从未选 `#9ca3af` 切换为选中 `#4f6ef7`。左缘 `::before` 固定 `left:6px;top:12px;bottom:12px;width:4px;border-radius:2px;background:#6366f1`，位于卡片内部并与外边框留出 6px 空隙，避免贴边时看似被裁断；不使用负偏移，`overflow:hidden` 下完整可见。仅选中/可选卡片按下时显示，hover 只有 `#f8faff` 浅底与 -1px 抬升，不产生状态线。状态过渡为 200ms ease，仅覆盖 transform/opacity/background/box-shadow，减少动态时关闭；深色模式用对应深色表面令牌保持可读。
 - 单选卡使用 `role="radiogroup"` / `role="radio"` 和 `aria-checked`；列表型选项使用 `role="listbox"` / `role="option"` 和 `aria-selected`。自定义卡片必须支持 `Enter` 与 `Space` 触发选择。
 - 已选状态还必须通过现有标签、单选标记或文字说明表达；色彩与状态线不能是唯一的信息来源。
 
@@ -452,6 +453,59 @@ Hero 区域（`HomeView.vue`）、通知条幅（`AnnouncementBanner.vue`）等�
 
 `prefers-reduced-motion: reduce` 下：取消循环、漂浮、弹跳和大位移，保留极短的颜色/透明度反馈。状态脉冲应变为静态弱晕染；路由转场应变为短暂淡入淡出。
 
+### 6.4 异步更新与防闪跳约束
+
+**适用范围**：聊天回复、科研工作台、任务详情等已经呈现业务内容的页面，尤其是窗口重新聚焦、后台权限校验、轮询、SSE 终态与标题更新。以下为后续实现的共同约束；寻宝鼠是已落地样例，不表示其他模块均已完成同类改造。
+
+#### 6.4.1 问题识别：区分路由变化与空态闪现
+
+寻宝鼠曾出现“回复 → 欢迎首页 → 回复”的闪跳。已复现的原因是 `window.focus` 直接调用完整 `refreshAccess()`：先中断 SSE，清空 `currentSession` / `messages`，再读取最近会话；`FullPresentation` 在消息为空时渲染 `EmptyState`，因此等待历史消息期间出现欢迎页。该路径中 URL 没有改变，SSE 结束与标题生成本身也没有执行路由跳转。
+
+排查时同时观察路由、当前业务 ID、消息/记录数量、加载标志与组件挂载情况。只确认 URL 未变、最终回复能恢复或最终截图正确，都不能证明没有闪跳；必须检查异步过程中的中间状态。
+
+#### 6.4.2 必须遵守的实现原则
+
+1. **首次加载与后台校验分离**：页面尚未建立上下文时，可以做完整预检并显示骨架；已有内容后，聚焦、轮询与权限复查不得直接复用会清空业务数据的初始化方法。需要后台加载提示时，使用独立状态，不用整页 `loading` 替换当前内容。
+2. **后台刷新保留当前上下文**：正常授权时保留当前会话/项目、已显示消息、草稿、滚动位置和仍有效的流式请求。不得为了刷新权限、余额、会话标题或元数据，清空内容、自动选择最近会话、重新读取并覆盖当前回复，或主动取消已授权 SSE。
+3. **空态只表达真实空结果**：欢迎页/空列表仅用于已确认没有内容或用户显式新建等业务状态，不得临时充当“正在请求”“重新鉴权”或“回复已结束”的占位。请求错误应在现有内容旁提示，不通过“清空 → 空态 → 重新填充”展示刷新过程。
+4. **保持渲染树与身份稳定**：列表键使用稳定的业务 ID；不能将标题、时间戳、`isStreaming` 或加载状态用作组件 `key`。Vue/React Island 更新沿用现有挂载句柄与 `update()`，不能为一次终态/元数据更新销毁并重新挂载整棵回复树。不要依赖淡入淡出或延时掩盖清空过程。
+5. **异步结果按上下文隔离**：会话/项目切换使用 generation 守卫，同一上下文的重复校验使用请求序号或等价机制；异步成功、错误及收尾回写前均检查请求是否仍有效。旧会话的结果不能覆盖新会话，较早的授权结果不能覆盖较新的撤权结果。
+6. **区分临时失败与真实失权**：网络抖动、服务暂不可用时保留已有回复并显示可恢复错误。确认读权限被撤销、401/403 或当前项目授权失效时，应立即停止相关流并清理无权继续展示的数据；若仅发现/发送能力关闭，则禁用发送并停止生成，保留仍有权读取的历史。防闪跳不能成为保留越权数据的理由。
+7. **界面默认值只在初始化时应用**：历史侧栏、折叠面板等状态，不随每次回复/标题/权限更新重新初始化。寻宝鼠桌面历史侧栏默认折叠、手机抽屉默认关闭；用户主动展开后，正常异步更新保持其选择。
+
+用户显式新建、切换会话/项目、离开页面与确认撤权，仍按原业务生命周期切换或清理上下文；不得把这些操作与普通后台复查混为一谈。
+
+#### 6.4.3 寻宝鼠已落地方案与边界
+
+| 入口/结果 | 当前处理 |
+| --- | --- |
+| 初次进入或初始预检尚未完成 | 使用 `refreshAccess()`；初始预检中的 focus 允许重启，过期结果由 generation 丢弃 |
+| 已有上下文后的窗口 focus | 使用独立的 `revalidateAccessOnFocus()`；后台检查能力与项目列表，正常时不清空消息、不切换最近会话、不重载历史、不停止 SSE |
+| 校验结果迟到 | `sessionGeneration` + `focusCheckRevision` 校验，失效结果不回写 |
+| 临时网络异常 | 保留当前回复，显示既有错误提示 |
+| 读权限撤销、401/403、当前项目撤权 | 经 `clearPrivateHistory()` 停止流、清理私有历史并提示；项目撤权同时清除失效项目上下文 |
+| 发现/发送能力撤销但仍允许读历史 | 禁用发送、停止生成，保留可读历史 |
+| 回复结束、标题更新 | 原地更新消息状态/标题，保留回复树和侧栏展开状态 |
+
+注意：这里修复的是窗口聚焦的被动校验路径；当前显式“刷新权限”按钮仍绑定完整 `refreshAccess()`，不能将其描述为也已完成无损刷新。
+
+实现入口：[`TreasureResearchWorkbench.vue`](../frontend/src/views/TreasureResearchWorkbench.vue) 的预检、聚焦校验和上下文守卫；[`TreasureOriginalDisplay.vue`](../frontend/src/components/research/TreasureOriginalDisplay.vue) 的挂载/更新边界；[`FullPresentation.tsx`](../frontend/treasure-island/FullPresentation.tsx) 的回复/欢迎页分支及 `collapsed` 初始状态。专项现状见 [寻宝鼠界面文档 §8](CygnusX_treasure_mouse_ui.md)。
+
+#### 6.4.4 回归验证要求
+
+修改上述路径时，至少验证以下情况：
+
+- 当前阅读的不是最近会话，触发 focus 后会话 ID、回复和滚动上下文保持不变。
+- SSE 已输出前半段时切走再回到窗口，流不被提前取消，后半段与终态正常显示。
+- 回复结束、标题生成与多次 focus 交错，回复不卸载、不短暂显示欢迎页，用户手动展开的侧栏不重置。
+- 延迟/乱序响应、切换会话/项目后旧请求返回、临时网络故障，不得覆盖或清空有效内容。
+- 模块读权限、HTTP 401/403、项目授权失效仍正确清理；不能只验证“内容一直在”。
+- 用**正式构建的完整 App/DefaultLayout 与实际展示树**验证，不仅测试最终静态页面。隔离 HTTP 服务可分段发送真实 SSE，并延迟权限/标题响应；须明确使用模拟 API，不能作为真实模型/科研后端验收。
+
+浏览器在回复首次出现后持续监测回复容器（例如 `MutationObserver`）：正常授权的完整过程中 `emptyFrames = 0`，当前路由和会话保持不变，SSE 无提前 abort，聚焦不增加历史消息/最近会话的重载请求。验证应包含生成中、完成后、侧栏开关及手机抽屉。
+
+对应回归：[`TreasureFocusRefresh.test.ts`](../frontend/src/components/research/__tests__/TreasureFocusRefresh.test.ts)、既有 `TreasureAccess` / `TreasureSessionIsolation` / `TreasureHomeEntry` 测试，以及 [`platform-entry.poc.ts`](../frontend/poc/treasure-island/platform-entry.poc.ts)。本次正式构建的隔离浏览器证据见 [`evidence/treasure-focus-stability/`](../evidence/treasure-focus-stability/)：3 次 focus 下，回复空帧为 0，历史列表/消息读取均保持初始 1 次，流未提前中断。该数字属于此测试场景，其他模块应按自身请求基线检查，不照搬固定次数。
+
 ## 7. 响应式与可访问性
 
 ### 7.1 响应式规则
@@ -521,6 +575,7 @@ Arco 项目可遵守 Vue 3 `<script setup lang="ts">`、kebab-case 模板属性�
 - [ ] 系统健康、进度和任务状态是否同时呈现文本、颜色与加载/错误语义？
 - [ ] 刷新是否保持页面上下文，而不是使用整页重载？
 - [ ] 是否处理了空状态、部分失败、权限不足和长文本溢出？
+- [ ] 涉及聚焦/后台刷新/SSE 终态更新时，是否符合 §6.4：已有内容与当前上下文不中途清空、空态不充当加载占位、异步结果有上下文守卫，且真实失权仍清理？是否验证了完整异步过程，而非只看最终截图？
 - [ ] 动效是否短促、必要、可中断，并在减少动态下安全回退？
 - [ ] 是否验证了浅色、深色、窄屏、高对比度和键盘焦点？
 - [ ] 是否通过 `npm run type-check`、`npm run build` 和 `git diff --check`？
@@ -1363,13 +1418,13 @@ Hero 横幅（`HomeView.vue` 的 `<section class="hero">`）背景不是位图�
 
 Canvas 层必须遵守 §31 的装饰覆盖层契约：`position:absolute; inset:0; pointer-events:none; z-index:0`，并 `aria-hidden`，置于 `.hero-inner` 之下、渐变底色之上；**严禁**被父级 `.hero > *` 之类通配选择器命中（否则 `absolute` 被拉成 `relative`，撑高 hero 并顶坏布局，见 §31.2 / §31.4）。内容层只允许按**类名**显式抬升 `z-index`。
 
-**使用方局部压暗（不改引擎）**：首页在 `.hero :deep(.omic-canvas)` 使用 `opacity: 0.4`（`≤640px` 为 `0.24`）；另以 `.hero::after` 的 `rgba(8,11,18,0.48)` 遮罩位于画布与内容之间，保证玻璃卡副文字的对比度。遮罩 `pointer-events:none; z-index:1`，`.hero-inner` 为 `z-index:2`。登录页与动画引擎档位不变。
+**使用方局部压暗（不改引擎）**：首页按用户偏好恢复深色渐变，问候语、英文定位与愿景文字透明度提高到 `0.88`。首页在 `.hero :deep(.omic-canvas)` 使用 `opacity: 0.4`（`≤640px` 为 `0.24`）；另以 `.hero::after` 的 `rgba(8,11,18,0.48)` 遮罩位于画布与内容之间，保证玻璃卡副文字的对比度。遮罩 `pointer-events:none; z-index:1`，`.hero-inner` 为 `z-index:2`。登录页与动画引擎档位不变。
 
-**文案与布局（首页 Hero）**：`/api/v1/site-content` 的 `hero` 段驱动平台名、标语、介绍、标签与愿景，`DEFAULT_CONTENT` 逐层兜底。桌面端 `.hero-inner` 为 `minmax(0,1.1fr) / minmax(320px,1fr)` 双栏；左栏依次展示平台名、问候语、唯一 H1、英文定位、介绍、能力标签、两档按钮与愿景。H1 在首个中文逗号后分行，以 `clamp(26px,2.6vw,38px)`、`text-wrap:balance`、`word-break:keep-all` 控制默认标语两行内排完；后台自定义长文案用 `overflow-wrap:anywhere` 兜底。Hero `min-height:380px; padding:40px 32px`，与公告间隔 `16px`；内容多时允许自然增高。主按钮仍为“开始一项研究”，次按钮文案为“AI 规划研究方案”，分别导航至 `/flows`、`/ai`。右栏 `.hero-lifecycle` 展示科研生命周期，桌面占双栏可用宽度约 48%，`min-height:340px; padding:28px 28px 24px`，标题 `20px`、步骤正文 `14px`、节点 `30px`、行距 `8px`，使用 `rgba(255,255,255,0.10)`、`blur(16px)`、白色主文字与 `rgba(255,255,255,0.85)` 副文字；减少透明度时退回实色。`≤1100px` 收为上下布局，`≤640px` 卡片取消最小高度、使用 `20px` 内边距，精简生命周期后续步骤并以说明文字保留语义。
+**文案与布局（首页 Hero）**：`/api/v1/site-content` 的 `hero` 段驱动平台名、标语、介绍、标签与愿景，`DEFAULT_CONTENT` 逐层兜底。桌面端 `.hero-inner` 为 `minmax(0,1.1fr) / minmax(320px,1fr)` 双栏；左栏依次展示平台名、问候语、唯一 H1、英文定位、介绍、能力标签、两档按钮与愿景。H1 在首个中文逗号后分行，以 `clamp(26px,2.6vw,38px)`、`text-wrap:balance`、`word-break:keep-all` 控制默认标语两行内排完；后台自定义长文案用 `overflow-wrap:anywhere` 兜底。Hero `min-height:380px; padding:40px 32px`，与公告间隔 `16px`；内容多时允许自然增高。主按钮仍为“开始一项研究”，次按钮文案为“AI 规划研究方案”，均进入 `/treasure-mouse`；一次性 `start=new/plan` 分别触发空白新会话与研究方案引导草稿，不自动发送，详情见 `CygnusX_treasure_mouse_ui.md` §7。右栏 `.hero-lifecycle` 展示科研生命周期，桌面占双栏可用宽度约 48%，`min-height:340px; padding:28px 28px 24px`，标题 `20px`、步骤正文 `14px`、节点 `30px`、行距 `8px`，使用 `rgba(255,255,255,0.10)`、`blur(16px)`、白色主文字与 `rgba(255,255,255,0.85)` 副文字；减少透明度时退回实色。`≤1100px` 收为上下布局，`≤640px` 卡片取消最小高度、使用 `20px` 内边距，精简生命周期后续步骤并以说明文字保留语义。
 
 **首页字号与可读性**：`HomeView.vue` 在 `.home-page` 局部定义 `--home-font-section:24px`、`--home-font-card-title:16px`、`--home-font-body:14px`、`--home-font-small:13px`、`--home-font-meta:12px` 与 `--home-font-eyebrow:11px`，首页及 `ResearchWorkbenchPanel.vue` 共同消费，避免逐区块漂移。Hero 介绍使用 `--home-font-body`（14px）；标题自适应 `26–38px`，窄屏 `21–26px`。工作台项目/任务/报告名称统一 `14px`、说明/时间 `12px`，卡片标题 `16px`；中文说明使用 `--neutral-text-2`。状态标签为 `26px` 高、`12px` 字；列表行高至少 `62px`，同步增加留白。移动端区块标题 `22px`，正文和辅助文字保持可读字号，禁止通过全站 zoom 或 transform scale 放大首页。
 
-**首页工作台与交互层级**：`ResearchWorkbenchPanel.vue` 仍通过既有项目、运行/排队任务、报告 API 聚合；三张卡片为 `repeat(3,minmax(0,1fr))`，视口 `<1280px` 时单列。长标题单行省略，保留原文 `title`；任务和报告共用 `NTag.status-badge`，蓝/绿/灰区分运行/完成/过期，排队与失败另有黄/红状态。工作台和快捷入口 hover 上移 `2px`，阴影伪元素通过透明度过渡，时长 `200ms`；支柱和生态无悬停位移。`prefers-reduced-motion` 下关闭位移、入场和过渡。首页管理按钮使用 `--brand-gradient`。首页公告传 `remember-dismissal`，按公告 ID 和可见内容版本持久关闭；不传时继续遵守后台 daily/forever/none 策略。顶部积分 `NTag` 使用 `padding:4px 12px`，右侧控件间距 `12px`。
+**首页工作台与交互层级**：`ResearchWorkbenchPanel.vue` 仍通过既有项目、运行/排队任务、报告 API 聚合；三张卡片为 `repeat(3,minmax(0,1fr))`，视口 `<1280px` 时单列。长标题单行省略，保留原文 `title`；任务和报告共用 `NTag.status-badge`，蓝/绿/灰区分运行/完成/过期，排队与失败另有黄/红状态。工作台和快捷入口 hover 上移 `2px`，阴影伪元素通过透明度过渡，时长 `200ms`；科研工作台、快捷入口、Agent/Skill/Flow/Evidence、技术支柱、科研生态与管理入口均使用 §5.2 共享卡片反馈，移除工作台 0.35 黑色重阴影和机制卡按图标色高亮的旧伪元素。首页根容器 overflow:visible，卡片阴影不再沿左侧内容边界裁断。信息卡原生按钮支持键盘选择；工作台在点击/聚焦内部内容时标记当前分组，保留原导航。右侧箭头消费 `.card-state-arrow`，机制连接箭头仍保留在卡片间隙，该组局部 overflow:visible 避免箭头被截断。`prefers-reduced-motion` 下关闭位移、入场和过渡。首页管理按钮使用 `--brand-gradient`。首页公告传 `remember-dismissal`，按公告 ID 和可见内容版本持久关闭；不传时继续遵守后台 daily/forever/none 策略。顶部积分 `NTag` 使用 `padding:4px 12px`，右侧控件间距 `12px`。
 
 引擎对外契约不变：组件 `onMounted` 动态 `import('@/utils/animationLibrary')`，按 `context` 取 `window.initHeroAnimation(canvas)`，返回的 cleanup 在 `onUnmounted` 调用；引擎内部监听 `resize` 与 `visibilitychange`（切后台停 rAF、回前台续），cleanup 一并解绑，杜绝句柄/内存泄漏。Hero 档位 `opacity:0.82 / density:5000 / speed:0.8 / glow:true`，登录页档位更淡更慢（`0.3 / 10000 / 0.6`）。渐变太抢眼，动画既要"压得住被看见"，又必须**克制、舒缓**——`speed` 取慢档、`opacity` 留余量，避免频率过高或过亮而喧宾夺主、抢标题与按钮（见 §32.3 频率克制原则）。整体转速另由主循环 **60fps 封顶**兜底（见 §32.3 原则 5），与 `speed` 解耦——保证高刷屏不会比 60Hz 转得更快。
 
@@ -2922,3 +2977,14 @@ sequenceDiagram
 2. 新增"忙碌"信号或入口 → 冲刷触发 watch 必须覆盖该信号的全部回落路径；评估是否需要兜底探测（参照 masRoom）。
 3. 动 `KimiChatInput` 发送/停止按钮区 → 三入口的 `queuedItems` / `stopLabel` 契约不回退（不传 props 时行为不变）。
 4. 动会话生命周期（切换/删除/物化）→ 队列隔离与键改写逻辑同步；跑侧栏与 masRoom 队列测试。
+
+关于页愿景落款在中文“从星辰中来，向发现而去。”旁展示 `lang="en"` 的 “From Stardust, to Discovery.”；宽屏并排，窄屏 flex-wrap 自动换行；顶部英文标语、中英落款与题记标题共用 `.stardust-text`：Georgia/Times/Songti 衬线斜体、700 字重、1.5px 字距、蓝白渐变、10px 辉光和 10s shimmer 流光，落款维持 14px 字号。顶部标语的流光放在内部 span，避免被 Hero 入场动画覆盖；减少动态偏好下这几处文字一并停止流光。
+
+平台 GitHub 入口统一指向 `https://github.com/CygnusX-Labs`：关于页顶部/页脚使用 `data/CygnusX.yaml` 的 `platform.github`（`/site-content` → `site-config` store），分析中心“GitHub 开源代码”按钮使用同一组织主页地址。生态组件/管线的独立仓库链接仍按各组件来源提供。
+
+
+卡片状态复用清单：`HomeView` 三组卡片、`ImageSelector` 镜像单选、`AgentCard` / `AgentCapabilitiesView` 智能体卡片、`ModelNavBar` 模型选项（样式来自 `chat-theme.css`）、`AgentTeamsRoomView` Case 卡片、`FastqQCView` 文件卡片及 `DashboardView` 的 Arco 卡片。各处只保留基础布局与默认外观，选中表面/边框/状态线统一消费全局令牌。`AgentCard` 将外部 class/属性绑定到真实 button，避免 `.is-highlighted` 丢在 Popover 外层。普通信息面板内的子按钮按下不将整个面板标记选中；按下态仅对显式 `.cygnusx-selectable-card` 生效。
+
+卡片视觉修正验证使用真实 App/DefaultLayout/路由的完整首页（API 为明确测试桩），覆盖科研工作台与机制/Evidence 等六类卡片的 hover/selected 对比，并保留左侧页面内边距截图检查阴影和竖条，不再仅以裁剪卡片的像素宽度判定视觉完成。
+
+寻宝鼠聚焦校验、防闪跳与历史侧栏状态的通用约束、落地方案及回归要求统一见 §6.4；专项实现见 `CygnusX_treasure_mouse_ui.md` §8。

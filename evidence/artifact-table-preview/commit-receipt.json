@@ -1,0 +1,33 @@
+{
+  "base_commit": "51003efa7db3b621898844cdbc747b5709f8f1da",
+  "commits": [
+    {
+      "sha": "315b7a65b5beb5c0e2712ea0e9efe0062c5929d8",
+      "message": "feat(frontend): 美化分析产物 CSV TSV Excel 表格预览",
+      "files": [
+        "ARCHITECTURE_DESIGN/CygnusX_frontend.md",
+        "frontend/src/api/artifactPreview.ts",
+        "frontend/src/components/ai-chat/ArtifactTablePreview.vue",
+        "frontend/src/components/ai-chat/MessageArtifactGallery.vue",
+        "frontend/src/components/ai-chat/__tests__/artifact-preview-transport.test.ts",
+        "frontend/src/components/ai-chat/__tests__/artifact-table-preview.test.ts",
+        "frontend/src/components/ai-chat/__tests__/message-artifact-gallery.test.ts",
+        "frontend/src/components/studio/StudioArtifactsPanel.vue",
+        "frontend/src/utils/artifactTablePreview.ts",
+        "scripts/poc/artifact-table-browser.mjs"
+      ]
+    },
+    {
+      "sha": "45030a94906f1a578b5583199b07978bb24ecf28",
+      "message": "feat(frontend): replace platform header with CygnusX wordmark",
+      "files": [
+        "frontend/public/cygnusx-wordmark.png",
+        "frontend/src/components/brand/PlatformBrandLogo.vue",
+        "frontend/src/layouts/DefaultLayout.vue",
+        "scripts/poc/platform-logo-browser.mjs"
+      ]
+    }
+  ],
+  "existing_staged_changes_preserved": true,
+  "task_worktree_content_preserved": true
+}

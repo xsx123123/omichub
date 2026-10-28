@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-genome-assembly-pipeline
 description: Orchestrates an end-to-end de novo genome assembly project, routing each step to the right genome-assembly skill rather than restating it. Profiles the genome first (k-mer spectrum -> size, heterozygosity, ploidy), QCs reads, chooses an assembly path by data type (SPAdes for Illumina, Flye for noisy long reads, hifiasm for HiFi, metaFlye for communities), polishes only when needed, decontaminates, scaffolds with Hi-C, and finishes with three-axis QC (contiguity + completeness + correctness). Use when assembling a genome from raw reads and deciding which assembler, whether to polish, and how to prove the result is good.
+version: 1.0.0
+display_name: 基因组组装全流程
+display_name_en: Genome Assembly Pipeline
+description_zh: >-
+  从原始 reads 到完成图的从头基因组组装流程，先评估基因组大小、杂合度与倍性，再按数据类型选择 SPAdes/Flye/hifiasm/metaFlye，完成纠错、去污染、Hi-C 挂载与三维质控。
+description_en: >-
+  Orchestrates an end-to-end de novo genome assembly project, routing each step to the right genome-assembly skill rather than restating it. Profiles the genome first (k-mer spectrum -> size, heterozygosity, ploidy), QCs reads, chooses an assembly path by data type (SPAdes for Illumina, Flye for noisy long reads, hifiasm for HiFi, metaFlye for communities), polishes only when needed, decontaminates, scaffolds with Hi-C, and finishes with three-axis QC (contiguity + completeness + correctness). Use when assembling a genome from raw reads and deciding which assembler, whether to polish, and how to prove the result is good.
+author: JZHANG
+examples_zh:
+  - "用 HiFi reads 组装这个植物基因组"
+  - "帮我判断是否需要打磨以及选哪个组装器"
+  - "对组装结果做连续性、完整性和正确性质控"
+examples_en:
+  - "Assemble this plant genome from HiFi reads"
+  - "Do I need polishing, and which assembler fits my data?"
+  - "Run contiguity, completeness, and correctness QC on the assembly"
 tool_type: cli
 primary_tool: Flye
 workflow: true
@@ -48,37 +64,37 @@ A genome project fails when one number stands in for the whole. Profiling sets e
 Raw reads (+ optional Hi-C, trio, short reads)
     |
     v
-[0. Profile the genome] --> genome-assembly/genome-profiling
+[0. Profile the genome] --> references/genome-assembly--genome-profiling.md
     |   k-mer spectrum (GenomeScope2) -> genome size, heterozygosity, ploidy.
     |   Sets NG50 denominator, expected haplotype count, hifiasm purge level,
     |   and which assembly path is even sensible. Do this BEFORE assembling.
     v
-[1. QC reads] -----------> short: read-qc/fastp-workflow
-    |                       long:  long-read-sequencing/long-read-qc
+[1. QC reads] -----------> short: references/read-qc--fastp-workflow.md
+    |                       long:  references/long-read-sequencing--long-read-qc.md
     |   Garbage-in caps assembly quality; record platform + basecaller era
     |   (it is an assembly PARAMETER, see step 2), trim internal adapters.
     v
 [2. Choose path BY DATA TYPE]
-    |  Illumina-only small/isolate -> genome-assembly/short-read-assembly (SPAdes)
-    |  noisy ONT/CLR              -> genome-assembly/long-read-assembly (Flye --nano-hq for R10)
-    |  PacBio HiFi                -> genome-assembly/hifi-assembly (hifiasm, phased)
-    |  community sample           -> genome-assembly/metagenome-assembly (metaFlye/metaSPAdes + binning)
+    |  Illumina-only small/isolate -> references/genome-assembly--short-read-assembly.md (SPAdes)
+    |  noisy ONT/CLR              -> references/genome-assembly--long-read-assembly.md (Flye --nano-hq for R10)
+    |  PacBio HiFi                -> references/genome-assembly--hifi-assembly.md (hifiasm, phased)
+    |  community sample           -> references/genome-assembly--metagenome-assembly.md (metaFlye/metaSPAdes + binning)
     |  large/heterozygous euk     -> long-read or HiFi, NOT short reads
     v
-[3. Polish IF needed] ---> genome-assembly/assembly-polishing
+[3. Polish IF needed] ---> references/genome-assembly--assembly-polishing.md
     |   noisy long-read assemblies: Racon -> medaka (model MUST match basecaller).
     |   Do NOT polish HiFi reflexively (often net-harmful). Measure with Merqury QV,
     |   not the reads polished with. Skip entirely for SPAdes/HiFi when QV is already high.
     v
-[4. Decontaminate] ------> genome-assembly/contamination-detection
+[4. Decontaminate] ------> references/genome-assembly--contamination-detection.md
     |   single organism: FCS-GX (GenBank-mandatory) + BlobToolKit blob plot.
     |   MAG:              CheckM2 + GUNC (chimerism). Two disjoint problems (see below).
     v
-[5. Scaffold IF Hi-C] ---> genome-assembly/scaffolding
+[5. Scaffold IF Hi-C] ---> references/genome-assembly--scaffolding.md
     |   automated YaHS produces a DRAFT; manual contact-map curation is the standard.
     |   Scaffold N50 != contig N50 (gaps are Ns). Skip if no Hi-C.
     v
-[6. Three-axis QC] ------> genome-assembly/assembly-qc
+[6. Three-axis QC] ------> references/genome-assembly--assembly-qc.md
         contiguity (auN/NG50 vs profiled size) + completeness (BUSCO/compleasm)
         + correctness (Merqury QV). Report the triad; NEVER N50 alone.
 ```
@@ -94,7 +110,7 @@ Raw reads (+ optional Hi-C, trio, short reads)
 | Large heterozygous eukaryote, ONT | profile -> QC -> Flye -> purge_dups -> medaka -> decontam -> scaffold -> QC | long-read-assembly, scaffolding |
 | Community / microbiome sample | QC -> metaFlye/metaSPAdes -> binning -> CheckM2 + GUNC | metagenome-assembly, contamination-detection |
 | Hi-C reads available | after contigs+polish: scaffold, curate contact map | scaffolding |
-| Reads not yet QC'd | start at step 1 | read-qc/fastp-workflow, long-read-sequencing/long-read-qc |
+| Reads not yet QC'd | start at step 1 | references/read-qc--fastp-workflow.md, references/long-read-sequencing--long-read-qc.md |
 
 ## Cross-Cutting Gotchas (surface these at every project)
 
@@ -107,7 +123,7 @@ Raw reads (+ optional Hi-C, trio, short reads)
 
 ## Step 0: Profile the Genome (do this first)
 
-Route the full treatment to genome-assembly/genome-profiling. The minimal orchestration step:
+Route the full treatment to references/genome-assembly--genome-profiling.md. The minimal orchestration step:
 
 ```bash
 # k-mer count from ACCURATE reads (Illumina/HiFi, NEVER noisy ONT), then GenomeScope2 for size / heterozygosity / ploidy
@@ -120,7 +136,7 @@ genomescope2 -i reads.hist -o gscope_out -k 21
 
 ## Step 1: QC Reads
 
-Short reads route to read-qc/fastp-workflow; long reads to long-read-sequencing/long-read-qc.
+Short reads route to references/read-qc--fastp-workflow.md; long reads to references/long-read-sequencing--long-read-qc.md.
 
 ```bash
 fastp -i R1.fq.gz -I R2.fq.gz -o t_R1.fq.gz -O t_R2.fq.gz \
@@ -148,7 +164,7 @@ flye --nano-hq ont.fq.gz --meta --out-dir metaflye_out --threads 16    # --meta 
 
 ## Step 3: Polish IF Needed
 
-Polishing is read-type-matched and conditional. Route to genome-assembly/assembly-polishing.
+Polishing is read-type-matched and conditional. Route to references/genome-assembly--assembly-polishing.md.
 
 ```bash
 # Noisy long-read assembly: medaka with the MATCHING model. medaka_consensus does its own
@@ -176,7 +192,7 @@ gunc run --input_dir bins/ --out_dir gunc_out                            # chime
 
 ## Step 5: Scaffold IF Hi-C Is Available
 
-YaHS produces a draft; the contact map is the QC, not decoration. Route to genome-assembly/scaffolding.
+YaHS produces a draft; the contact map is the QC, not decoration. Route to references/genome-assembly--scaffolding.md.
 
 ```bash
 # Map Hi-C to contigs, then YaHS; inspect the contact map (PretextMap/Juicer) and break misjoins.
@@ -185,7 +201,7 @@ yahs assembly.fasta hic_to_contigs.bam -o yahs_out          # output scaffolds +
 
 ## Step 6: Three-Axis QC (contiguity + completeness + correctness)
 
-Route the full treatment to genome-assembly/assembly-qc. Report all three axes; lead with the QV.
+Route the full treatment to references/genome-assembly--assembly-qc.md. Report all three axes; lead with the QV.
 
 ```bash
 # Contiguity vs the PROFILED genome size (NG50/auN, not bare N50)
@@ -214,17 +230,17 @@ merqury.sh reads.meryl final.fasta merqury_out          # QV + k-mer completenes
 
 ## Related Skills
 
-- genome-assembly/genome-profiling - Step 0: k-mer spectrum for size, heterozygosity, ploidy; sets expectations before assembling
-- genome-assembly/short-read-assembly - SPAdes path for Illumina-only small/isolate genomes
-- genome-assembly/long-read-assembly - Flye/Canu path for noisy ONT/CLR reads
-- genome-assembly/hifi-assembly - hifiasm phased path for PacBio HiFi
-- genome-assembly/metagenome-assembly - metaFlye/metaSPAdes + binning for community samples
-- genome-assembly/assembly-polishing - Racon/medaka/Pilon, applied only when needed
-- genome-assembly/contamination-detection - FCS-GX/BlobToolKit (single organism) vs CheckM2/GUNC (MAG)
-- genome-assembly/scaffolding - YaHS Hi-C scaffolding and contact-map curation
-- genome-assembly/assembly-qc - Three-axis QC: auN/NG50 + BUSCO + Merqury QV
-- read-qc/fastp-workflow - Short-read QC before assembly
-- long-read-sequencing/long-read-qc - Long-read length/quality QC and basecaller-era awareness
+- references/genome-assembly--genome-profiling.md - Step 0: k-mer spectrum for size, heterozygosity, ploidy; sets expectations before assembling
+- references/genome-assembly--short-read-assembly.md - SPAdes path for Illumina-only small/isolate genomes
+- references/genome-assembly--long-read-assembly.md - Flye/Canu path for noisy ONT/CLR reads
+- references/genome-assembly--hifi-assembly.md - hifiasm phased path for PacBio HiFi
+- references/genome-assembly--metagenome-assembly.md - metaFlye/metaSPAdes + binning for community samples
+- references/genome-assembly--assembly-polishing.md - Racon/medaka/Pilon, applied only when needed
+- references/genome-assembly--contamination-detection.md - FCS-GX/BlobToolKit (single organism) vs CheckM2/GUNC (MAG)
+- references/genome-assembly--scaffolding.md - YaHS Hi-C scaffolding and contact-map curation
+- references/genome-assembly--assembly-qc.md - Three-axis QC: auN/NG50 + BUSCO + Merqury QV
+- references/read-qc--fastp-workflow.md - Short-read QC before assembly
+- references/long-read-sequencing--long-read-qc.md - Long-read length/quality QC and basecaller-era awareness
 - workflows/genome-annotation-pipeline - Downstream: only a decontaminated, QC-passed FASTA should hand off to annotation
 
 ## References

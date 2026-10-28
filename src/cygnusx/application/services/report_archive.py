@@ -18,9 +18,9 @@ from cygnusx.infrastructure.storage.backend import StorageBackend
 from cygnusx.infrastructure.storage.path_factory import StoragePathFactory
 
 
-def read_local_archive(path: Path) -> bytes:
+def read_local_archive(path: Path, limit: int | None = None) -> bytes:
     with open_evidence_file(path) as stream:
-        return stream.read()
+        return stream.read(-1 if limit is None else limit)
 
 
 def _atomic_local_write(path: Path, content: bytes) -> None:
@@ -43,11 +43,13 @@ def _atomic_local_write(path: Path, content: bytes) -> None:
 
 
 async def read_archive(
-    backend: StorageBackend, factory: StoragePathFactory, relative: str
+    backend: StorageBackend, factory: StoragePathFactory, relative: str, *, limit: int | None = None
 ) -> bytes:
     if backend.name == "local":
-        return await asyncio.to_thread(read_local_archive, factory.data_root / relative)
+        return await asyncio.to_thread(read_local_archive, factory.data_root / relative, limit)
     try:
+        if limit is not None:
+            return await backend.read(relative, limit=limit)
         return await backend.read(relative)
     except (BusinessError, NotFoundError) as exc:
         raise OSError("Archive storage read unavailable") from exc

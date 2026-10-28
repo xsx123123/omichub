@@ -1,0 +1,84 @@
+{
+  "scope": "Current compiled application and real DefaultLayout; isolated auth/welcome API + PostgreSQL; simulated 2026-11-02; unrelated GETs use empty fixtures",
+  "results": [
+    {
+      "label": "admin",
+      "expected": "toast",
+      "url": "http://127.0.0.1:18923/",
+      "first_login": false,
+      "claims": [
+        {
+          "status": 200,
+          "body": {
+            "delivery_id": "0ecf2714-4358-4149-a0cc-3b932156e24f",
+            "reservation_expires_at": "2026-11-02T08:05:00Z",
+            "title": "欢迎回来",
+            "message": "回头看看步骤间的接缝，流程会在眼前更顺。",
+            "source": "agent_pool",
+            "duration_ms": 5000
+          }
+        }
+      ],
+      "errors": [],
+      "actual_compiled_application": true
+    },
+    {
+      "label": "admin-second-session",
+      "expected": "none",
+      "url": "http://127.0.0.1:18923/",
+      "first_login": false,
+      "claims": [
+        {
+          "status": 204,
+          "body": null
+        }
+      ],
+      "errors": [],
+      "actual_compiled_application": true
+    },
+    {
+      "label": "first",
+      "expected": "onboarding",
+      "url": "http://127.0.0.1:18923/",
+      "first_login": true,
+      "claims": [],
+      "errors": [],
+      "actual_compiled_application": true
+    },
+    {
+      "label": "general-disabled",
+      "expected": "none",
+      "url": "http://127.0.0.1:18923/",
+      "first_login": false,
+      "claims": [
+        {
+          "status": 204,
+          "body": null
+        }
+      ],
+      "errors": [],
+      "actual_compiled_application": true
+    },
+    {
+      "label": "general-enabled",
+      "expected": "toast",
+      "url": "http://127.0.0.1:18923/",
+      "first_login": false,
+      "claims": [
+        {
+          "status": 200,
+          "body": {
+            "delivery_id": "85a664c5-1994-4a01-9da5-0e639c5c44db",
+            "reservation_expires_at": "2026-11-02T08:05:00Z",
+            "title": "欢迎回来",
+            "message": "把走过的弯路讲给同伴，经验便在交流里变暖。",
+            "source": "agent_pool",
+            "duration_ms": 5000
+          }
+        }
+      ],
+      "errors": [],
+      "actual_compiled_application": true
+    }
+  ]
+}

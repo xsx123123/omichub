@@ -87,12 +87,12 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- single-cell/preprocessing - QC thresholds, ambient-RNA removal, normalization choice
-- single-cell/doublet-detection - Per-sample doublet calling before integration
+- references/single-cell--preprocessing.md - QC thresholds, ambient-RNA removal, normalization choice
+- references/single-cell--doublet-detection.md - Per-sample doublet calling before integration
 - single-cell/hashing-demultiplexing - Demultiplex hashed/multiplexed pools to samples before QC
 - single-cell/batch-integration - Multi-sample integration and over-correction diagnosis
-- single-cell/clustering - Resolution sweep and cluster validation
-- single-cell/markers-annotation - Marker discovery, manual labeling, and pseudobulk condition DE
+- references/single-cell--clustering.md - Resolution sweep and cluster validation
+- references/single-cell--markers-annotation.md - Marker discovery, manual labeling, and pseudobulk condition DE
 - single-cell/cell-annotation - Automated reference-based label transfer
 - single-cell/differential-abundance - Test whether cell-type proportions shifted between conditions
 - single-cell/trajectory-inference - Pseudotime and lineage reconstruction for continuous processes

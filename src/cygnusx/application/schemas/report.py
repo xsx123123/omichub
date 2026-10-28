@@ -60,6 +60,14 @@ class ReportVersionTreeResponse(CygnusXBaseSchema):
     items: list[ReportResponse]
 
 
+class ReportPreviewResponse(CygnusXBaseSchema):
+    """Browser-bound URL; never a publicly shareable report link."""
+
+    url: str
+    expires_at: datetime
+    channel: str
+
+
 class ReportListResponse(CygnusXBaseSchema):
     """报告列表响应"""
 

@@ -1,0 +1,18 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/zj/zj_code_libarary/OmicHub
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, langsmith-0.10.16
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 8 items
+
+tests/unit/core/test_telemetry_routes.py ........                        [100%]
+
+=============================== warnings summary ===============================
+src/cygnusx/application/schemas/ai_provider.py:36
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/schemas/ai_provider.py:36: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AIProviderConfigDTO(AIProviderConfigBaseDTO):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========================= 8 passed, 1 warning in 0.08s =========================

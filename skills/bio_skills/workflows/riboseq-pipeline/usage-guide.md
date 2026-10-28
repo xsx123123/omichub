@@ -56,9 +56,9 @@ BiocManager::install(c("riboWaltz", "riborex", "DESeq2"))
 
 ## Related Skills
 
-- ribo-seq/riboseq-preprocessing - Preprocessing decisions
-- ribo-seq/ribosome-periodicity - Periodicity QC and offsets
-- ribo-seq/orf-detection - ORF calling
-- ribo-seq/translation-efficiency - Differential TE
-- ribo-seq/initiation-site-mapping - Start-codon mapping
+- references/ribo-seq--riboseq-preprocessing.md - Preprocessing decisions
+- references/ribo-seq--ribosome-periodicity.md - Periodicity QC and offsets
+- references/ribo-seq--orf-detection.md - ORF calling
+- references/ribo-seq--translation-efficiency.md - Differential TE
+- references/ribo-seq--initiation-site-mapping.md - Start-codon mapping
 - differential-expression/deseq2-basics - Count-based testing

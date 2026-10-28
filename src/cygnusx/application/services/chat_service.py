@@ -260,6 +260,7 @@ _agent_duration = _chat_meter.create_histogram(
     "agent.run.duration", unit="ms", description="Agent 单次运行耗时"
 )
 
+
 def _extract_user_message_metadata(message: dict[str, Any]) -> dict[str, Any]:
     """仅持久化聊天入口允许的用户操作标记，避免任意客户端元数据入库。"""
     metadata = message.get("metadata")
@@ -270,11 +271,7 @@ def _extract_user_message_metadata(message: dict[str, Any]) -> dict[str, Any]:
     if isinstance(marker, dict):
         key = marker.get("key")
         token = marker.get("token")
-        if (
-            isinstance(key, str)
-            and isinstance(token, str)
-            and marker.get("confirmed") is True
-        ):
+        if isinstance(key, str) and isinstance(token, str) and marker.get("confirmed") is True:
             extracted["agentteams_case_confirmation"] = {
                 "key": key[:128],
                 "token": token[:256],
@@ -466,6 +463,7 @@ OVERDRIVE_MANAGER_PROMPT = """你是团队房间的 Manager（人格：{manager_
 
 用户消息：{user_content}"""
 
+
 class ChatService(
     AgentRuntimeGateway,
     ChatSessionManagement,
@@ -639,9 +637,7 @@ class ChatService(
             server = await repo.get_by_name(CONDA_META_MCP_SERVER_NAME)
         if server is None or not server.is_enabled:
             return servers
-        if any(
-            str(item.id) == str(server.id) or item.name == server.name for item in servers
-        ):
+        if any(str(item.id) == str(server.id) or item.name == server.name for item in servers):
             return servers
         return [*servers, server]
 
@@ -730,6 +726,7 @@ class ChatService(
             from cygnusx.infrastructure.database.repositories.ai_provider_repository import (
                 SqlAlchemyAIProviderConfigRepository,
             )
+
             try:
                 provider_repo = SqlAlchemyAIProviderConfigRepository(self._db)
                 classifier_config = await provider_repo.get_by_name(
@@ -740,9 +737,10 @@ class ChatService(
                 default_config = None
                 logger.debug("无法读取默认分类 Provider，沿用 Router 上下文配置: {}", exc)
             if (
-                classifier_config is None
-                or classifier_config is router_ctx.model_config
-            ) and default_config is not None and default_config.is_active:
+                (classifier_config is None or classifier_config is router_ctx.model_config)
+                and default_config is not None
+                and default_config.is_active
+            ):
                 classifier_config = default_config
             if model_health_monitor.classifier_healthy(classifier_config.name):
                 try:
@@ -765,7 +763,9 @@ class ChatService(
                 degraded = True
                 degrade_reason = "classifier_unhealthy"
                 model_health_monitor.record(classifier_config.name, HealthEventKind.CLIENT_ERROR)
-                logger.warning("路由分类器健康熔断，跳过分类调用 provider={}", classifier_config.name)
+                logger.warning(
+                    "路由分类器健康熔断，跳过分类调用 provider={}", classifier_config.name
+                )
             decision = _extract_route_json(route_text)
             if decision is None:
                 degraded = True
@@ -1047,14 +1047,31 @@ class ChatService(
 
         planning_only = is_planning_only_request(planning_content, assignments)
         execution_markers = (
-            "开始分析", "进行分析", "执行分析", "运行流程", "跑流程", "生成代码",
-            "写代码", "处理数据", "run the analysis", "execute", "implement",
+            "开始分析",
+            "进行分析",
+            "执行分析",
+            "运行流程",
+            "跑流程",
+            "生成代码",
+            "写代码",
+            "处理数据",
+            "run the analysis",
+            "execute",
+            "implement",
         )
-        auto_promote_studio = bool(assignments) and not planning_only and (
-            any(bool(item.get("workspace_access")) for item in assignments)
-            or any(marker in planning_content.casefold() for marker in execution_markers)
+        auto_promote_studio = (
+            bool(assignments)
+            and not planning_only
+            and (
+                any(bool(item.get("workspace_access")) for item in assignments)
+                or any(marker in planning_content.casefold() for marker in execution_markers)
+            )
         )
-        if auto_promote_studio and session_row is not None and getattr(session_row, "mode", "chat") != "studio":
+        if (
+            auto_promote_studio
+            and session_row is not None
+            and getattr(session_row, "mode", "chat") != "studio"
+        ):
             session_row.mode = "studio"
             session_row.workspace_id = getattr(session_row, "workspace_id", None) or session_id
             session_row.updated_at = datetime.now(UTC)
@@ -1247,9 +1264,9 @@ class ChatService(
             )
 
             if isinstance(session_row, ChatSessionModel):
-                planning_image = str(
-                    (session_row.sandbox_meta or {}).get("image") or ""
-                ).strip() or None
+                planning_image = (
+                    str((session_row.sandbox_meta or {}).get("image") or "").strip() or None
+                )
                 workspace_call_id = f"planning-workspace-{uuid.uuid4()}"
                 yield ChatChunk(
                     type="tool_call",
@@ -1394,7 +1411,7 @@ class ChatService(
                                 "每条只包含 2-4 个最关键的专业概念或短语，使用 AND/OR 连接；"
                                 "必须保留关键基因、疾病/模型、技术类型和目标机制中最相关的部分；"
                                 "不要复述用户原句，不要写解释，不要添加网站域名。"
-                                "严格返回 JSON：{\"queries\":[\"...\",\"...\"]}。"
+                                '严格返回 JSON：{"queries":["...","..."]}。'
                             ),
                         }
                     ],
@@ -1562,12 +1579,8 @@ class ChatService(
                     source_timeout_seconds=float(
                         research_limits.get("source_timeout_seconds") or 20
                     ),
-                    model_timeout_seconds=float(
-                        research_limits.get("model_timeout_seconds") or 45
-                    ),
-                    wall_timeout_seconds=float(
-                        research_limits.get("wall_timeout_seconds") or 75
-                    ),
+                    model_timeout_seconds=float(research_limits.get("model_timeout_seconds") or 45),
+                    wall_timeout_seconds=float(research_limits.get("wall_timeout_seconds") or 75),
                     max_evidence_items_per_source=int(
                         research_limits.get("max_evidence_items_per_source") or 8
                     ),
@@ -1603,7 +1616,9 @@ class ChatService(
                 except TimeoutError:
                     continue
                 source = str(activity.get("source") or "")
-                tool_name, mcp_server = source_tools.get(source, (source or "planning_activity", None))
+                tool_name, mcp_server = source_tools.get(
+                    source, (source or "planning_activity", None)
+                )
                 if activity.get("event") == "source_started":
                     call_id = f"planning-{source}-{uuid.uuid4()}"
                     planning_calls[source] = (call_id, mcp_server)
@@ -2765,9 +2780,7 @@ class ChatService(
             studio_always_allow = always_allow_set(session_mcp_meta)
             _session_permissions = session_mcp_meta.get("permissions")
             chat_permission_mode = (
-                _session_permissions.get("mode")
-                if isinstance(_session_permissions, dict)
-                else None
+                _session_permissions.get("mode") if isinstance(_session_permissions, dict) else None
             )
             active_case_id = _active_agentteams_case_id(session_mcp_meta)
             if active_case_id:
@@ -3074,7 +3087,9 @@ class ChatService(
                     )
 
                     try:
-                        default_config = await SqlAlchemyAIProviderConfigRepository(self._db).get_default()
+                        default_config = await SqlAlchemyAIProviderConfigRepository(
+                            self._db
+                        ).get_default()
                     except Exception as exc:  # noqa: BLE001 - preserve degraded chat path
                         default_config = None
                         logger.warning("降级路径读取默认 Provider 失败，沿用已装配模型: {}", exc)
@@ -3092,9 +3107,7 @@ class ChatService(
                 route_execution_confirmed = False
                 if routed_session is not None and isinstance(transition, dict):
                     routed_meta = dict(routed_session.sandbox_meta or {})
-                    previous_routed_agent_id = str(
-                        routed_meta.get("last_routed_agent_id") or ""
-                    )
+                    previous_routed_agent_id = str(routed_meta.get("last_routed_agent_id") or "")
                     gate = routed_meta.get("route_execution_gate")
                     route_execution_confirmed = (
                         isinstance(gate, dict)
@@ -3167,10 +3180,10 @@ class ChatService(
                         else site_settings.collaboration_degradation_template_zh
                     )
                     unified_decision = normalize_decision(
-                            route_info,
-                            fallback_agent_id=ctx.agent.agent_id,
-                            valid_agent_ids={ctx.agent.agent_id},
-                        )
+                        route_info,
+                        fallback_agent_id=ctx.agent.agent_id,
+                        valid_agent_ids={ctx.agent.agent_id},
+                    )
                     unified_route_notice = capability_notice(
                         unified_decision,
                         fanout_enabled=(
@@ -3332,7 +3345,10 @@ class ChatService(
             selected_result = await self._db.execute(
                 select(SkillModel).where(
                     SkillModel.is_active == True,  # noqa: E712
-                    (SkillModel.skill_id.in_(selected_skill_refs) | SkillModel.name.in_(selected_skill_refs)),
+                    (
+                        SkillModel.skill_id.in_(selected_skill_refs)
+                        | SkillModel.name.in_(selected_skill_refs)
+                    ),
                 )
             )
             selected_skills = list(selected_result.scalars().all())
@@ -3476,7 +3492,13 @@ class ChatService(
                         active_mcp_servers.append(server)
         tools = list(ctx.tools or []) + base_tools
         if runtime_context and runtime_context.get("goal_safe_only"):
-            safe_tool_names = {"ask_user", "knowledge_search", "web_search", "use_skill", "skill_resource"}
+            safe_tool_names = {
+                "ask_user",
+                "knowledge_search",
+                "web_search",
+                "use_skill",
+                "skill_resource",
+            }
             if runtime_context.get("goal_fanout_enabled"):
                 safe_tool_names.add(PARALLEL_SUBAGENTS_TOOL_NAME)
 
@@ -3486,9 +3508,7 @@ class ChatService(
                     return True
                 schema = schema_loader.get_tool(name)
                 return bool(
-                    schema
-                    and schema.annotations.read_only_hint
-                    and not schema.requires_confirm
+                    schema and schema.annotations.read_only_hint and not schema.requires_confirm
                 )
 
             tools = [tool for tool in tools if isinstance(tool, dict) and _is_goal_safe_tool(tool)]
@@ -3554,9 +3574,7 @@ class ChatService(
             )
 
             _page_prompt = build_page_context_prompt(str(_page_context))
-            system_prompt = (
-                f"{system_prompt}\n\n{_page_prompt}" if system_prompt else _page_prompt
-            )
+            system_prompt = f"{system_prompt}\n\n{_page_prompt}" if system_prompt else _page_prompt
         if route_prompt_suffix:
             system_prompt = (
                 f"{system_prompt}\n\n{route_prompt_suffix}"
@@ -3578,9 +3596,7 @@ class ChatService(
             if get_settings().memory_v2_enabled:
                 memory_prompt = f"{memory_prompt}\n\n{MEMORY_V2_WRITE_DISCIPLINE}"
             system_prompt = (
-                f"{system_prompt}\n\n{memory_prompt}"
-                if system_prompt
-                else memory_prompt
+                f"{system_prompt}\n\n{memory_prompt}" if system_prompt else memory_prompt
             )
         if any(
             tool.get("function", {}).get("name") == HANDOFF_TOOL_NAME
@@ -3764,9 +3780,7 @@ class ChatService(
                     if isinstance(item, dict)
                 }
             ):
-                runtime_prompt = (
-                    f"{runtime_prompt}\n\n{KNOWLEDGE_SEARCH_SYSTEM_PROMPT_SUFFIX}"
-                )
+                runtime_prompt = f"{runtime_prompt}\n\n{KNOWLEDGE_SEARCH_SYSTEM_PROMPT_SUFFIX}"
             runtime_profile_id = str(
                 (ctx.features.get("studio") or {}).get("runtime_profile") or ""
             ).strip()
@@ -3808,7 +3822,9 @@ class ChatService(
                     render_workspace_memory_index,
                 )
 
-                runtime_prompt += f"\n\n{render_workspace_memory_index(studio_workspace_memory_index)}"
+                runtime_prompt += (
+                    f"\n\n{render_workspace_memory_index(studio_workspace_memory_index)}"
+                )
             if studio_permission_mode == "plan":
                 runtime_prompt += (
                     "\n\n## Studio 计划权限\n"
@@ -3925,7 +3941,9 @@ class ChatService(
                     if isinstance(item, dict)
                 }
             ):
-                target_prompt = f"{target_prompt}\n\n{KNOWLEDGE_SEARCH_SYSTEM_PROMPT_SUFFIX}".strip()
+                target_prompt = (
+                    f"{target_prompt}\n\n{KNOWLEDGE_SEARCH_SYSTEM_PROMPT_SUFFIX}".strip()
+                )
             try:
                 from cygnusx.application.services.agent_memory_service import AgentMemoryService
 
@@ -3957,11 +3975,48 @@ class ChatService(
                 target_prompt,
             )
 
+        copilot_session = await self.get_session(current_session_id, user_id)
+        copilot_binding = (
+            copilot_session.sandbox_meta.get("report_copilot")
+            if copilot_session and isinstance(copilot_session.sandbox_meta, dict)
+            else None
+        )
+        is_report_copilot = isinstance(copilot_binding, dict)
+        if is_report_copilot:
+            from cygnusx.application.services.report_copilot_service import (
+                REPORT_COPILOT_TOOLS,
+                ReportCopilotService,
+            )
+
+            try:
+                report_context = await ReportCopilotService(
+                    self._db, user_id, current_session_id
+                ).metadata()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("报告 Copilot 上下文解析失败: {}", exc)
+                report_context = {"metadata_status": "unavailable"}
+            tools = list(REPORT_COPILOT_TOOLS) if supports_function_tools else []
+            active_mcp_servers = []
+            bound_skills = []
+            effective_multi_agent = False
+            effective_overdrive = False
+            effective_web_search = False
+            system_prompt = (
+                "你是 CygnusX 报告解读 Copilot。回答必须以当前报告和只读工具返回为依据；"
+                "没有工具证据时明确说明数据缺失，不得编造数值、样本或结论。"
+                "此会话仅绑定当前报告，禁止请求或推测其他项目/任务/文件。"
+                "数据问题必须先调用只读工具。引用章节时使用格式 [报告章节: 章节标题]。"
+                "只回答问题，不创建任务、不执行代码、不搜索网络、不访问记忆或其他用户数据。"
+                f"\n绑定报告摘要（schema v1）：{json.dumps(report_context, ensure_ascii=False)[:12000]}"
+                f"\n\n{USER_FACING_CHINESE_PROMPT_SUFFIX}"
+            )
+
         # 不支持 function calling 的模型总是在调用前搜索；对时效/文献类问题，
         # 即使模型支持工具也强制预搜索，保证先核验事实再回答。
         presearch_sources: list[dict[str, Any]] = []
         if (
-            effective_web_search
+            not is_report_copilot
+            and effective_web_search
             and (search_required or (not supports_function_tools and presearch_requested))
             and user_content.strip()
         ):
@@ -4079,6 +4134,8 @@ class ChatService(
             db=self._db,
             extra=dict(runtime_context or {}),
         )
+        if is_report_copilot:
+            tool_context.extra["report_copilot"] = True
 
         if (
             unified_route_notice is not None
@@ -4217,8 +4274,13 @@ class ChatService(
         if (
             not studio_mode
             and not is_mas_orchestrator
-            and ctx.features.get("engine") != "legacy"
-            and not get_settings().chat_force_legacy_runtime
+            and (
+                is_report_copilot
+                or (
+                    ctx.features.get("engine") != "legacy"
+                    and not get_settings().chat_force_legacy_runtime
+                )
+            )
         ):
             from cygnusx.application.services.chat.runtimes.langgraph_runtime import (
                 LangGraphChatRuntime,
@@ -4251,7 +4313,9 @@ class ChatService(
                 yield chunk
             return
 
-        loop_guard = StudioLoopGuard(get_studio_config().agent.loop_control) if studio_mode else None
+        loop_guard = (
+            StudioLoopGuard(get_studio_config().agent.loop_control) if studio_mode else None
+        )
         loop_guard_triggered = False
         execution_path = "studio_chat_loop" if studio_mode else "chat_legacy"
         execution_run_id = f"agent-chat:{ai_message.message_id}"
@@ -4311,7 +4375,11 @@ class ChatService(
                 if tool_context.extra.get("fanout_preexecuted"):
                     fanout_admission.mark_preexecuted()
 
-                llm_messages, context_compressed, tokens_before = await self._compress_context_if_needed(
+                (
+                    llm_messages,
+                    context_compressed,
+                    tokens_before,
+                ) = await self._compress_context_if_needed(
                     llm_messages,
                     model_config,
                     tool_schemas=tools,
@@ -4327,7 +4395,9 @@ class ChatService(
                             {
                                 "tokens_after": self._last_context_compaction.get("tokens_after"),
                                 "yield_ratio": self._last_context_compaction.get("yield_ratio"),
-                                "archived_count": self._last_context_compaction.get("archived_count"),
+                                "archived_count": self._last_context_compaction.get(
+                                    "archived_count"
+                                ),
                             }
                         )
                     if getattr(self, "_last_context_compaction_policy", None):
@@ -4470,10 +4540,7 @@ class ChatService(
                     # ask_user 在普通会话也挂载，两种模式下都走澄清拦截分支
                     is_studio_tool = (
                         studio_mode
-                        and (
-                            tool_name in STUDIO_TOOL_NAMES
-                            or is_capability_tool
-                        )
+                        and (tool_name in STUDIO_TOOL_NAMES or is_capability_tool)
                         and tool_name != NETWORK_REQUEST_TOOL_NAME
                     ) or tool_name == "ask_user"
                     is_mas_plan_tool = (
@@ -4487,9 +4554,7 @@ class ChatService(
                     is_agentteams_case_tool = tool_name == "create_agentteams_case"
                     # Skills 三层渐进式披露内部工具（非 Studio；Studio 走 capability_load 机制）
                     is_skill_tool = (not studio_mode) and tool_name in SKILL_TOOL_NAMES
-                    is_chat_sandbox_tool = (
-                        (not studio_mode) and tool_name == CHAT_SANDBOX_TOOL_NAME
-                    )
+                    is_chat_sandbox_tool = (not studio_mode) and tool_name == CHAT_SANDBOX_TOOL_NAME
 
                     # 在绑定的 MCP server 中找到拥有该工具的 server
                     server = None
@@ -4715,7 +4780,9 @@ class ChatService(
 
                                         async def _on_fanout_child_event(
                                             event: dict[str, Any],
-                                            _queue: asyncio.Queue[dict[str, Any]] = child_event_queue,
+                                            _queue: asyncio.Queue[
+                                                dict[str, Any]
+                                            ] = child_event_queue,
                                         ) -> None:
                                             await _queue.put(event)
 
@@ -4726,11 +4793,14 @@ class ChatService(
                                                 parent_agent_id=str(ctx.agent.agent_id),
                                                 parent_session_id=current_session_id,
                                                 on_event=_on_fanout_child_event,
+                                                request_key=(
+                                                    str(args.get("request_key") or "").strip()
+                                                    or None
+                                                ),
                                             )
                                         )
                                         while (
-                                            not execute_task.done()
-                                            or not child_event_queue.empty()
+                                            not execute_task.done() or not child_event_queue.empty()
                                         ):
                                             try:
                                                 child_event = await asyncio.wait_for(
@@ -4780,9 +4850,9 @@ class ChatService(
                                             )
                                             or ""
                                         ),
-                                        "progress": (
-                                            fanout_envelope.get("ui_payload") or {}
-                                        ).get("progress")
+                                        "progress": (fanout_envelope.get("ui_payload") or {}).get(
+                                            "progress"
+                                        )
                                         or [],
                                     },
                                 )
@@ -5066,7 +5136,11 @@ class ChatService(
                                 if not plan_approved:
                                     plan_rejection = str(
                                         resolution.get("reason")
-                                        or ("用户未响应（超时）" if action == "timeout" else "用户拒绝了该计划")
+                                        or (
+                                            "用户未响应（超时）"
+                                            if action == "timeout"
+                                            else "用户拒绝了该计划"
+                                        )
                                     )
                             studio_plan_approved = plan_approved
                             result = {
@@ -5139,9 +5213,8 @@ class ChatService(
                         # AI 助手页面（auto_approve）同样直接放行：该页面由前端显式
                         # 声明"不再逐次确认"，故连会话的 supervised 模式一并跳过；
                         # AI 工作台页面不传该标记，下方判定保持原样。
-                        if (
-                            not auto_approve_operations
-                            and needs_approval(studio_permission_mode, tool_name, studio_always_allow)
+                        if not auto_approve_operations and needs_approval(
+                            studio_permission_mode, tool_name, studio_always_allow
                         ):
                             approval_service = get_studio_approval_service()
                             approval = await approval_service.create(
@@ -5223,12 +5296,17 @@ class ChatService(
                         # 沙盒执行：sandbox_execute 的 stdout/stderr 以 tool_output 事件边跑边推
                         if approval_passed:
                             should_checkpoint = False
-                            round_checkpoint_requested = round_checkpoint_requested or tool_name in {
-                                "workspace_write",
-                                "workspace_edit",
-                            } or (
-                                tool_name == "sandbox_execute"
-                                and studio_permission_mode in {"auto", "plan"}
+                            round_checkpoint_requested = (
+                                round_checkpoint_requested
+                                or tool_name
+                                in {
+                                    "workspace_write",
+                                    "workspace_edit",
+                                }
+                                or (
+                                    tool_name == "sandbox_execute"
+                                    and studio_permission_mode in {"auto", "plan"}
+                                )
                             )
                             result = {}
                             async for item in stream_studio_tool(
@@ -5250,13 +5328,10 @@ class ChatService(
                         # 主机、方法和 URL；通过后才真正发起请求。
                         # AI 助手页面（auto_approve）跳过该闸直接访问。
                         network_approval_passed = True
-                        if (
-                            not auto_approve_operations
-                            and needs_approval(
-                                chat_permission_mode if not studio_mode else studio_permission_mode,
-                                tool_name,
-                                studio_always_allow,
-                            )
+                        if not auto_approve_operations and needs_approval(
+                            chat_permission_mode if not studio_mode else studio_permission_mode,
+                            tool_name,
+                            studio_always_allow,
                         ):
                             approval_service = get_studio_approval_service()
                             approval = await approval_service.create(
@@ -5320,7 +5395,9 @@ class ChatService(
                             if action != "approved":
                                 network_approval_passed = False
                                 reason = resolution.get("reason") or (
-                                    "用户未响应（超时）" if action == "timeout" else "用户拒绝了该网络请求"
+                                    "用户未响应（超时）"
+                                    if action == "timeout"
+                                    else "用户拒绝了该网络请求"
                                 )
                                 result = {
                                     "success": False,
@@ -5339,11 +5416,8 @@ class ChatService(
                         # 权限模式（普通聊天现状）时保持放行。
                         # AI 助手页面（auto_approve）一律直接执行，不弹审批卡。
                         chat_approval_passed = True
-                        if (
-                            not auto_approve_operations
-                            and needs_approval(
-                                chat_permission_mode, tool_name, studio_always_allow
-                            )
+                        if not auto_approve_operations and needs_approval(
+                            chat_permission_mode, tool_name, studio_always_allow
                         ):
                             approval_service = get_studio_approval_service()
                             approval = await approval_service.create(
@@ -5454,9 +5528,7 @@ class ChatService(
                                 content=query,
                                 metadata={"status": "searching"},
                             )
-                            result = await self._web_search(
-                                args, model_config=model_config
-                            )
+                            result = await self._web_search(args, model_config=model_config)
                             search_payload = (
                                 result.get("result") if isinstance(result, dict) else None
                             )
@@ -5529,9 +5601,7 @@ class ChatService(
                         code = llm_result.get("code")
                         if not code:
                             failure_kind = llm_result.get("failure_kind") or (
-                                result.get("failure_kind")
-                                if isinstance(result, dict)
-                                else None
+                                result.get("failure_kind") if isinstance(result, dict) else None
                             )
                             if failure_kind:
                                 code = code_from_failure_kind(str(failure_kind))
@@ -5572,11 +5642,19 @@ class ChatService(
                         and session is not None
                     ):
                         meta_plan = (session.sandbox_meta or {}).get("plan") or {}
-                        current_steps = meta_plan.get("steps") if isinstance(meta_plan, dict) else None
+                        current_steps = (
+                            meta_plan.get("steps") if isinstance(meta_plan, dict) else None
+                        )
                         if isinstance(current_steps, list) and current_steps:
                             advanced_steps = advance_plan_steps(
-                                [{"title": str(s.get("title") or ""), "status": str(s.get("status") or "pending")}
-                                 for s in current_steps if isinstance(s, dict)]
+                                [
+                                    {
+                                        "title": str(s.get("title") or ""),
+                                        "status": str(s.get("status") or "pending"),
+                                    }
+                                    for s in current_steps
+                                    if isinstance(s, dict)
+                                ]
                             )
                             if advanced_steps is not None:
                                 plan_meta = dict(session.sandbox_meta or {})
@@ -5621,7 +5699,9 @@ class ChatService(
                     # 重建工具卡片、工作区摘要与 Plotly 图表（此前仅 Studio 工具落库，
                     # 普通 MCP 工具——list_workspace_files/cygnusx_plot_volcano 等——
                     # 重开会话后卡片与图表全部丢失）。
-                    capped_result, result_truncation = _cap_tool_invocation_payload_detail(llm_result)
+                    capped_result, result_truncation = _cap_tool_invocation_payload_detail(
+                        llm_result
+                    )
                     capped_ui_payload, ui_payload_truncation = _cap_tool_invocation_payload_detail(
                         ui_payload
                     )
@@ -5653,9 +5733,11 @@ class ChatService(
                         # WP3-Task1：cell 语义冗余字段（可选；旧信封无此字段）。
                         # 在 payload_hash 计算前写入，hash 覆盖这两个字段，
                         # 篡改 cell_index/language 会使复算 hash 不匹配
-                        **(_cell_fields := _code_cell_envelope_fields(
-                            tool_name, args, code_cell_next
-                        )),
+                        **(
+                            _cell_fields := _code_cell_envelope_fields(
+                                tool_name, args, code_cell_next
+                            )
+                        ),
                     }
                     if _cell_fields["cell_index"] is not None:
                         code_cell_next += 1
@@ -5696,7 +5778,10 @@ class ChatService(
                         else 4000
                     )
                     if not studio_mode and len(llm_content) > llm_limit:
-                        llm_content = llm_content[:llm_limit]
+                        # 显式截断标记：被截断的工具结果不得静默进入父上下文
+                        # （fan-out 信封已在服务侧按预算降级为 detail_ref，这里是兜底护栏）
+                        _trunc_marker = '...[PAYLOAD_TRUNCATED_BY_CHAT]'
+                        llm_content = llm_content[: llm_limit - len(_trunc_marker)] + _trunc_marker
                     llm_messages.append(
                         {
                             "role": "tool",
@@ -5776,9 +5861,7 @@ class ChatService(
                             # Agent 的默认绑定，源 Agent 已加载的能力不越权带过去。
                             if target_image:
                                 studio_image = target_image
-                            target_servers = await self._with_studio_preset_servers(
-                                target_servers
-                            )
+                            target_servers = await self._with_studio_preset_servers(target_servers)
                             bound_mcp_servers = target_servers
                             studio_capability_state = normalize_capability_state(
                                 None, target_skills, target_servers
@@ -6156,9 +6239,7 @@ class ChatService(
         async def literature_search(query: str, **_: Any) -> list[dict[str, Any]]:
             return await literature_service.search(query, research_limit)
 
-        async def query_refiner(
-            query: str, *, context: dict[str, Any]
-        ) -> dict[str, Any]:
+        async def query_refiner(query: str, *, context: dict[str, Any]) -> dict[str, Any]:
             if planner_ctx is None or planner_ctx.model_config is None:
                 return {"queries": []}
             answer = ""
@@ -6173,7 +6254,7 @@ class ChatService(
                             "每条只包含 2-4 个最关键的专业概念或短语，使用 AND/OR 连接；"
                             "必须保留关键基因、疾病/模型、技术类型和目标机制中最相关的部分；"
                             "不要复述用户原句，不要写解释，不要添加网站域名。"
-                            "严格返回 JSON：{\"queries\":[\"...\",\"...\"]}。"
+                            '严格返回 JSON：{"queries":["...","..."]}。'
                         ),
                     }
                 ],
@@ -6309,9 +6390,7 @@ class ChatService(
                         max_tokens=2400 if deep_thinking else 900,
                     )
                 except Exception:  # noqa: BLE001
-                    logger.exception(
-                        "Orchestrator 图规划修复调用失败 run_id={}", run.run_id
-                    )
+                    logger.exception("Orchestrator 图规划修复调用失败 run_id={}", run.run_id)
                     return "", []
                 repair_decision = _extract_route_json(repair_raw) or {}
                 return (
@@ -6333,15 +6412,15 @@ class ChatService(
                 max_tokens=2400 if deep_thinking else 900,
             )
             decision = _extract_route_json(manager_raw) or {}
-            speech = str(
-                decision.get("speech") or "已为你生成执行计划，请确认任务分工与顺序。"
-            )
+            speech = str(decision.get("speech") or "已为你生成执行计划，请确认任务分工与顺序。")
             assignments = _normalize_overdrive_assignments(
                 decision.get("assignments"), known_agent_ids
             )
             authoritative_assignments = _normalize_overdrive_assignments(
                 _default_overdrive_assignments(
-                    planning_content, catalog_items, intake_slots,
+                    planning_content,
+                    catalog_items,
+                    intake_slots,
                     authoritative_only=True,
                 ),
                 known_agent_ids,
@@ -6362,9 +6441,7 @@ class ChatService(
             )
             if not assignments:
                 assignments = _normalize_overdrive_assignments(
-                    _default_overdrive_assignments(
-                        planning_content, catalog_items, intake_slots
-                    ),
+                    _default_overdrive_assignments(planning_content, catalog_items, intake_slots),
                     known_agent_ids,
                 )
                 speech = speech or "已为你生成执行计划，请确认任务分工与顺序。"
@@ -6468,12 +6545,8 @@ class ChatService(
                     source_timeout_seconds=float(
                         research_limits.get("source_timeout_seconds") or 20
                     ),
-                    model_timeout_seconds=float(
-                        research_limits.get("model_timeout_seconds") or 45
-                    ),
-                    wall_timeout_seconds=float(
-                        research_limits.get("wall_timeout_seconds") or 75
-                    ),
+                    model_timeout_seconds=float(research_limits.get("model_timeout_seconds") or 45),
+                    wall_timeout_seconds=float(research_limits.get("wall_timeout_seconds") or 75),
                     max_evidence_items_per_source=research_limit,
                 ),
                 plan_builder,
@@ -6531,9 +6604,7 @@ class ChatService(
             if run_row is None:
                 raise ValidationError("超频 run 不存在或无权访问")
             summary = dict((run_row.plan or {}).get("summary") or {})
-            summary["agent_ids"] = sorted(
-                {str(task.get("agent_id")) for task in edited_tasks}
-            )
+            summary["agent_ids"] = sorted({str(task.get("agent_id")) for task in edited_tasks})
             summary["wave_count"] = len(task_waves(edited_tasks))
             summary["deliverables"] = sorted(
                 {
@@ -6561,9 +6632,7 @@ class ChatService(
                 "plan_version": int(plan.get("version") or 0),
                 "plan_hash": str(plan.get("hash") or ""),
                 "plan_summary": dict(plan.get("summary") or {}),
-                "plan_tasks": [
-                    dict(task) for task in ((run_row.tasks if run_row else None) or [])
-                ],
+                "plan_tasks": [dict(task) for task in ((run_row.tasks if run_row else None) or [])],
             }
 
         async def dispatch_run(

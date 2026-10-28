@@ -65,13 +65,13 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- alternative-splicing/splicing-quantification - PSI computation, event taxonomy
-- alternative-splicing/differential-splicing - Tool selection, MAJIQ V3, Shiba, leafcutter
-- alternative-splicing/isoform-switching - DTU and NMD/domain consequences
-- alternative-splicing/sashimi-plots - Visualization tools
-- alternative-splicing/splicing-qc - QC prerequisites
+- references/alternative-splicing--splicing-quantification.md - PSI computation, event taxonomy
+- references/alternative-splicing--differential-splicing.md - Tool selection, MAJIQ V3, Shiba, leafcutter
+- references/alternative-splicing--isoform-switching.md - DTU and NMD/domain consequences
+- references/alternative-splicing--sashimi-plots.md - Visualization tools
+- references/alternative-splicing--splicing-qc.md - QC prerequisites
 - alternative-splicing/single-cell-splicing - Chemistry-first single-cell decision
 - alternative-splicing/splice-variant-prediction - Variant impact (SpliceAI/Pangolin)
 - alternative-splicing/outlier-splicing-detection - Rare-disease single-patient (FRASER 2.0)
 - alternative-splicing/long-read-splicing - Full-isoform PacBio/ONT analysis
-- read-alignment/star-alignment - STAR 2-pass cohort-style configuration
+- references/read-alignment--star-alignment.md - STAR 2-pass cohort-style configuration

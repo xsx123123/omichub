@@ -90,9 +90,9 @@ Tell the AI agent what to run:
 1. Inspect library file and FASTQ filenames; verify naming consistency
 2. Run mageck count with sample labels and --trim-5 adapter
 3. Inspect countsummary.txt for mapping rate, Gini, % zero per sample
-4. Run six-stage QC (per [[crispr-screens/screen-qc]]): plasmid Gini, Day-0 coverage, replicate Pearson/Spearman, sequencing depth, CEGv2 PR-AUC against Hart 2017
-5. If cancer cell line: apply CRISPRcleanR or Chronos for CN bias (per [[crispr-screens/copy-number-correction]])
-6. If multi-batch: add batch covariate to MAGeCK MLE design matrix (per [[crispr-screens/batch-correction]])
+4. Run six-stage QC (per [[references/crispr-screens--screen-qc.md]]): plasmid Gini, Day-0 coverage, replicate Pearson/Spearman, sequencing depth, CEGv2 PR-AUC against Hart 2017
+5. If cancer cell line: apply CRISPRcleanR or Chronos for CN bias (per [[references/crispr-screens--copy-number-correction.md]])
+6. If multi-batch: add batch covariate to MAGeCK MLE design matrix (per [[references/crispr-screens--batch-correction.md]])
 7. Pick hit-calling method by design (RRA for two-condition; MLE for multi-condition; BAGEL2 for essentiality; drugZ for chemogenomic; JACKS for multi-screen joint; Chronos for cancer panels)
 8. Execute primary method and at least one orthogonal method
 9. Build tier-based consensus: Tier 1 = 3-method agreement, Tier 2 = 2 of 3
@@ -156,20 +156,20 @@ Tell the AI agent what to run:
 
 ## Related Skills
 
-- crispr-screens/library-design - Library composition gates downstream analysis
-- crispr-screens/screen-qc - Six-stage QC with stage-specific thresholds
-- crispr-screens/mageck-analysis - MAGeCK RRA + MLE detail
-- crispr-screens/bagel-essentiality - BAGEL2 Bayes factor classifier
-- crispr-screens/drugz-chemogenomic - drugZ for chemogenomic screens
-- crispr-screens/jacks-analysis - JACKS for joint multi-screen analysis
-- crispr-screens/hit-calling - Cross-method decision tree + tier consensus
-- crispr-screens/copy-number-correction - CRISPRcleanR / Chronos for cancer lines
-- crispr-screens/batch-correction - Multi-batch covariate design
-- crispr-screens/crispresso-editing - Editing quantification
-- crispr-screens/base-editing-analysis - Variant-function BE screens
-- crispr-screens/prime-editing-screens - PE screens with PRIDICT2
-- crispr-screens/perturb-seq-analysis - Single-cell screens
-- crispr-screens/combinatorial-screens - Cas12a paralog screens
-- crispr-screens/in-vivo-screens - Bottleneck-aware in vivo design
+- references/crispr-screens--library-design.md - Library composition gates downstream analysis
+- references/crispr-screens--screen-qc.md - Six-stage QC with stage-specific thresholds
+- references/crispr-screens--mageck-analysis.md - MAGeCK RRA + MLE detail
+- references/crispr-screens--bagel-essentiality.md - BAGEL2 Bayes factor classifier
+- references/crispr-screens--drugz-chemogenomic.md - drugZ for chemogenomic screens
+- references/crispr-screens--jacks-analysis.md - JACKS for joint multi-screen analysis
+- references/crispr-screens--hit-calling.md - Cross-method decision tree + tier consensus
+- references/crispr-screens--copy-number-correction.md - CRISPRcleanR / Chronos for cancer lines
+- references/crispr-screens--batch-correction.md - Multi-batch covariate design
+- references/crispr-screens--crispresso-editing.md - Editing quantification
+- references/crispr-screens--base-editing-analysis.md - Variant-function BE screens
+- references/crispr-screens--prime-editing-screens.md - PE screens with PRIDICT2
+- references/crispr-screens--perturb-seq-analysis.md - Single-cell screens
+- references/crispr-screens--combinatorial-screens.md - Cas12a paralog screens
+- references/crispr-screens--in-vivo-screens.md - Bottleneck-aware in vivo design
 - pathway-analysis/go-enrichment - Hit-list functional enrichment
 - pathway-analysis/gsea - Pre-ranked GSEA

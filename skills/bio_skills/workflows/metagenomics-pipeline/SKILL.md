@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-metagenomics-pipeline
 description: End-to-end shotgun metagenomics workflow from FASTQ to taxonomic and functional profiles, orchestrating controls/host depletion, Kraken2+Bracken classification, MetaPhlAn marker profiling, and HUMAnN functional profiling. Covers the controls-first ordering, why Kraken2 read counts are not abundances and MetaPhlAn cell fractions do not equal Bracken read fractions, and the consistent-pipeline framing. Use when profiling shotgun metagenomic samples end to end, or chaining classification, abundance, and function. For resistome see metagenomics/amr-detection; for strains see metagenomics/strain-tracking; for assembly see genome-assembly/metagenome-assembly.
+version: 1.0.0
+display_name: 鸟枪法宏基因组流程
+display_name_en: Shotgun Metagenomics Pipeline
+description_zh: >-
+  从 FASTQ 到分类与功能谱的鸟枪法宏基因组全流程，编排对照与宿主去除、Kraken2+Bracken 分类、MetaPhlAn 标记基因谱与 HUMAnN 功能谱，并强调各方法丰度口径不可混用。
+description_en: >-
+  End-to-end shotgun metagenomics workflow from FASTQ to taxonomic and functional profiles, orchestrating controls/host depletion, Kraken2+Bracken classification, MetaPhlAn marker profiling, and HUMAnN functional profiling. Covers the controls-first ordering, why Kraken2 read counts are not abundances and MetaPhlAn cell fractions do not equal Bracken read fractions, and the consistent-pipeline framing. Use when profiling shotgun metagenomic samples end to end, or chaining classification, abundance, and function. For resistome see metagenomics/amr-detection; for strains see metagenomics/strain-tracking; for assembly see genome-assembly/metagenome-assembly.
+author: JZHANG
+examples_zh:
+  - "分析这批肠道宏基因组并生成物种和功能谱"
+  - "帮我比较 Kraken2 和 MetaPhlAn 的结果差异"
+  - "用 HUMAnN 做通路层面的功能分析"
+examples_en:
+  - "Profile taxonomic and functional composition from these shotgun metagenomes"
+  - "Why do Kraken2 and MetaPhlAn give different abundance estimates?"
+  - "Run HUMAnN pathway-level functional profiling"
 tool_type: cli
 primary_tool: Kraken2
 workflow: true
@@ -79,10 +95,10 @@ Taxonomic profiles + Pathway abundances (+ AMR/strain via their own skills)
 
 ### Step 0: Quality Control, Host Removal, and Controls
 
-Carry extraction blanks and a mock through the whole workflow; host-deplete against T2T-CHM13; confirm depth with Nonpareil. See metagenomics/contamination-controls for the controls/decontam detail.
+Carry extraction blanks and a mock through the whole workflow; host-deplete against T2T-CHM13; confirm depth with Nonpareil. See references/metagenomics--contamination-controls.md for the controls/decontam detail.
 
 ```bash
-# QC with fastp (trimming mechanics: read-qc/fastp-workflow)
+# QC with fastp (trimming mechanics: references/read-qc--fastp-workflow.md)
 for sample in sample1 sample2 sample3; do
     fastp -i ${sample}_R1.fastq.gz -I ${sample}_R2.fastq.gz \
         -o trimmed/${sample}_R1.fq.gz -O trimmed/${sample}_R2.fq.gz \
@@ -230,7 +246,7 @@ plt.savefig('species_barplot.pdf')
 | Step | Parameter | Value |
 |------|-----------|-------|
 | fastp | --length_required | 50 (metagenomic reads) |
-| Kraken2 | --confidence | 0.1-0.4 (default 0.0 over-classifies; see metagenomics/kraken-classification) |
+| Kraken2 | --confidence | 0.1-0.4 (default 0.0 over-classifies; see references/metagenomics--kraken-classification.md) |
 | Kraken2 | --minimum-hit-groups | 2 (cut single-region false positives) |
 | Bracken | -r | Read length (e.g., 150; must match the DB build) |
 | Bracken | -l | S (species) or G (genus) |
@@ -328,11 +344,11 @@ echo "Bracken abundances: ${OUTDIR}/bracken/"
 - database-access/sra-data - Pull metagenomic FASTQ from SRA / ENA (16S amplicon or shotgun)
 - database-access/ncbi-datasets-cli - Bulk-pull reference genomes for read mapping
 - database-access/remote-homology - DIAMOND --ultra-sensitive for predicted-ORF annotation
-- metagenomics/contamination-controls - Host depletion, blanks/decontam, depth checks up front
-- metagenomics/kraken-classification - Kraken2 details
-- metagenomics/metaphlan-profiling - MetaPhlAn parameters
-- metagenomics/abundance-estimation - Bracken options and compositional handling
-- metagenomics/functional-profiling - HUMAnN workflow
+- references/metagenomics--contamination-controls.md - Host depletion, blanks/decontam, depth checks up front
+- references/metagenomics--kraken-classification.md - Kraken2 details
+- references/metagenomics--metaphlan-profiling.md - MetaPhlAn parameters
+- references/metagenomics--abundance-estimation.md - Bracken options and compositional handling
+- references/metagenomics--functional-profiling.md - HUMAnN workflow
 - metagenomics/amr-detection - Community resistome from the same reads
 - metagenomics/strain-tracking - Strain resolution from the same reads
-- metagenomics/metagenome-visualization - Plotting and community statistics
+- references/metagenomics--metagenome-visualization.md - Plotting and community statistics

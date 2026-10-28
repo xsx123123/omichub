@@ -3,8 +3,8 @@ import { effectScope, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResearchSession } from '@/api/researchAgent'
 import { useResearchWorkflow } from '../useResearchWorkflow'
-const calls = vi.hoisted(() => ({ invoke: vi.fn(), related: vi.fn(), detail: vi.fn(), decide: vi.fn(), analysis: vi.fn(), catalog: vi.fn(), status: vi.fn(), describe: vi.fn() }))
-vi.mock('@/api/agentTools', () => ({ agentToolsApi: { capabilities: calls.catalog, invoke: (session: string, capability: string, args: unknown) => capability === 'downloads.describe_capabilities' ? calls.describe() : capability === 'tasks.get_status' ? calls.status(session, capability, args) : calls.invoke(session, capability, args), related: calls.related } }))
+const calls = vi.hoisted(() => ({ invoke: vi.fn(), related: vi.fn(), detail: vi.fn(), decide: vi.fn(), sharedDecision: vi.fn(), analysis: vi.fn(), catalog: vi.fn(), status: vi.fn(), describe: vi.fn() }))
+vi.mock('@/api/agentTools', () => ({ agentToolsApi: { capabilities: calls.catalog, invoke: (session: string, capability: string, args: unknown) => capability === 'downloads.describe_capabilities' ? calls.describe() : capability === 'tasks.get_status' ? calls.status(session, capability, args) : calls.invoke(session, capability, args), related: calls.related, decide: calls.sharedDecision } }))
 vi.mock('@/api/datasets', () => ({ datasetsApi: { detail: calls.detail, decide: calls.decide, decideAnalysis: calls.analysis } }))
 let stop: () => void
 function mount(project: string | null = 'p1') {
@@ -22,7 +22,75 @@ beforeEach(() => {
   calls.status.mockResolvedValue({ result: { status: 'running' } })
 })
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r }); return { promise, resolve } }
+function sharedProposal(operation = 'downloads.submit', state = 'PENDING') {
+  return { proposal_id: 'shared-1', conversation_id: 's1', project_id: 'p1', operation,
+    parameters_hash: 'parameter-hash', state, expires_at: '2099-01-01T00:00:00Z',
+    confirmation_id: 'confirmation', normalized_parameters: { target_directory: '/private' },
+    preview: { accession: 'SRR123', flow_id: 'rna_seq', operation, target_directory: '/private' },
+    write_enabled: false, gate: 'WRITE_GATE_BLOCKED' }
+}
 describe('T11–T14/T24/T25/T35/T41/T42 safe workflow adapter', () => {
+  it.each([
+    ['downloads.prepare', 'downloads.submit', 'import'],
+    ['analysis.prepare', 'analysis.submit', 'analysis'],
+  ] as const)('restores and decides %s through the shared Gateway without Dataset permissions', async (capability, operation, kind) => {
+    calls.catalog.mockResolvedValue({ tools: ['tasks.list_related', capability].map(capability_id => ({ capability_id })) })
+    calls.related.mockResolvedValue([{ capability_id: capability, proposal: sharedProposal(operation) }])
+    calls.sharedDecision.mockResolvedValue({ state: 'APPROVED', write_enabled: false })
+    const w = mount()
+    await w.action({ type: 'records.refresh' })
+    expect(w.view.proposals).toHaveLength(1)
+    expect(w.view.catalogStatus).toBe('AVAILABLE')
+    expect(w.view.proposals[0]).toMatchObject({ id: 'shared-1', kind, capabilityId: capability, state: 'PENDING', hash: 'parameter-hash' })
+    expect(JSON.stringify(w.view)).not.toContain('/private')
+    expect(JSON.stringify(w.view)).not.toContain('confirmation_id')
+    await w.action({ type: 'proposal.decide', proposalId: 'shared-1', kind, approve: true })
+    expect(calls.sharedDecision).toHaveBeenCalledWith('s1', 'shared-1', true)
+    expect(calls.decide).not.toHaveBeenCalled()
+    expect(calls.analysis).not.toHaveBeenCalled()
+    expect(w.view.proposals[0].state).toBe('APPROVED')
+    expect(w.view.tasks).toEqual([])
+  })
+  it('drops shared proposal bindings when prepare scope is revoked', async () => {
+    calls.related.mockResolvedValue([{ capability_id: 'downloads.prepare', proposal: sharedProposal() }])
+    calls.catalog.mockResolvedValueOnce({ tools: ['tasks.list_related', 'downloads.prepare'].map(capability_id => ({ capability_id })) })
+    const w = mount()
+    await w.action({ type: 'records.refresh' })
+    expect(w.view.proposals).toHaveLength(1)
+    calls.catalog.mockResolvedValue({ tools: [{ capability_id: 'tasks.list_related' }] })
+    await w.action({ type: 'proposal.decide', proposalId: 'shared-1', kind: 'import', approve: true })
+    expect(calls.sharedDecision).not.toHaveBeenCalled()
+    expect(calls.decide).not.toHaveBeenCalled()
+    expect(w.view.proposals).toEqual([])
+  })
+  it('does not approve an expired shared proposal or adopt a foreign session proposal', async () => {
+    calls.catalog.mockResolvedValue({ tools: ['tasks.list_related', 'downloads.prepare'].map(capability_id => ({ capability_id })) })
+    calls.related.mockResolvedValue([
+      { capability_id: 'downloads.prepare', proposal: { ...sharedProposal(), expires_at: '2000-01-01T00:00:00Z' } },
+      { capability_id: 'downloads.prepare', proposal: { ...sharedProposal(), proposal_id: 'foreign', conversation_id: 'other-session' } },
+    ])
+    const w = mount()
+    await w.action({ type: 'records.refresh' })
+    expect(w.view.proposals.map(proposal => proposal.id)).toEqual(['shared-1'])
+    await w.action({ type: 'proposal.decide', proposalId: 'shared-1', kind: 'import', approve: true })
+    expect(calls.sharedDecision).not.toHaveBeenCalled()
+    expect(calls.decide).not.toHaveBeenCalled()
+  })
+  it('a late shared approval cannot update the next session', async () => {
+    calls.catalog.mockResolvedValue({ tools: ['tasks.list_related', 'analysis.prepare'].map(capability_id => ({ capability_id })) })
+    calls.related.mockResolvedValue([{ capability_id: 'analysis.prepare', proposal: sharedProposal('analysis.submit') }])
+    const wait = deferred<{ state: string }>()
+    calls.sharedDecision.mockReturnValue(wait.promise)
+    const w = mount()
+    await w.action({ type: 'records.refresh' })
+    const pending = w.action({ type: 'proposal.decide', proposalId: 'shared-1', kind: 'analysis', approve: false })
+    await vi.waitFor(() => expect(calls.sharedDecision).toHaveBeenCalledTimes(1))
+    w.session.value = { session_id: 'other-session', project_id: 'p2' } as ResearchSession
+    wait.resolve({ state: 'REJECTED' })
+    await pending
+    expect(w.view.proposals).toEqual([])
+    expect(w.view.tasks).toEqual([])
+  })
   it('does not replay an interrupted prepare and restores only persisted tasks after refresh', async () => {
     calls.invoke.mockRejectedValueOnce(new TypeError('connection interrupted'))
     const w = mount()

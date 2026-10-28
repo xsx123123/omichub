@@ -1,6 +1,6 @@
 /** Build only the original display island with its own locked dependencies. */
 import { spawnSync } from 'node:child_process';
-import { access, cp, mkdtemp, rm, symlink } from 'node:fs/promises';
+import { access, appendFile, cp, mkdtemp, rm, symlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -23,9 +23,11 @@ try {
     await cp(resolve(source, 'src'), resolve(staging, 'src'), { recursive: true });
     await cp(resolve(source, 'shared'), resolve(staging, 'shared'), { recursive: true });
     await cp(resolve(archive, 'src/island'), resolve(staging, 'src/island'), { recursive: true });
-    for (const name of ['FullPresentation.tsx', 'index.tsx']) {
+    for (const name of ['FullPresentation.tsx', 'index.tsx', 'platformStats.ts', 'ResearchWorkflowPanel.tsx']) {
       await cp(resolve(frontend, 'treasure-island', name), resolve(staging, 'src/island', name));
     }
+    // Extend the frozen adapter's props without changing archived source files.
+    await appendFile(resolve(staging, 'src/island/contract.ts'), '\nimport type { PlatformStatsProps } from "./platformStats";\nexport interface TreasureIslandProps extends PlatformStatsProps {}\n');
     for (const name of ['vite.island.config.ts', 'tsconfig.island.json']) {
       await cp(resolve(archive, name), resolve(staging, name));
     }

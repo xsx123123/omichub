@@ -1,0 +1,232 @@
+diff --git a/ARCHITECTURE_DESIGN/CygnusX_frontend.md b/ARCHITECTURE_DESIGN/CygnusX_frontend.md
+index 1e38886f..0cdff4d6 100644
+--- a/ARCHITECTURE_DESIGN/CygnusX_frontend.md
++++ b/ARCHITECTURE_DESIGN/CygnusX_frontend.md
+@@ -181,6 +181,7 @@ CygnusX 深色工作台使用五级 Surface 空间层级，替代“页面背景
+ - 深色模式下输入区各层保持同一 Surface 体系，避免出现“外框深蓝、内部纯黑”的割裂效果。
+ - 工作台页面按钮激活态使用 `--arco-primary` 与 `--arco-primary-light`（历史命名的品牌色别名，见 §2.2）。
+ - 输入区的边框、圆角和阴影遵循组件默认值；页面级覆盖只能用于布局尺寸，不得重新引入独立的表面色和阴影体系。
++- 草稿编辑必须保留原生 textarea 的光标和选区。`KimiChatInput`（AI 助手/工作台）只在外部 modelValue 变化时同步本地草稿；寻宝鼠 React Composer 同样只监听外部 value，避免 Vue 下一 tick 回显前用旧值回滚本地输入。全局 `GlobalAiAssistantSidebar` 使用原生 NInput v-model，并保护 composition、keyCode 229 与 compositionend 后 200ms 内的候选确认 Enter。四类入口浏览器编辑回归见 `scripts/poc/chat-input-editing-browser.mjs`（真实组件、隔离业务桩）。
+ 
+ ### 3.4 间距、圆角、阴影与排版
+ 
+diff --git a/ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md b/ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md
+index 4c56add0..3685428b 100644
+--- a/ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md
++++ b/ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md
+@@ -101,3 +101,13 @@ Docker 冷构建已通过子仓冻结依赖安装及新目录 COPY，随后在
+ 目标截图 B 缺失，当前按文字规范统一而非像素对齐；保留现有产品的四类入口、文案与夜探矿洞暗色主题。主平台外层 CygnusX 导航、真实登录和项目权限继续由平台负责，本轮没有模拟替换产品业务。
+ 
+ 需要更新 Node 检索/任务能力时，应单独按现有镜像 SHA 规范构建并核对运行镜像，再验证平台受信端点；不能把子仓拉取、前端重建或本轮截图当作后端已升级。全新容器安装还需先处理原有前端锁文件问题。其他人的文档移动和技能元数据改动未纳入本次变更。
++
++## 9. 草稿编辑与光标连续性
++
++`Composer` 用 React 本地状态即时控制 textarea，Vue 工作台通过 `onValueChange` 在下一 tick 回显草稿。外部 prop 同步 effect 原先同时依赖 `value` 和 `localValue`，本地输入后会先把旧 prop 写回，再接收 Vue 新值；浏览器复现：在 `ABCDEFGH` 的 `AB` 后连续输入 `123` 得到 `AB1CDEFGH23`，光标被 value 重写移到文末。
++
++共享组件现仅在外部 `value` 真正变化时同步，保留组合输入本地状态及外部示例预填、清空行为。修改位于子仓活动 `src/components/chat/Composer.tsx`，平台仍经原 Island 构建消费，不修改归档适配器。
++
++浏览器回归入口为父仓 `scripts/poc/chat-input-editing-browser.mjs`：挂载真实 `TreasureOriginalDisplay` 和构建后 React Island，通过 Vue v-model 回显，覆盖欢迎/对话两布局的连续插入、选中替换、中间删除、多行、中文插入、CDP composition、外部预填及无关渲染的选区保留。同一脚本挂载 AI 助手/工作台复用的 `KimiChatInput` 和真实全局侧栏组件，后端与模型为隔离桩；系统中文输入法候选窗口不属于自动化范围。
++
++本轮验证：上述浏览器检查全部通过（`evidence/chat-input-editing/browser-result.json`）；父前端 type-check、100 文件/739 测试、生产构建通过，Island 接入 16 测试通过；子仓 typecheck、195 测试通过/1 跳过、构建通过。AI 助手/工作台共用组件未复现同类跳光标，侧栏另外修复中文候选确认 Enter 误发送（composition 状态、229 与结束后 200ms 保护），普通 Enter 发送仍通过。未把隔离组件验证当作真实模型链路验收。
+diff --git a/frontend/src/components/ai-assistant/GlobalAiAssistantSidebar.vue b/frontend/src/components/ai-assistant/GlobalAiAssistantSidebar.vue
+index c1ab4cb1..da613b66 100644
+--- a/frontend/src/components/ai-assistant/GlobalAiAssistantSidebar.vue
++++ b/frontend/src/components/ai-assistant/GlobalAiAssistantSidebar.vue
+@@ -69,6 +69,12 @@ function dismissHint() {
+ }
+ 
+ const inputValue = ref('')
++const isComposing = ref(false)
++let lastCompositionEndTime = 0
++function onCompositionEnd() {
++  isComposing.value = false
++  lastCompositionEndTime = Date.now()
++}
+ const listEl = ref<HTMLElement | null>(null)
+ 
+ // 流式回复期间输入框已有内容时才提示"消息将排队等待"
+@@ -128,6 +134,11 @@ function onSend() {
+ 
+ function onEnter(e: KeyboardEvent) {
+   if (e.key !== 'Enter' || e.shiftKey) return
++  // Candidate confirmation can arrive as Enter even after compositionend.
++  if (
++    isComposing.value || e.isComposing || e.keyCode === 229 ||
++    Date.now() - lastCompositionEndTime < 200
++  ) return
+   e.preventDefault()
+   onSend()
+ }
+@@ -335,6 +346,8 @@ function errorSummary(error: string): string {
+               :autosize="{ minRows: 1, maxRows: 6 }"
+               placeholder="输入问题，Enter 发送，Shift+Enter 换行"
+               @keydown="onEnter"
++              @compositionstart="isComposing = true"
++              @compositionend="onCompositionEnd"
+             />
+             <NTooltip v-if="store.isStreaming">
+               <template #trigger>
+diff --git a/pipelines/Treasure-Seeking_Mouse b/pipelines/Treasure-Seeking_Mouse
+index e4f462b3..925f25e7 160000
+--- a/pipelines/Treasure-Seeking_Mouse
++++ b/pipelines/Treasure-Seeking_Mouse
+@@ -1 +1 @@
+-Subproject commit e4f462b3d31a9e495474d8d338900fe15bfb4297
++Subproject commit 925f25e7b8679169bb9c75ad17992d89fb977a57
+diff --git a/scripts/poc/chat-input-editing-browser.mjs b/scripts/poc/chat-input-editing-browser.mjs
+new file mode 100644
+index 00000000..b5292851
+--- /dev/null
++++ b/scripts/poc/chat-input-editing-browser.mjs
+@@ -0,0 +1,151 @@
++/** Real browser regression for the Vue/React draft echo and the Vue chat inputs.
++ * PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs CHROMIUM_PATH=/path/to/chrome
++ * node scripts/poc/chat-input-editing-browser.mjs
++ * Uses real components with isolated stores; no live account, API or model.
++ */
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
++import { resolve, basename } from 'node:path';
++import { pathToFileURL } from 'node:url';
++import { createServer } from '../../frontend/node_modules/vite/dist/node/index.js';
++
++const frontend = resolve('frontend');
++const fixture = await mkdtemp(resolve(frontend, '.input-editing-'));
++const output = resolve('evidence/chat-input-editing');
++await mkdir(output, { recursive: true });
++await writeFile(resolve(fixture, 'index.html'), '<div id="app"></div><script type="module" src="./main.ts"></script>');
++await writeFile(resolve(fixture, 'main.ts'), `
++import { createApp } from 'vue';
++import { createPinia } from 'pinia';
++import { createRouter, createMemoryHistory } from 'vue-router';
++import App from './App.vue';
++const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { render: () => null } }] });
++await router.push('/');
++createApp(App).use(createPinia()).use(router).mount('#app');
++`);
++await writeFile(resolve(fixture, 'App.vue'), `
++<script setup>
++import { ref, nextTick, onMounted } from 'vue';
++import { NMessageProvider, NDialogProvider } from 'naive-ui';
++import KimiChatInput from '@/components/ai-chat/KimiChatInput.vue';
++import Sidebar from '@/components/ai-assistant/GlobalAiAssistantSidebar.vue';
++import Treasure from '@/components/research/TreasureOriginalDisplay.vue';
++import { useAiAssistantSidebarStore } from '@/stores/aiAssistantSidebar';
++import { useAgentHubStore } from '@/stores/agentHub';
++const draft = ref(''), assistant = ref(''), studio = ref(''), messages = ref([]);
++const theme = ref('light');
++const sidebar = useAiAssistantSidebarStore();
++sidebar.ensureModels = async () => {};
++useAgentHubStore().fetchRuntimeProfiles = async () => {};
++window.sends = [];
++sidebar.sendOrQueue = async text => { window.sends.push(text); return 'queued'; };
++sidebar.modelId = 'fixture-model';
++window.setChat = () => { messages.value = [{ id: 'reply', role: 'assistant', content: 'fixture reply' }]; };
++window.externalDraft = value => { draft.value = value; };
++window.refreshPresentation = () => { theme.value = theme.value === 'light' ? 'dark' : 'light'; };
++onMounted(async () => { await nextTick(); sidebar.open = true; });
++</script>
++<template>
++  <NMessageProvider><NDialogProvider>
++    <div id="treasure" style="height:700px"><Treasure mode="app" v-model:draft="draft" :disabled="false" :streaming="false" :project-id="null" :presentation="{ messages, context: { projectId: null, projectName: '', locale: 'zh', theme } }" /></div>
++    <div id="assistant"><KimiChatInput v-model="assistant" /></div>
++    <div id="studio"><KimiChatInput v-model="studio" /></div>
++    <Sidebar />
++  </NDialogProvider></NMessageProvider>
++</template>
++`);
++let server, browser;
++const report = { checks: [], errors: [] };
++try {
++  server = await createServer({ configFile: resolve(frontend, 'vite.config.ts'), root: frontend,
++    plugins: [{ name: 'built-island-fixture', configureServer(vite) {
++      // Serve the already-built Island as production does, including Vite's ?import query.
++      vite.middlewares.use(async (req, res, next) => {
++        if (req.url?.split('?')[0] !== '/treasure-island/treasure-island.js') return next();
++        res.setHeader('Content-Type', 'text/javascript');
++        res.end(await readFile(resolve(frontend, 'public/treasure-island/treasure-island.js')));
++      });
++    } }],
++    optimizeDeps: { entries: [resolve(fixture, 'index.html')] },
++    server: { host: '127.0.0.1', port: 0, open: false }, logLevel: 'error' });
++  await server.listen();
++  const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
++  browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH });
++  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
++  page.on('console', message => { if (message.type() === 'error') console.error(message.text()); });
++  page.on('requestfailed', request => console.error(request.url(), request.failure()));
++  page.on('pageerror', error => report.errors.push(error.message));
++  await page.route('**/api/v1/**', route => route.fulfill({ json: { data: [], items: [], profiles: [] } }));
++  await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/${basename(fixture)}/index.html`);
++  await page.waitForFunction(() => document.querySelector('#treasure .original-display-host')?.shadowRoot?.querySelector('textarea'), { timeout: 30000 }).catch(async error => {
++    console.error(await page.content());
++    throw error;
++  });
++  async function select(input, start, end = start) {
++    await input.focus();
++    await input.evaluate((el, [a, b]) => el.setSelectionRange(a, b), [start, end]);
++  }
++  async function check(input, name) {
++    await input.fill('ABCDEFGH');
++    await select(input, 2);
++    await input.pressSequentially('123', { delay: 40 });
++    assert.equal(await input.inputValue(), 'AB123CDEFGH', name + ': middle insertion');
++    assert.equal(await input.evaluate(el => el.selectionStart), 5, name + ': caret');
++    await select(input, 2, 5);
++    await input.pressSequentially('xy', { delay: 40 });
++    assert.equal(await input.inputValue(), 'ABxyCDEFGH', name + ': selected replacement');
++    await select(input, 3);
++    await input.press('Backspace');
++    await input.press('Delete');
++    assert.equal(await input.inputValue(), 'ABCDEFGH', name + ': middle deletion');
++    await input.fill('寻找相关数据');
++    await select(input, 2);
++    await page.keyboard.insertText('小鼠');
++    await page.keyboard.insertText('肝脏');
++    assert.equal(await input.inputValue(), '寻找小鼠肝脏相关数据', name + ': Chinese insertion');
++    await select(input, 2);
++    await input.press('Shift+Enter');
++    await input.pressSequentially('RNA');
++    assert.equal(await input.inputValue(), '寻找\nRNA小鼠肝脏相关数据', name + ': multiline editing');
++    report.checks.push(name + ': insertion, replacement, caret, deletion, Chinese text, multiline');
++  }
++  await check(page.locator('#treasure textarea'), 'Treasure welcome');
++  await page.evaluate(() => window.setChat());
++  const treasure = page.locator('#treasure textarea');
++  await check(treasure, 'Treasure conversation');
++  await select(treasure, 1, 3);
++  await page.evaluate(() => window.refreshPresentation());
++  assert.deepEqual(await treasure.evaluate(el => [el.selectionStart, el.selectionEnd]), [1, 3]);
++  await page.evaluate(() => window.externalDraft('external prefill'));
++  await page.waitForFunction(() => document.querySelector('#treasure .original-display-host').shadowRoot.querySelector('textarea').value === 'external prefill');
++  // CDP sends actual browser composition updates (system IME itself is not automated).
++  await treasure.fill('ABCD');
++  await select(treasure, 2);
++  const cdp = await page.context().newCDPSession(page);
++  await cdp.send('Input.imeSetComposition', { text: 'zhong', selectionStart: 5, selectionEnd: 5 });
++  await cdp.send('Input.imeSetComposition', { text: '中文', selectionStart: 2, selectionEnd: 2 });
++  await cdp.send('Input.insertText', { text: '中文' });
++  await page.keyboard.insertText('插入');
++  assert.equal(await treasure.inputValue(), 'AB中文插入CD');
++  report.checks.push('Treasure: unrelated render preserves selection; external prefill; CDP composition in middle');
++  await check(page.locator('#assistant textarea'), 'AI assistant shared KimiChatInput');
++  await check(page.locator('#studio textarea'), 'AI studio shared KimiChatInput');
++  const sidebar = page.locator('.ai-sidebar textarea');
++  await check(sidebar, 'AI sidebar');
++  await sidebar.dispatchEvent('compositionstart');
++  await sidebar.dispatchEvent('keydown', { key: 'Enter', isComposing: true });
++  await sidebar.dispatchEvent('compositionend');
++  await sidebar.dispatchEvent('keydown', { key: 'Enter' });
++  assert.equal(await page.evaluate(() => window.sends.length), 0, 'IME confirmation must not send');
++  await page.waitForTimeout(220);
++  await sidebar.press('Enter');
++  assert.equal(await page.evaluate(() => window.sends.length), 1, 'ordinary Enter still sends');
++  report.checks.push('AI sidebar: IME Enter guarded; normal Enter sends');
++  assert.deepEqual(report.errors, []);
++  console.log(JSON.stringify(report, null, 2));
++} finally {
++  await writeFile(resolve(output, 'browser-result.json'), JSON.stringify(report, null, 2));
++  await browser?.close();
++  await server?.close();
++  await rm(fixture, { recursive: true, force: true });
++}

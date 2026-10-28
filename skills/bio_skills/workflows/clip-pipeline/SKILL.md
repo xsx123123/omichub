@@ -4,6 +4,22 @@ workflow: true
 depends_on: [clip-seq/clip-preprocessing, clip-seq/clip-alignment, clip-seq/clip-qc, clip-seq/clip-peak-calling, clip-seq/crosslink-site-detection, clip-seq/binding-site-annotation, clip-seq/clip-motif-analysis, clip-seq/differential-clip]
 qc_checkpoints: [preprocessing_retention, alignment_rate, library_complexity, frip, idr]
 description: End-to-end CLIP-seq pipeline from FASTQ to ENCODE-compliant binding sites, single-nucleotide crosslink maps, annotation, motifs, and (optionally) differential binding. Use when running the full Yeo lab eCLIP / iCLIP / iCLIP2 / iCLIP3 / irCLIP / PAR-CLIP analysis with SMInput control, protocol-specific UMI extraction, ENCODE STAR parameters, CLIPper or Skipper peak calling with stringent log2 FC and -log10 p thresholds, IDR rescue and self-consistency QC, and downstream motif registration with mCross or PEKA.
+version: 1.0.0
+display_name: CLIP-seq 全流程分析
+display_name_en: CLIP-seq Pipeline
+description_zh: >-
+  从 FASTQ 到 ENCODE 合规结合位点、单核苷酸交联图谱、注释与 motif 的 CLIP-seq 全流程，支持 eCLIP/iCLIP/PAR-CLIP 等协议、SMInput 对照、CLIPper/Skipper 峰调用、IDR 与差异结合分析。
+description_en: >-
+  End-to-end CLIP-seq pipeline from FASTQ to ENCODE-compliant binding sites, single-nucleotide crosslink maps, annotation, motifs, and (optionally) differential binding. Use when running the full Yeo lab eCLIP / iCLIP / iCLIP2 / iCLIP3 / irCLIP / PAR-CLIP analysis with SMInput control, protocol-specific UMI extraction, ENCODE STAR parameters, CLIPper or Skipper peak calling with stringent log2 FC and -log10 p thresholds, IDR rescue and self-consistency QC, and downstream motif registration with mCross or PEKA.
+author: JZHANG
+examples_zh:
+  - "用 eCLIP 数据和 SMInput 对照跑完整分析"
+  - "帮我按协议提取 UMI 并调用 CLIP 结合位点"
+  - "比较两组 CLIP 样本的差异结合位点"
+examples_en:
+  - "Run a complete eCLIP analysis with SMInput controls and call binding sites"
+  - "Extract protocol-specific UMIs and quantify crosslink sites"
+  - "Compare differential binding between two CLIP-seq conditions"
 tool_type: mixed
 primary_tool: CLIPper
 ---
@@ -79,7 +95,7 @@ zcat raw_R1.fq.gz | awk 'NR%4==2' | head -100 | cut -c1-12 | sort | uniq -c | so
 
 ```bash
 # eCLIP: 10 nt UMI on R1; two-pass adapter trim for read-through
-# See clip-seq/clip-preprocessing for protocol-specific patterns
+# See references/clip-seq--clip-preprocessing.md for protocol-specific patterns
 umi_tools extract \
     --bc-pattern=NNNNNNNNNN \
     --stdin=raw_R1.fq.gz --read2-in=raw_R2.fq.gz \
@@ -107,7 +123,7 @@ cutadapt \
     >> qc/cutadapt_pass2.log 2>&1
 ```
 
-For PAR-CLIP: same UMI extraction but downstream alignment raises `--outFilterMismatchNoverReadLmax` from 0.04 to 0.07 (the T->C signature would otherwise be filtered as sequencing error). See clip-seq/clip-preprocessing for full per-protocol guidance.
+For PAR-CLIP: same UMI extraction but downstream alignment raises `--outFilterMismatchNoverReadLmax` from 0.04 to 0.07 (the T->C signature would otherwise be filtered as sequencing error). See references/clip-seq--clip-preprocessing.md for full per-protocol guidance.
 
 ## Step 3: Alignment (ENCODE STAR Block)
 
@@ -145,7 +161,7 @@ umi_tools dedup \
 samtools index sample_dedup.bam
 ```
 
-For PAR-CLIP: change `--outFilterMismatchNoverReadLmax 0.04` to `0.07`. For repeat-binding RBPs (MATR3, ZFP36, FUS at LINE-1, HNRNPK at SINEs): change `--outFilterMultimapNmax 1` to `100` and add `--outSAMmultNmax -1`, then run CLAM downstream for EM-based multi-mapper assignment. See clip-seq/clip-alignment for full guidance.
+For PAR-CLIP: change `--outFilterMismatchNoverReadLmax 0.04` to `0.07`. For repeat-binding RBPs (MATR3, ZFP36, FUS at LINE-1, HNRNPK at SINEs): change `--outFilterMultimapNmax 1` to `100` and add `--outSAMmultNmax -1`, then run CLAM downstream for EM-based multi-mapper assignment. See references/clip-seq--clip-alignment.md for full guidance.
 
 ## Step 4: QC (Five Gates)
 
@@ -166,7 +182,7 @@ preseq lc_extrap -B -P sample_q10.bam -o qc/preseq.txt
 multiqc qc/ -o qc/multiqc/
 ```
 
-CLIP libraries have 40-70% PCR duplication BY DESIGN (the IP enriches a small molecule pool). Low duplication usually means failed IP, not a good library. The unique-fragment count after UMI dedup is the actual quality metric. See clip-seq/clip-qc for full five-gate diagnostic.
+CLIP libraries have 40-70% PCR duplication BY DESIGN (the IP enriches a small molecule pool). Low duplication usually means failed IP, not a good library. The unique-fragment count after UMI dedup is the actual quality metric. See references/clip-seq--clip-qc.md for full five-gate diagnostic.
 
 ## Step 5: Peak Calling
 
@@ -181,7 +197,7 @@ clipper \
     --processors 8   # super-local p-values are hard-coded ON in current CLIPper; the --superlocal flag was removed
 
 # ENCODE stringent: log2(IP/SMInput) >= 3 AND -log10 p >= 3
-# (Yeo lab eclip-pipeline scripts implement the normalization; see clip-seq/clip-peak-calling)
+# (Yeo lab eclip-pipeline scripts implement the normalization; see references/clip-seq--clip-peak-calling.md)
 python overlap_peakfi_with_bam_PE.py \
     peaks/sample.clipper.bed \
     sample_dedup.bam sminput_dedup.bam \
@@ -196,7 +212,7 @@ python compress_l2foldenrpeakfi_for_replicate_overlapping_bedformat.py \
 awk 'BEGIN{FS=OFS="\t"} $5 >= 3 && $6 >= 3' peaks/sample.compressed.bed > peaks/sample.stringent.bed
 ```
 
-For maximum sensitivity (substantially more sites than CLIPper for mRNA-binding RBPs), use the Skipper Snakemake workflow with the same SMInput control. Mandatory for FASTKD2 / mt-RBPs which CLIPper misses on chrM. See clip-seq/clip-peak-calling for the full caller taxonomy.
+For maximum sensitivity (substantially more sites than CLIPper for mRNA-binding RBPs), use the Skipper Snakemake workflow with the same SMInput control. Mandatory for FASTKD2 / mt-RBPs which CLIPper misses on chrM. See references/clip-seq--clip-peak-calling.md for the full caller taxonomy.
 
 ## Step 6: Single-Nucleotide Crosslink-Site Detection
 
@@ -214,7 +230,7 @@ pureclip \
     -iv 'chr1;chr2;chr3;'
 ```
 
-Single-nt CL sites feed mCross motif registration and allele-specific binding analyses. They are NOT a replacement for the broad peak list; complementary outputs. See clip-seq/crosslink-site-detection.
+Single-nt CL sites feed mCross motif registration and allele-specific binding analyses. They are NOT a replacement for the broad peak list; complementary outputs. See references/clip-seq--crosslink-site-detection.md.
 
 ## Step 7: IDR Across Replicates
 
@@ -253,7 +269,7 @@ anno <- annotatePeak(
 plotAnnoPie(anno)
 ```
 
-Default ChIPseeker `tssRegion=c(-3000, 3000)` over-extends for CLIP (would label 30-50% peaks as "Promoter"). Splicing factors additionally need RBP-Maps (Yeo lab) for the 1400 nt cassette-exon regulatory metagene. See clip-seq/binding-site-annotation.
+Default ChIPseeker `tssRegion=c(-3000, 3000)` over-extends for CLIP (would label 30-50% peaks as "Promoter"). Splicing factors additionally need RBP-Maps (Yeo lab) for the 1400 nt cassette-exon regulatory metagene. See references/clip-seq--binding-site-annotation.md.
 
 ## Step 9: Motif Analysis (De Novo + CL-Registered)
 
@@ -273,10 +289,10 @@ findMotifs.pl motifs/peaks.fa fasta motifs/homer \
 # mCross for CL-position-registered motif. mCross.pl takes a POSITIONAL FASTA of sequences
 # pre-extracted/registered around the CL sites and an output stem (not a BED + genome + -i/-g/-k/-o):
 #   bedtools slop -i crosslinks/sample.sites.bed -g genome.sizes -b 10 | bedtools getfasta -fi genome.fa -bed - -s > motifs/peakseqs.fa
-mCross.pl motifs/peakseqs.fa motifs/mcross   # see clip-seq/clip-motif-analysis for options
+mCross.pl motifs/peakseqs.fa motifs/mcross   # see references/clip-seq--clip-motif-analysis.md for options
 ```
 
-UV254 crosslinking has a strong U bias at CL sites; naive logos centered on CL positions are U-enriched even for non-U-binding RBPs. mCross corrects this by registering motif relative to the CL offset. See clip-seq/clip-motif-analysis.
+UV254 crosslinking has a strong U bias at CL sites; naive logos centered on CL positions are U-enriched even for non-U-binding RBPs. mCross corrects this by registering motif relative to the CL offset. See references/clip-seq--clip-motif-analysis.md.
 
 ## Step 10: Differential Binding (Optional, Across Conditions)
 
@@ -300,7 +316,7 @@ dds <- DESeq(dds)
 res <- results(dds, name='typeip.conditiontreat')
 ```
 
-See clip-seq/differential-clip for full DEWSeq workflow and the htseq-clip preprocessing required upstream.
+See references/clip-seq--differential-clip.md for full DEWSeq workflow and the htseq-clip preprocessing required upstream.
 
 ## Quality Checkpoints
 
@@ -348,14 +364,14 @@ See clip-seq/differential-clip for full DEWSeq workflow and the htseq-clip prepr
 
 ## Related Skills
 
-- clip-seq/clip-preprocessing - UMI extraction and adapter trimming details
-- clip-seq/clip-alignment - STAR ENCODE block + multi-mapper rescue
-- clip-seq/clip-qc - Five-gate QC framework
-- clip-seq/clip-peak-calling - CLIPper / Skipper / PureCLIP / CTK taxonomy
-- clip-seq/crosslink-site-detection - Single-nt CL detection by chemistry
-- clip-seq/binding-site-annotation - ChIPseeker + RBP-Maps
-- clip-seq/clip-motif-analysis - HOMER + mCross + RBNS validation
-- clip-seq/differential-clip - DEWSeq + Flipper for cross-condition
+- references/clip-seq--clip-preprocessing.md - UMI extraction and adapter trimming details
+- references/clip-seq--clip-alignment.md - STAR ENCODE block + multi-mapper rescue
+- references/clip-seq--clip-qc.md - Five-gate QC framework
+- references/clip-seq--clip-peak-calling.md - CLIPper / Skipper / PureCLIP / CTK taxonomy
+- references/clip-seq--crosslink-site-detection.md - Single-nt CL detection by chemistry
+- references/clip-seq--binding-site-annotation.md - ChIPseeker + RBP-Maps
+- references/clip-seq--clip-motif-analysis.md - HOMER + mCross + RBNS validation
+- references/clip-seq--differential-clip.md - DEWSeq + Flipper for cross-condition
 - clip-seq/m6a-clip - miCLIP2 / GLORI / DART for m6A modifications
 - clip-seq/stamp-antibody-free - STAMP / TRIBE for antibody-free profiling
 - clip-seq/ago-clip-mirna-targets - chimeric eCLIP for direct miRNA-target pairs

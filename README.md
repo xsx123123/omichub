@@ -108,7 +108,7 @@ flowchart TD
 
 | Component | Role in the research chain |
 | --- | --- |
-| **[CygnusX BioOps](https://github.com/xsx123123/omichub)** | Project context, Agents, permissions, tasks, data, delivery, run records, archives, and evidence links. |
+| **[CygnusX BioOps](https://github.com/CygnusX-Labs)** | Project context, Agents, permissions, tasks, data, delivery, run records, archives, and evidence links. |
 | **[Treasure-Seeking Mouse](https://github.com/xsx123123/Treasure-Seeking_Mouse)** | Conversational public omics data discovery, literature search, and provenance checks. |
 | **[Polariseq](https://github.com/xsx123123/polariseq)** | Resumable sequencing-data transfer with integrity checks. |
 | **[FlowFrame](https://github.com/xsx123123/FlowFrame)** | General omics workflow architecture and standardized integration. |

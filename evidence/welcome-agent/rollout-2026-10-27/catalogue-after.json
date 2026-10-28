@@ -1,0 +1,27 @@
+{
+  "general_enabled": false,
+  "timezone": "Asia/Shanghai",
+  "generation_hour": 3,
+  "generation_minute": 0,
+  "auto_publish": true,
+  "active_batches": [
+    {
+      "audience": "admin",
+      "week_start": "2026-10-26",
+      "revision": 1,
+      "status": "active",
+      "prompt_version": "v1",
+      "message_count": 24,
+      "old_brand_count": 0
+    },
+    {
+      "audience": "general",
+      "week_start": "2026-10-26",
+      "revision": 1,
+      "status": "active",
+      "prompt_version": "v1",
+      "message_count": 24,
+      "old_brand_count": 0
+    }
+  ]
+}

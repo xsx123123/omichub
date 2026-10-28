@@ -139,6 +139,9 @@ const heroTitleLines = computed(() => {
   return slogan.replace('，', '，\n').split('\n')
 })
 const configuredQuickEntries = ref<HomeQuickEntry[] | null>(null)
+const selectedHomeCards = ref<Record<'quick' | 'pillar' | 'ecosystem' | 'mechanism' | 'admin', string | null>>({
+  quick: null, pillar: null, ecosystem: null, mechanism: null, admin: null,
+})
 const todayFestival = ref<FestivalConfig | null>(null)
 const festivalClaimed = ref(false)
 
@@ -223,11 +226,11 @@ onMounted(async () => {
             <li v-for="tag in content.hero.tags" :key="tag" class="hero-tag">{{ tag }}</li>
           </ul>
           <div class="hero-actions">
-            <NButton size="large" class="hero-btn-primary" @click="goTo('/flows')">
+            <NButton size="large" class="hero-btn-primary" @click="router.push({ name: 'treasure-mouse', query: { start: 'new' } })">
               <template #icon><NIcon><FlaskOutline /></NIcon></template>
               开始一项研究
             </NButton>
-            <NButton size="large" class="hero-btn-secondary" @click="goTo('/ai')">
+            <NButton size="large" class="hero-btn-secondary" @click="router.push({ name: 'treasure-mouse', query: { start: 'plan' } })">
               <template #icon><NIcon><SparklesOutline /></NIcon></template>
               AI 规划研究方案
             </NButton>
@@ -267,7 +270,7 @@ onMounted(async () => {
         </div>
       </div>
       <div class="entry-grid">
-        <button v-for="entry in quickEntries" :key="entry.key" type="button" class="entry-card arco-card" @click="goTo(entry.to)">
+        <button v-for="entry in quickEntries" :key="entry.key" type="button" class="entry-card arco-card cygnusx-selectable-card" :data-selected="selectedHomeCards.quick === entry.key" @click="selectedHomeCards.quick = entry.key; goTo(entry.to)">
           <span class="entry-icon" :style="{ background: quickEntryBgColors[entry.icon_bg], color: quickEntryIconColors[entry.icon_bg] }">
             <NIcon :size="22"><component :is="entry.iconComponent" /></NIcon>
           </span>
@@ -275,7 +278,7 @@ onMounted(async () => {
             <strong class="entry-title">{{ entry.title }}</strong>
             <span class="entry-desc">{{ entry.desc }}</span>
           </span>
-          <NIcon :size="16" class="entry-arrow"><ArrowForwardOutline /></NIcon>
+          <NIcon :size="16" class="entry-arrow card-state-arrow"><ArrowForwardOutline /></NIcon>
         </button>
       </div>
     </section>
@@ -290,35 +293,37 @@ onMounted(async () => {
       </div>
       <div class="mechanism-layout">
         <div class="mechanism-flow" aria-label="核心协作机制">
-          <div v-for="(card, index) in mechanismCards" :key="card.key" class="mechanism-card" :class="`mechanism-card--${card.color}`">
+          <button v-for="(card, index) in mechanismCards" :key="card.key" type="button" class="mechanism-card cygnusx-selectable-card" :class="`mechanism-card--${card.color}`" :aria-pressed="selectedHomeCards.mechanism === card.key" @click="selectedHomeCards.mechanism = card.key">
             <span class="mechanism-card__icon"><NIcon :size="19"><component :is="card.icon" /></NIcon></span>
             <div>
               <p class="mechanism-card__name">{{ card.name }}</p>
               <h3>{{ card.title }}</h3>
               <p>{{ card.desc }}</p>
             </div>
-            <span v-if="index < 2" class="mechanism-card__arrow" aria-hidden="true"><ArrowForwardOutline /></span>
-          </div>
+            <span v-if="index < 2" class="mechanism-card__arrow card-state-arrow" aria-hidden="true"><ArrowForwardOutline /></span>
+          </button>
         </div>
-        <div class="evidence-note">
+        <button type="button" class="evidence-note cygnusx-selectable-card" :aria-pressed="selectedHomeCards.mechanism === 'evidence'" @click="selectedHomeCards.mechanism = 'evidence'">
           <span class="evidence-note__icon"><NIcon :size="20"><DocumentTextOutline /></NIcon></span>
           <div>
             <p class="mechanism-card__name">Evidence</p>
             <h3>让结果可以被核对</h3>
             <p>Evidence 不承担执行；它沉淀运行记录、质量检查、产物与报告来源，支撑交付核验。</p>
           </div>
-        </div>
+          <NIcon :size="16" class="evidence-note__arrow card-state-arrow" aria-hidden="true"><ArrowForwardOutline /></NIcon>
+        </button>
       </div>
     </section>
 
     <section class="section pillars-section animate-fade-in-up delay-200" aria-labelledby="pillars-title">
       <div class="section-heading"><div><p class="section-eyebrow">PLATFORM FOUNDATIONS</p><h2 id="pillars-title">四大技术支柱</h2></div></div>
       <div class="pillars-grid">
-        <article v-for="pillar in pillars" :key="pillar.key" class="pillar-card" :class="`pillar-card--${pillar.color}`">
+        <button v-for="pillar in pillars" :key="pillar.key" type="button" class="pillar-card cygnusx-selectable-card" :class="`pillar-card--${pillar.color}`" :aria-pressed="selectedHomeCards.pillar === pillar.key" @click="selectedHomeCards.pillar = pillar.key">
           <span class="pillar-icon"><NIcon :size="20"><component :is="pillar.icon" /></NIcon></span>
           <div class="pillar-copy"><p class="pillar-en">{{ pillar.en }}</p><h3>{{ pillar.zh }}</h3><p>{{ pillar.desc }}</p></div>
           <span class="maturity-badge">{{ pillar.status }}</span>
-        </article>
+          <NIcon :size="16" class="pillar-arrow card-state-arrow" aria-hidden="true"><ArrowForwardOutline /></NIcon>
+        </button>
       </div>
     </section>
 
@@ -328,10 +333,10 @@ onMounted(async () => {
         <NButton quaternary size="small" @click="goTo('/about')">查看完整生态介绍<template #icon><NIcon><ArrowForwardOutline /></NIcon></template></NButton>
       </div>
       <div class="ecosystem-grid">
-        <a v-for="item in ecosystem" :key="item.name" class="ecosystem-card" :href="item.href" :target="item.href.startsWith('/') ? undefined : '_blank'" rel="noreferrer" @click="handleEcosystemClick($event, item.href)">
+        <a v-for="item in ecosystem" :key="item.name" class="ecosystem-card cygnusx-selectable-card" :data-selected="selectedHomeCards.ecosystem === item.name" :href="item.href" :target="item.href.startsWith('/') ? undefined : '_blank'" rel="noreferrer" @click="selectedHomeCards.ecosystem = item.name; handleEcosystemClick($event, item.href)">
           <span class="ecosystem-card__mark"><NIcon :size="17"><component :is="item.name === 'CygnusX BioOps' ? FlaskOutline : item.name === 'Treasure-Seeking Mouse' ? SearchOutline : item.name === 'BioReport' ? DocumentTextOutline : ArrowForwardOutline" /></NIcon></span>
           <span class="ecosystem-card__copy"><strong>{{ item.name }}</strong><small>{{ item.role }} · {{ item.status }}</small><span>{{ item.text }}</span></span>
-          <NIcon :size="14" class="ecosystem-card__arrow"><ArrowForwardOutline /></NIcon>
+          <NIcon :size="14" class="ecosystem-card__arrow card-state-arrow"><ArrowForwardOutline /></NIcon>
         </a>
       </div>
     </section>
@@ -340,14 +345,13 @@ onMounted(async () => {
       <div><p class="section-eyebrow">CAPABILITY MATURITY</p><h2>能力范围随部署配置与验收结果而定</h2></div>
       <div class="capability-legend">
         <span v-for="item in capabilityMaturity" :key="item.label" class="capability-item" :class="`capability-item--${item.color}`">
-          <i class="legend-dot" />
-          <span><strong>{{ item.label }}</strong><small>{{ item.text }}</small></span>
+          <span><strong><i class="legend-dot" aria-hidden="true" />{{ item.label }}</strong><small>{{ item.text }}</small></span>
         </span>
       </div>
     </section>
 
     <section v-if="isAdmin" class="section animate-fade-in-up delay-200">
-      <div class="admin-banner" @click="goTo('/admin/users')">
+      <div class="admin-banner cygnusx-selectable-card" :data-selected="selectedHomeCards.admin === 'admin'" @click="selectedHomeCards.admin = 'admin'; goTo('/admin/users')">
         <div class="admin-icon"><NIcon :size="20"><BarChartOutline /></NIcon></div>
         <div class="admin-text"><h4 class="admin-title">系统管理</h4><p class="admin-desc">用户、AI 模型、饼干账户与资源中心管理</p></div>
         <NButton class="admin-cta">进入管理</NButton>
@@ -368,7 +372,7 @@ onMounted(async () => {
   --home-font-eyebrow: 11px;
   font-size: var(--home-font-body);
   min-height: 100%;
-  overflow-x: hidden;
+  overflow: visible;
   background: var(--neutral-bg);
 }
 
@@ -419,7 +423,7 @@ onMounted(async () => {
 .hero-greeting {
   margin: 0 0 6px;
   font-size: var(--home-font-body);
-  opacity: 0.74;
+  opacity: 0.88;
 }
 .hero-title {
   margin: 0 0 8px;
@@ -435,7 +439,7 @@ onMounted(async () => {
   font-size: var(--home-font-small);
   font-weight: 600;
   letter-spacing: 1.5px;
-  opacity: 0.76;
+  opacity: 0.88;
 }
 .hero-desc {
   max-width: 58ch;
@@ -464,7 +468,7 @@ onMounted(async () => {
 .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .hero-vision-line {
   margin: 12px 0 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.88);
   font-size: var(--home-font-meta);
   line-height: 1.55;
 }
@@ -555,41 +559,24 @@ onMounted(async () => {
   align-items: center;
   gap: 13px;
   padding: 20px;
-  border: 0;
+  border: 1px solid var(--neutral-border);
   text-align: left;
   cursor: pointer;
   font: inherit;
-  transition: transform 200ms ease;
 }
-.entry-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  transition: opacity 200ms ease;
-  pointer-events: none;
-}
-.entry-card:hover,
-.entry-card:focus-visible { transform: translateY(-2px); }
-.entry-card:hover::after,
-.entry-card:focus-visible::after { opacity: 1; }
-.entry-icon { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border-radius: 11px; transition: transform 0.2s ease; }
-.entry-card:hover .entry-icon { transform: scale(1.05); }
+.entry-icon { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border-radius: 11px; }
 .entry-text { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
 .entry-title { overflow: hidden; color: var(--neutral-text-1); font-size: var(--home-font-card-title); font-weight: 600; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .entry-desc { overflow: hidden; color: var(--neutral-text-2); font-size: var(--home-font-body); line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
-.entry-arrow { flex: 0 0 auto; color: var(--neutral-text-4); transition: transform 0.2s ease; }
-.entry-card:hover .entry-arrow { color: var(--brand-primary); transform: translateX(2px); }
+.entry-arrow { flex: 0 0 auto; }
 
 .mechanism-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(240px, 0.8fr); gap: 14px; }
 .mechanism-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .mechanism-card,
 .evidence-note,
 .pillar-card,
-.ecosystem-card { border: 1px solid var(--neutral-border); background: var(--neutral-card); box-shadow: var(--shadow-card); }
-.mechanism-card { position: relative; display: flex; min-width: 0; gap: 11px; padding: 17px 16px; border-radius: var(--radius-card); }
+.ecosystem-card { position: relative; border: 1px solid var(--neutral-border); background: var(--neutral-card); box-shadow: var(--shadow-card); }
+.mechanism-card { width: 100%; color: inherit; font: inherit; text-align: left; cursor: pointer; overflow: visible; position: relative; display: flex; min-width: 0; gap: 11px; padding: 17px 16px; border-radius: var(--radius-card); }
 .mechanism-card__icon,
 .evidence-note__icon,
 .pillar-icon { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 10px; }
@@ -598,16 +585,18 @@ onMounted(async () => {
 .evidence-note h3 { margin: 0 0 5px; color: var(--neutral-text-1); font-size: var(--home-font-card-title); font-weight: 650; line-height: 1.35; }
 .mechanism-card > div > p:last-child,
 .evidence-note > div > p:last-child { margin: 0; color: var(--neutral-text-2); font-size: var(--home-font-body); line-height: 1.55; }
-.mechanism-card__arrow { position: absolute; top: 50%; right: -17px; z-index: 1; display: grid; width: 21px; height: 21px; place-items: center; border: 1px solid var(--neutral-border); border-radius: 50%; background: var(--neutral-card); color: var(--neutral-text-4); transform: translateY(-50%); }
+.mechanism-card__arrow { position: absolute; top: 50%; right: -17px; z-index: 1; display: grid; width: 21px; height: 21px; place-items: center; border: 1px solid var(--neutral-border); border-radius: 50%; background: var(--neutral-card); transform: translateY(-50%); }
 .mechanism-card--violet .mechanism-card__icon { color: #8059d8; background: color-mix(in srgb, #8059d8 11%, var(--neutral-card)); }
 .mechanism-card--blue .mechanism-card__icon { color: var(--brand-primary); background: var(--brand-primary-light); }
 .mechanism-card--purple .mechanism-card__icon { color: #722ed1; background: color-mix(in srgb, #722ed1 10%, var(--neutral-card)); }
-.evidence-note { display: flex; min-width: 0; gap: 12px; align-items: flex-start; padding: 19px; border-radius: var(--radius-card); background: color-mix(in srgb, var(--brand-primary) 4%, var(--neutral-card)); }
+.evidence-note { width: 100%; color: inherit; font: inherit; text-align: left; cursor: pointer; display: flex; min-width: 0; gap: 12px; align-items: flex-start; padding: 19px; border-radius: var(--radius-card); background: var(--neutral-card); }
+.evidence-note__arrow { position: absolute; top: 17px; right: 17px; }
 .evidence-note__icon { color: #0b9d9a; background: color-mix(in srgb, #0b9d9a 11%, var(--neutral-card)); }
 
 .pillars-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; }
-.pillar-card { display: flex; min-width: 0; flex-direction: column; gap: 13px; padding: 17px; border-radius: var(--radius-card); }
+.pillar-card { width: 100%; color: inherit; font: inherit; text-align: left; cursor: pointer; display: flex; min-width: 0; flex-direction: column; gap: 13px; padding: 17px; border-radius: var(--radius-card); }
 .pillar-icon { width: 37px; height: 37px; }
+.pillar-arrow { position: absolute; top: 17px; right: 17px; }
 .pillar-copy { min-width: 0; }
 .pillar-en { margin: 0 0 3px; color: var(--neutral-text-3); font-size: var(--home-font-meta); font-weight: 700; letter-spacing: 0.45px; }
 .pillar-copy h3 { margin: 0 0 6px; color: var(--neutral-text-1); font-size: var(--home-font-card-title); font-weight: 650; }
@@ -625,24 +614,27 @@ onMounted(async () => {
 .ecosystem-card__copy strong { overflow: hidden; color: var(--neutral-text-1); font-size: var(--home-font-body); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .ecosystem-card__copy small { color: var(--neutral-text-2); font-size: var(--home-font-meta); }
 .ecosystem-card__copy > span { color: var(--neutral-text-2); font-size: var(--home-font-body); line-height: 1.45; }
-.ecosystem-card__arrow { flex: 0 0 auto; margin-top: 2px; color: var(--neutral-text-4); }
+.ecosystem-card__arrow { flex: 0 0 auto; margin-top: 2px; }
 
 .capability-boundary { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; padding: 16px 18px; border: 1px solid var(--neutral-border); border-radius: var(--radius-card); background: var(--neutral-fill-2); }
 .capability-boundary h2 { margin: 0; color: var(--neutral-text-2); font-size: var(--home-font-body); font-weight: 600; }
 .capability-legend { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; color: var(--neutral-text-3); font-size: var(--home-font-meta); }
 .capability-item { display: flex; min-width: 0; align-items: flex-start; gap: 7px; }
 .capability-item > span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.capability-item strong { color: var(--neutral-text-2); font-size: var(--home-font-small); font-weight: 650; white-space: nowrap; }
-.capability-item small { color: var(--neutral-text-2); font-size: var(--home-font-meta); line-height: 1.5; }
-.legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+.capability-item strong { display: flex; align-items: center; gap: 7px; color: var(--neutral-text-2); font-size: var(--home-font-small); font-weight: 650; line-height: 1.5; white-space: nowrap; }
+.capability-item small { padding-left: 14px; color: var(--neutral-text-2); font-size: var(--home-font-meta); line-height: 1.5; }
+.legend-dot { position: relative; display: block; flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%; }
+.legend-dot::after { content: ''; position: absolute; inset: -3px; border-radius: inherit; background: inherit; pointer-events: none; animation: capability-dot-breathe 3.2s ease-in-out infinite; }
+@keyframes capability-dot-breathe {
+  0%, 100% { transform: scale(0.75); opacity: 0.08; }
+  50% { transform: scale(1.15); opacity: 0.26; }
+}
 .capability-item--available .legend-dot { background: #2a9d68; }
 .capability-item--config .legend-dot { background: #d58a24; }
 .capability-item--preview .legend-dot { background: #8059d8; }
 .capability-item--roadmap .legend-dot { background: var(--neutral-text-4); }
 
-.admin-banner { position: relative; display: flex; align-items: center; gap: 16px; overflow: hidden; padding: 20px; border-radius: var(--radius-card); background: var(--neutral-card); box-shadow: var(--shadow-card); cursor: pointer; transition: transform 0.2s ease; }
-.admin-banner::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--brand-gradient); }
-.admin-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+.admin-banner { position: relative; display: flex; align-items: center; gap: 16px; overflow: hidden; padding: 20px; border-radius: var(--radius-card); background: var(--neutral-card); box-shadow: var(--shadow-card); cursor: pointer; }
 .admin-icon { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border-radius: 10px; background: var(--arco-primary-light); color: var(--arco-primary); }
 .admin-text { min-width: 0; flex: 1; }
 .admin-title { margin: 0 0 4px; color: var(--neutral-text-1); font-size: var(--home-font-card-title); font-weight: 600; }
@@ -700,6 +692,7 @@ onMounted(async () => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .legend-dot::after { animation: none; opacity: 0; }
   .home-page .animate-fade-in-up { animation: none; }
   .entry-card,
   .entry-card::after,

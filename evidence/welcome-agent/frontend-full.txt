@@ -1,0 +1,34 @@
+
+ RUN  v4.1.10 /home/zj/zj_code_libarary/OmicHub/frontend
+
+Not implemented: navigation to another Document
+TypeError: global.removeEventListener is not a function
+    at /home/zj/zj_code_libarary/OmicHub/frontend/node_modules/@juggle/resize-observer/lib/exports/resize-observer.umd.js:372:64
+    at Array.forEach (<anonymous>)
+    at Scheduler.stop (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/@juggle/resize-observer/lib/exports/resize-observer.umd.js:372:24)
+    at Scheduler.schedule (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/@juggle/resize-observer/lib/exports/resize-observer.umd.js:351:18)
+    at MutationObserver.Scheduler.listener (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/@juggle/resize-observer/lib/exports/resize-observer.umd.js:317:56)
+    at MutationObserver.invokeTheCallbackFunction (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/jsdom/lib/generated/idl/MutationCallback.js:19:26)
+    at notifyMutationObservers (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/jsdom/lib/jsdom/living/helpers/mutation-observers.js:160:22)
+    at /home/zj/zj_code_libarary/OmicHub/frontend/node_modules/jsdom/lib/jsdom/living/helpers/mutation-observers.js:133:5
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+TypeError: global.removeEventListener is not a function
+    at /home/zj/zj_code_libarary/OmicHub/frontend/node_modules/@juggle/resize-observer/lib/exports/resize-observer.umd.js:372:64
+    at Array.forEach (<anonymous>)
+    at Scheduler.stop (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/@juggle/resize-observer/lib/exports/resize-observer.umd.js:372:24)
+    at Scheduler.schedule (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/@juggle/resize-observer/lib/exports/resize-observer.umd.js:351:18)
+    at MutationObserver.Scheduler.listener (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/@juggle/resize-observer/lib/exports/resize-observer.umd.js:317:56)
+    at MutationObserver.invokeTheCallbackFunction (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/jsdom/lib/generated/idl/MutationCallback.js:19:26)
+    at notifyMutationObservers (/home/zj/zj_code_libarary/OmicHub/frontend/node_modules/jsdom/lib/jsdom/living/helpers/mutation-observers.js:160:22)
+    at /home/zj/zj_code_libarary/OmicHub/frontend/node_modules/jsdom/lib/jsdom/living/helpers/mutation-observers.js:133:5
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+Not implemented: navigation to another Document
+
+ Test Files  97 passed (97)
+      Tests  710 passed (710)
+   Start at  10:27:42
+   Duration  14.58s (transform 15.11s, setup 0ms, import 104.40s, tests 29.14s, environment 48.55s)
+

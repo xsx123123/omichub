@@ -1,0 +1,29 @@
+{
+  "observed_at": "2026-10-27T08:25:21.582850+00:00",
+  "running_web": {
+    "treasure_native_ui_enabled": true,
+    "tool_gateway_read_enabled": false,
+    "dataset_discovery_readonly": false,
+    "agent_download_write_enabled": false,
+    "agent_analysis_write_enabled": false,
+    "WRITE_RUNTIME_ACCEPTED": false
+  },
+  "running_node": {
+    "callback_configured": false
+  },
+  "deployment_performed": false,
+  "execution_acceptance": "NOT_VERIFIED",
+  "verification": {
+    "backend_related_tests_passed": 157,
+    "ruff": "PASS (changed Python files)",
+    "mypy": "PASS (research_treasure_service.py)",
+    "migrations_static": "PASS",
+    "node_typecheck": "PASS",
+    "node_build": "PASS",
+    "compose_default_and_override": "PASS"
+  },
+  "remaining": [
+    "Rebuild/deploy Node runtime and apply reviewed read-channel configuration",
+    "Verify real download/analysis execution in an appropriate non-production runtime before changing protected execution gates"
+  ]
+}

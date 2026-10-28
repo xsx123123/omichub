@@ -1,9 +1,16 @@
 """JWT 认证中间件 - 全局请求拦截校验"""
 
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
+from cygnusx.core.exceptions import AuthorizationError
+from cygnusx.core.report_preview import (
+    PREVIEW_CONTEXT_COOKIE,
+    PREVIEW_SESSION_COOKIE,
+    preview_report_id,
+    verify_preview_grant,
+)
 from cygnusx.core.security import decode_token
 
 # 不需要认证的路径前缀/精确匹配
@@ -75,8 +82,29 @@ def api_key_allows_scope(scopes: frozenset[str], required_scope: str | None) -> 
 class AuthMiddleware(BaseHTTPMiddleware):
     """JWT 认证中间件 - 校验 Authorization 头并注入 user_id 到 request.state"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path = request.url.path
+
+        # Only this exact read-only route accepts report-scoped browser grants.
+        # Establish identity before ModuleGate; the API also checks the live user.
+        report_id = preview_report_id(path)
+        if request.method == "GET" and report_id is not None:
+            try:
+                preview_payload = verify_preview_grant(
+                    report_id,
+                    request.query_params.get("token", ""),
+                    request.cookies.get(PREVIEW_SESSION_COOKIE, ""),
+                    request.cookies.get(PREVIEW_CONTEXT_COOKIE, ""),
+                )
+            except AuthorizationError:
+                return Response(
+                    status_code=403,
+                    content='{"detail":"报告预览会话无效或已过期，请重新打开报告"}',
+                    media_type="application/json",
+                    headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
+                )
+            request.state.user_id = preview_payload["sub"]
+            return await call_next(request)
 
         # 公开路径或端点自行鉴权的内部路径直接放行
         if (

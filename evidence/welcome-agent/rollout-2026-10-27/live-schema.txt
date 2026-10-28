@@ -1,0 +1,7 @@
+/app/scripts/check_schema_drift.py:49: SAWarning: Did not recognize type 'vector' of column 'embedding'
+  existing_columns = {c["name"] for c in insp.get_columns(table_name)}
+⚠️  数据库存在 metadata 之外的表（仅告警）: checkpoint_blobs
+⚠️  数据库存在 metadata 之外的表（仅告警）: checkpoint_migrations
+⚠️  数据库存在 metadata 之外的表（仅告警）: checkpoint_writes
+⚠️  数据库存在 metadata 之外的表（仅告警）: checkpoints
+✅ Schema 无漂移：ORM metadata 与数据库一致。

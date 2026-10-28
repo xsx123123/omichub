@@ -26,6 +26,7 @@ class ParallelSubAgentToolService:
         tasks: list[dict[str, Any]] | None = None,
         context: ToolInvocationContext | None = None,
         on_event: Any = None,
+        request_key: str | None = None,
         **_kwargs: Any,
     ) -> dict[str, Any]:
         if context is None or not context.user_id or not context.session_id:
@@ -39,4 +40,5 @@ class ParallelSubAgentToolService:
             db=context.db,
             on_event=on_event,
             safe_only=bool(context.extra.get("goal_safe_only")),
+            request_key=request_key,
         )

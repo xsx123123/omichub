@@ -19,6 +19,7 @@ import type { Task } from '@/types'
 const projects = ref<ProjectItem[]>([])
 const runningTasks = ref<Task[]>([])
 const recentReports = ref<Report[]>([])
+const selectedCard = ref<string | null>(null)
 const loading = ref(true)
 const refreshing = ref(false)
 const projectsUnavailable = ref(false)
@@ -123,7 +124,7 @@ onMounted(() => void loadData())
     </div>
 
     <div class="workbench-grid" aria-live="polite">
-      <section class="workbench-card" aria-labelledby="recent-projects-title">
+      <section class="workbench-card cygnusx-selectable-card" :data-selected="selectedCard === 'projects'" aria-labelledby="recent-projects-title" @click.capture="selectedCard = 'projects'" @focusin="selectedCard = 'projects'">
         <header class="workbench-card__header">
           <div class="workbench-card__heading">
             <span class="workbench-card__icon workbench-card__icon--blue">
@@ -132,7 +133,7 @@ onMounted(() => void loadData())
             <h3 id="recent-projects-title">最近项目</h3>
           </div>
           <RouterLink class="workbench-card__more" :to="{ name: 'projects' }">
-            全部 <NIcon :size="14"><ChevronForwardOutline /></NIcon>
+            全部 <NIcon :size="14" class="card-state-arrow"><ChevronForwardOutline /></NIcon>
           </RouterLink>
         </header>
 
@@ -165,7 +166,7 @@ onMounted(() => void loadData())
         </div>
       </section>
 
-      <section class="workbench-card" aria-labelledby="running-tasks-title">
+      <section class="workbench-card cygnusx-selectable-card" :data-selected="selectedCard === 'tasks'" aria-labelledby="running-tasks-title" @click.capture="selectedCard = 'tasks'" @focusin="selectedCard = 'tasks'">
         <header class="workbench-card__header">
           <div class="workbench-card__heading">
             <span class="workbench-card__icon workbench-card__icon--violet">
@@ -174,7 +175,7 @@ onMounted(() => void loadData())
             <h3 id="running-tasks-title">运行任务</h3>
           </div>
           <RouterLink class="workbench-card__more" :to="{ name: 'tasks' }">
-            全部 <NIcon :size="14"><ChevronForwardOutline /></NIcon>
+            全部 <NIcon :size="14" class="card-state-arrow"><ChevronForwardOutline /></NIcon>
           </RouterLink>
         </header>
 
@@ -212,7 +213,7 @@ onMounted(() => void loadData())
         </template>
       </section>
 
-      <section class="workbench-card" aria-labelledby="recent-reports-title">
+      <section class="workbench-card cygnusx-selectable-card" :data-selected="selectedCard === 'reports'" aria-labelledby="recent-reports-title" @click.capture="selectedCard = 'reports'" @focusin="selectedCard = 'reports'">
         <header class="workbench-card__header">
           <div class="workbench-card__heading">
             <span class="workbench-card__icon workbench-card__icon--cyan">
@@ -221,7 +222,7 @@ onMounted(() => void loadData())
             <h3 id="recent-reports-title">最近报告</h3>
           </div>
           <RouterLink class="workbench-card__more" :to="{ name: 'reports' }">
-            全部 <NIcon :size="14"><ChevronForwardOutline /></NIcon>
+            全部 <NIcon :size="14" class="card-state-arrow"><ChevronForwardOutline /></NIcon>
           </RouterLink>
         </header>
 
@@ -310,24 +311,7 @@ onMounted(() => void loadData())
   border-radius: var(--radius-card);
   background: var(--neutral-card);
   box-shadow: var(--shadow-card);
-  transition: transform 200ms ease;
 }
-
-.workbench-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  transition: opacity 200ms ease;
-  pointer-events: none;
-}
-
-.workbench-card:hover,
-.workbench-card:focus-within { transform: translateY(-2px); }
-.workbench-card:hover::after,
-.workbench-card:focus-within::after { opacity: 1; }
 
 .workbench-card__header,
 .workbench-card__heading {
@@ -562,10 +546,7 @@ onMounted(() => void loadData())
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .workbench-card,
-  .workbench-card::after { transition: none; }
-  .workbench-card:hover,
-  .workbench-card:focus-within { transform: none; }
+  .workbench-card { transition: none; }
   .workbench-skeleton span {
     animation: none;
   }

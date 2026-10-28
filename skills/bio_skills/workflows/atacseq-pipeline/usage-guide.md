@@ -110,18 +110,18 @@ Tell your AI agent what you want to do:
 
 - database-access/sra-data - Pull ATAC-seq FASTQ from SRA / ENA
 - database-access/geo-data - Resolve GEO accessions for ATAC datasets
-- atac-seq/atac-peak-calling - MACS3 / Genrich / HMMRATAC details, ENCODE 4 IDR
-- atac-seq/atac-qc - ENCODE 4 thresholds with citations
-- atac-seq/consensus-peakset - Corces 2018 iterative overlap
-- atac-seq/differential-accessibility - DiffBind / csaw / DESeq2; spike-in
-- atac-seq/footprinting - TOBIAS three-step; per-TF failure modes
-- atac-seq/motif-deviation - chromVAR motif variability
-- atac-seq/nucleosome-positioning - V-plot, NucleoATAC, +1 nucleosome
+- references/atac-seq--atac-peak-calling.md - MACS3 / Genrich / HMMRATAC details, ENCODE 4 IDR
+- references/atac-seq--atac-qc.md - ENCODE 4 thresholds with citations
+- references/atac-seq--consensus-peakset.md - Corces 2018 iterative overlap
+- references/atac-seq--differential-accessibility.md - DiffBind / csaw / DESeq2; spike-in
+- references/atac-seq--footprinting.md - TOBIAS three-step; per-TF failure modes
+- references/atac-seq--motif-deviation.md - chromVAR motif variability
+- references/atac-seq--nucleosome-positioning.md - V-plot, NucleoATAC, +1 nucleosome
 - atac-seq/single-cell-atac - scATAC alternative
 - atac-seq/co-accessibility - Cicero cis-regulatory
 - atac-seq/enhancer-gene-linking - ABC, ENCODE-rE2G
 - atac-seq/deep-learning-atac - chromBPNet variant effects
 - atac-seq/allele-specific-accessibility - WASP + caQTL
-- read-alignment/bowtie2-alignment - Upstream alignment details
-- alignment-files/duplicate-handling - Pre-call dedup
+- references/read-alignment--bowtie2-alignment.md - Upstream alignment details
+- references/alignment-files--duplicate-handling.md - Pre-call dedup
 - chip-seq/peak-annotation - Annotate ATAC peaks to genes

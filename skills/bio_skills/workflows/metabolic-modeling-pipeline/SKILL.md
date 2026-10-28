@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-metabolic-modeling-pipeline
 description: Orchestrates genome-scale metabolic modeling from a protein FASTA to flux predictions, chaining CarveMe/gapseq reconstruction, memote QC, gap-filling, media-constrained FBA/FVA, gene essentiality, and context-specific models. Use when committing the reconstruction tool (which locks the identifier NAMESPACE forever - BiGG vs ModelSEED vs KEGG, no automatic translation), setting the medium BEFORE FBA (the exchange bounds ARE the medium; essentiality and gap-fill are computed relative to it), curating iteratively (stoichiometric-consistency first, then mass/charge, then directionality, then GPR) with energy-generating-cycle removal, and reading a MEMOTE score as well-formedness NOT correctness. Hands mechanism to the systems-biology component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 基因组尺度代谢建模
+display_name_en: Genome-Scale Metabolic Modeling
+description_zh: >-
+  从蛋白 FASTA 到通量预测的基因组尺度代谢建模流程，串联 CarveMe/gapseq 重构、memote 质控、缺口填补、培养基约束的 FBA/FVA、基因必需性分析与上下文特异模型。
+description_en: >-
+  Orchestrates genome-scale metabolic modeling from a protein FASTA to flux predictions, chaining CarveMe/gapseq reconstruction, memote QC, gap-filling, media-constrained FBA/FVA, gene essentiality, and context-specific models. Use when committing the reconstruction tool (which locks the identifier NAMESPACE forever - BiGG vs ModelSEED vs KEGG, no automatic translation), setting the medium BEFORE FBA (the exchange bounds ARE the medium; essentiality and gap-fill are computed relative to it), curating iteratively (stoichiometric-consistency first, then mass/charge, then directionality, then GPR) with energy-generating-cycle removal, and reading a MEMOTE score as well-formedness NOT correctness. Hands mechanism to the systems-biology component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "为这个菌株构建基因组尺度代谢模型"
+  - "用 memote 评估模型质量并做缺口填补"
+  - "在给定培养基下预测基因必需性"
+examples_en:
+  - "Build a genome-scale metabolic model for this strain"
+  - "Evaluate the model with memote and fill network gaps"
+  - "Predict gene essentiality under this defined medium"
 tool_type: mixed
 primary_tool: cobrapy
 goal_approach_exempt: true
@@ -139,14 +155,14 @@ memote report snapshot --filename model_report.html model_draft.xml
 # The memote SCORE measures consistency and annotation (well-formedness), NOT biological
 # correctness -- a model can score high and mispredict every knockout. Read WHICH tests fail
 # (stoichiometric consistency, mass/charge balance, energy-generating cycles) in the HTML report,
-# and validate predictions separately (see systems-biology/model-curation). Programmatic access:
+# and validate predictions separately (see references/systems-biology--model-curation.md). Programmatic access:
 from memote.suite.api import test_model
 code, result = test_model(model, results=True)   # result is a MemoteResult of the raw outcomes
 ```
 
 ### Step 3: Model Curation (Iterative)
 
-Curation order matters and the steps interact: fix stoichiometric consistency FIRST (unconserved metabolites poison everything), then per-reaction mass/charge balance, then directionality, then GPR. Gap-filling can break a balance and an energy-generating-cycle fix frequently unmasks a SECOND nested EGC, so re-run memote + the EGC sweep + a growth check after every change. Mechanism lives in systems-biology/model-curation.
+Curation order matters and the steps interact: fix stoichiometric consistency FIRST (unconserved metabolites poison everything), then per-reaction mass/charge balance, then directionality, then GPR. Gap-filling can break a balance and an energy-generating-cycle fix frequently unmasks a SECOND nested EGC, so re-run memote + the EGC sweep + a growth check after every change. Mechanism lives in references/systems-biology--model-curation.md.
 
 ```python
 import cobra
@@ -293,7 +309,7 @@ single_ko['growth_ratio'] = single_ko['growth'] / solution.objective_value
 
 # Essential genes: knockout drops growth below the cutoff (a policy, not a library default).
 # Report and sweep the cutoff; match the medium to any experiment being compared. Essentiality
-# is model- and medium-relative (see systems-biology/gene-essentiality).
+# is model- and medium-relative (see references/systems-biology--gene-essentiality.md).
 essential = single_ko[single_ko['growth_ratio'] < 0.1]
 print(f'Essential genes: {len(essential)} / {len(model.genes)} on this medium')
 
@@ -320,7 +336,7 @@ print(f'Synthetic lethal pairs: {len(synthetic_lethal)}')
 
 ### Step 5b: Context-Specific Models
 
-Use a validated extraction method rather than ad-hoc pruning. COBRApy has no native GIMME/iMAT/INIT; the real Python options are troppo and corda, and the threshold/method choice dominates the result more than the data does. See systems-biology/context-specific-models for the method decision table and the threshold-sensitivity discipline.
+Use a validated extraction method rather than ad-hoc pruning. COBRApy has no native GIMME/iMAT/INIT; the real Python options are troppo and corda, and the threshold/method choice dominates the result more than the data does. See references/systems-biology--context-specific-models.md for the method decision table and the threshold-sensitivity discipline.
 
 ```python
 # corda is the most turnkey native-Python extraction method.
@@ -407,10 +423,10 @@ Beyond the core genome-to-flux path, the model feeds two further analyses: build
 
 ## Related Skills
 
-- systems-biology/metabolic-reconstruction - CarveMe, gapseq details
-- systems-biology/model-curation - Memote, gap-filling, energy-generating-cycle checks
-- systems-biology/flux-balance-analysis - FBA, FVA, pFBA, sampling
-- systems-biology/gene-essentiality - Single/double knockouts, MOMA/ROOM
-- systems-biology/context-specific-models - Tissue-specific models (troppo/corda)
+- references/systems-biology--metabolic-reconstruction.md - CarveMe, gapseq details
+- references/systems-biology--model-curation.md - Memote, gap-filling, energy-generating-cycle checks
+- references/systems-biology--flux-balance-analysis.md - FBA, FVA, pFBA, sampling
+- references/systems-biology--gene-essentiality.md - Single/double knockouts, MOMA/ROOM
+- references/systems-biology--context-specific-models.md - Tissue-specific models (troppo/corda)
 - systems-biology/community-metabolic-modeling - Multi-species community FBA (MICOM/SMETANA)
 - systems-biology/strain-design - Growth-coupled knockout design (OptKnock/RobustKnock)

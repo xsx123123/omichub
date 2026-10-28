@@ -66,7 +66,7 @@ Tell your AI agent what you want to do:
 - **Sample size**: Need thousands of samples for common variants
 - **Lambda**: An elevated lambda is expected under a polygenic trait and is mostly true signal; do not genomic-control on it. Use the LDSC intercept (or attenuation ratio) to tell polygenicity from confounding
 - **Mixed models**: PC covariates absorb continuous ancestry but cannot remove relatedness; use a linear mixed model (BOLT-LMM, SAIGE, regenie) with LOCO for related or finely-structured samples, and SPA or Firth at extreme case:control imbalance
-- **Rare variants**: Single-variant tests are underpowered at low minor allele count; aggregate by gene with burden/SKAT/SKAT-O (see population-genetics/rare-variant-association)
+- **Rare variants**: Single-variant tests are underpowered at low minor allele count; aggregate by gene with burden/SKAT/SKAT-O (see references/population-genetics--rare-variant-association.md)
 - **Multiple testing**: Genome-wide threshold is p < 5e-8 (tighter for WGS and rare variants)
 - **Replication**: Always validate findings in independent cohort
 - **Imputation**: Impute cases and controls together and carry dosages (not hard calls) into association; see the phasing-imputation skills

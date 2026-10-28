@@ -1,0 +1,11 @@
+feat(research): 接入平台寻宝榜、昵称和使用统计
+
+- Aggregate authenticated platform discovery records for all-time and weekly rankings.
+- Persist owner-scoped leaderboard nicknames without changing login identity.
+- Connect Vue/React statistics callbacks and durable request usage snapshots.
+- Pin the verified runtime image and add PostgreSQL/browser/runtime checks.
+
+Validation recorded on 2026-10-27: frontend 758 tests and build;
+55 related backend/database checks; isolated runtime image 197 passed, 1 skipped;
+production read-only API and browser verification.
+Full-repository gate failures are documented in the architecture notes.

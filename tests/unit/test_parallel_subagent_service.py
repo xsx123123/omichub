@@ -1232,3 +1232,619 @@ def test_has_unfinished_json_fence_detects_truncated_envelope() -> None:
 def test_has_unfinished_json_fence_ignores_closed_blocks_and_plain_text() -> None:
     assert pss._has_unfinished_json_fence('```json {"a": 1} ``` 后续说明') is False
     assert pss._has_unfinished_json_fence("普通文本结论") is False
+
+
+@pytest.mark.asyncio
+async def test_fanout_capability_missing_marks_child_blocked(env, monkeypatch) -> None:
+    """R11：声明 python.execute 但执行上下文无执行器 → 子任务 spawn 前 blocked，不算成功。"""
+    contexts = {"agent-code": _ctx("agent-code")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="不应被执行到的正文")
+
+    seen = _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[
+            {"agent_id": "agent-code", "task": "运行 Python 探针", "requires": ["python.execute"]},
+            {"agent_id": "agent-code", "task": "查平台知识库", "requires": ["research.retrieve"]},
+        ],
+    )
+
+    blocked_item, ok_item = result["llm_payload"]["results"]
+    assert blocked_item["status"] == "blocked"
+    assert blocked_item["outcome_status"] == "blocked"
+    assert blocked_item["reason_code"] == "CAPABILITY_MISSING"
+    assert "python.execute" in blocked_item["capabilities_required"]
+    assert ok_item["outcome_status"] == "answered_unverified"
+    # 被准入阻止的子任务不得产生 provider 调用：仅 1 路真正执行
+    assert len(seen["tools"]) == 1
+    # 汇总口径不得出现 "2/2 成功"
+    summary = result["llm_payload"]["summary"]
+    assert "2/2" not in summary
+    assert "受阻" in summary and "未验证问答" in summary
+
+
+@pytest.mark.asyncio
+async def test_fanout_execution_contract_without_receipt_not_verified(env, monkeypatch) -> None:
+    """R12：有能力但子循环只给文本、无执行回执 → execution=ok 而 outcome 必非 succeeded。"""
+    contexts = {"agent-code": _ctx("agent-code")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def fake_studio(name, args, session_id, **_kwargs):
+        return {"success": True, "result": {"stdout": "hello"}}
+
+    monkeypatch.setattr(pss, "execute_studio_tool", fake_studio)
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="我认为可以这样写代码（未实际执行）")
+
+    _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[
+            {
+                "agent_id": "agent-code",
+                "task": "运行代码并给出真实 stdout",
+                "requires": ["python.execute"],
+                "workspace_access": True,
+            }
+        ],
+    )
+
+    item = result["llm_payload"]["results"][0]
+    assert item["status"] == "ok"  # 子循环正常结束
+    assert item["outcome_status"] == "blocked"
+    assert item["reason_code"] == "EXECUTION_NOT_VERIFIED"
+    assert item["artifact_status"] == "not_created"
+    assert result["llm_payload"]["summary"].startswith("0 已验证完成")
+
+
+@pytest.mark.asyncio
+async def test_fanout_execution_contract_with_receipt_verified(env, monkeypatch) -> None:
+    """声明 python.execute 且产生真实执行回执 → outcome=succeeded，回执随结果透传。"""
+    contexts = {"agent-code": _ctx("agent-code")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    studio_calls: list[str] = []
+
+    async def fake_studio(name, args, session_id, **_kwargs):
+        studio_calls.append(name)
+        return {"success": True, "result": {"stdout": "hello\npython=3.11"}}
+
+    monkeypatch.setattr(pss, "execute_studio_tool", fake_studio)
+
+    async def handler(messages, _kwargs):
+        if len(messages) == 1:
+            yield ChatChunk(
+                type="tool_calls",
+                metadata={
+                    "tool_calls": [
+                        {
+                            "id": "call-1",
+                            "function": {"name": "sandbox_execute", "arguments": "{}"},
+                        }
+                    ]
+                },
+            )
+        else:
+            yield ChatChunk(type="text", content="已真实执行，stdout 见回执")
+
+    _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[
+            {
+                "agent_id": "agent-code",
+                "task": "运行 print('hello') 并汇报 stdout",
+                "requires": ["python.execute"],
+                "workspace_access": True,
+            }
+        ],
+    )
+
+    item = result["llm_payload"]["results"][0]
+    assert item["status"] == "ok"
+    assert item["outcome_status"] == "succeeded"
+    assert item["reason_code"] == "EXECUTION_RECEIPT_VERIFIED"
+    assert studio_calls == ["sandbox_execute"]
+    receipts = item["tool_receipts"]
+    assert receipts and receipts[0]["tool_name"] == "sandbox_execute"
+    assert receipts[0]["success"] is True
+    assert "1 已验证完成" in result["llm_payload"]["summary"]
+
+
+@pytest.mark.asyncio
+async def test_fanout_pure_qa_contract_answered_unverified(env, monkeypatch) -> None:
+    """纯问答声明 research.retrieve 且无客观验收器 → answered_unverified，不冒充成功。"""
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="数据入库字段契约如下：……")
+
+    _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[
+            {
+                "agent_id": "agent-general",
+                "task": "说明数据入库字段契约",
+                "requires": ["research.retrieve"],
+            }
+        ],
+    )
+
+    item = result["llm_payload"]["results"][0]
+    assert item["status"] == "ok"
+    assert item["outcome_status"] == "answered_unverified"
+    assert item["reason_code"] == "ANSWER_WITHOUT_VERIFIER"
+    assert item["artifact_status"] == "not_required"
+
+
+@pytest.mark.asyncio
+async def test_fanout_rejects_unknown_capability(env, monkeypatch) -> None:
+    """未知能力名在校验阶段拒绝（SUBAGENT_INVALID_TASKS），不产生执行副作用。"""
+    contexts = {"agent-code": _ctx("agent-code")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="不应执行")
+
+    seen = _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[{"agent_id": "agent-code", "task": "干活", "requires": ["shell.exec"]}],
+    )
+
+    assert result["success"] is False
+    assert result["llm_payload"]["code"] == "SUBAGENT_INVALID_TASKS"
+    assert "未知能力" in result["llm_payload"]["error"]
+    assert seen["tools"] == []
+
+
+@pytest.mark.asyncio
+async def test_fanout_undeclared_tasks_keep_legacy_summary(env, monkeypatch) -> None:
+    """未声明 requires 的旧式任务保持原有汇总口径与字段（向后兼容）。"""
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="结论 A")
+
+    _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[{"agent_id": "agent-general", "task": "旧式问答"}],
+    )
+
+    assert result["success"] is True
+    assert result["llm_payload"]["summary"].startswith("1/1 个子任务成功")
+    item = result["llm_payload"]["results"][0]
+    assert item["status"] == "ok"
+    assert "outcome_status" not in item
+    assert "tool_receipts" not in item
+
+
+@pytest.mark.asyncio
+async def test_fanout_long_answer_persisted_as_detail_ref(env, monkeypatch) -> None:
+    """R16：长正文落盘为 detail_ref，信封内保持完整答案（预算内不降级）。"""
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+    marker = "DETAIL_REF_EOF_MARKER"
+    long_answer = "长交付物正文。" * 300 + marker  # ~4200 字，超过落盘阈值
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content=long_answer)
+
+    _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[{"agent_id": "agent-general", "task": "长文任务"}],
+    )
+
+    item = result["llm_payload"]["results"][0]
+    detail_ref = item.get("detail_ref")
+    assert detail_ref and detail_ref.endswith("result.json")
+    # 预算内单路不降级：信封内仍是完整正文
+    assert marker in item["answer"]
+    assert "payload_truncated" not in item
+    # 落盘文件含完整结果，供父/前端按 ref 读取
+    record = json.loads((env.tmp_path / detail_ref).read_text(encoding="utf-8"))
+    assert marker in record["answer"]
+    assert record["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_fanout_payload_budget_compacts_longest_answer(env, monkeypatch) -> None:
+    """R16：多路长正文超出父轮回灌预算时，最长路降级为摘要+detail_ref 并显式标记。"""
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        task = messages[0]["content"]
+        if "task-a" in task:
+            yield ChatChunk(type="text", content="甲" * 4000)
+        elif "task-b" in task:
+            yield ChatChunk(type="text", content="乙" * 4000)
+        else:
+            yield ChatChunk(type="text", content="丙" * 4000)
+
+    _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[
+            {"agent_id": "agent-general", "task": "task-a 长文"},
+            {"agent_id": "agent-general", "task": "task-b 长文"},
+            {"agent_id": "agent-general", "task": "task-c 长文"},
+        ],
+    )
+
+    # 预算内只保留必要降级：至少一路被压缩且带显式标记
+    compacted = [
+        item
+        for item in result["llm_payload"]["results"]
+        if item.get("payload_truncated") is True
+    ]
+    assert compacted, "超长正文应触发预算降级"
+    for item in compacted:
+        assert len(item["answer"]) < 4000
+        assert item.get("detail_ref")
+        assert "detail_ref" in item["answer"]
+    # 降级后 llm_payload 必须回到预算内
+    assert (
+        len(json.dumps(result["llm_payload"], ensure_ascii=False))
+        <= pss._LLM_PAYLOAD_BUDGET_CHARS
+    )
+    # 所有路的完整正文均已落盘
+    for item in result["llm_payload"]["results"]:
+        record = json.loads((env.tmp_path / item["detail_ref"]).read_text(encoding="utf-8"))
+        assert len(record["answer"]) >= 4000
+
+
+@pytest.mark.asyncio
+async def test_fanout_ok_without_body_flagged_missing(env, monkeypatch) -> None:
+    """R15：退化场景——子循环报 ok 却无正文时，聚合必须显式标记正文缺失。"""
+
+    async def fake_child_loop(*_args, **_kwargs):
+        return {"status": "ok", "answer": None, "error": None, "usage": None}
+
+    monkeypatch.setattr(pss.ParallelSubAgentService, "_child_loop", fake_child_loop)
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[{"agent_id": "agent-general", "task": "任意"}],
+    )
+
+    item = result["llm_payload"]["results"][0]
+    assert item["status"] == "ok"
+    assert item["body_missing"] is True
+    assert "正文缺失" in result["llm_payload"]["summary"]
+
+
+@pytest.mark.asyncio
+async def test_fanout_replay_same_key_same_payload_returns_original(env, monkeypatch) -> None:
+    """R04：相同 request_key + 相同 payload 重放返回原 run 结果，不重复执行。"""
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="原始执行结果")
+
+    seen = _patch_provider(monkeypatch, handler)
+    base_kwargs = dict(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-replay",
+        context_summary="共享背景",
+        db=SimpleNamespace(),
+        tasks=[{"agent_id": "agent-general", "task": "幂等任务"}],
+    )
+    first = await pss.ParallelSubAgentService().run(**base_kwargs, request_key="rk-r04")
+    second = await pss.ParallelSubAgentService().run(**base_kwargs, request_key="rk-r04")
+
+    assert first["success"] is True
+    assert second["replayed"] is True
+    assert second["ui_payload"]["replayed"] is True
+    assert second["ui_payload"]["fanout_run_id"] == first["ui_payload"]["fanout_run_id"]
+    # provider 仅被调用一次：重放不产生第二次执行与回执
+    assert len(seen["tools"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_fanout_same_key_different_payload_conflicts(env, monkeypatch) -> None:
+    """R05：相同 request_key 携带不同 payload → 明确 conflict，不得静默重跑。"""
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="结果")
+
+    seen = _patch_provider(monkeypatch, handler)
+    base_kwargs = dict(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-conflict",
+        context_summary="",
+        db=SimpleNamespace(),
+    )
+    first = await pss.ParallelSubAgentService().run(
+        **base_kwargs,
+        tasks=[{"agent_id": "agent-general", "task": "第一批任务"}],
+        request_key="rk-r05",
+    )
+    assert first["success"] is True
+    second = await pss.ParallelSubAgentService().run(
+        **base_kwargs,
+        tasks=[{"agent_id": "agent-general", "task": "不同的第二批任务"}],
+        request_key="rk-r05",
+    )
+    assert second["success"] is False
+    assert second["llm_payload"]["code"] == "SUBAGENT_REQUEST_CONFLICT"
+    assert len(seen["tools"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_fanout_without_key_same_payload_executes_again(env, monkeypatch) -> None:
+    """无 request_key 的同 payload 调用视为新的业务请求（如用户要求再跑一次），不隐式重放。"""
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="结果")
+
+    seen = _patch_provider(monkeypatch, handler)
+    base_kwargs = dict(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-nokey",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[{"agent_id": "agent-general", "task": "同一任务再来一次"}],
+    )
+    first = await pss.ParallelSubAgentService().run(**base_kwargs)
+    second = await pss.ParallelSubAgentService().run(**base_kwargs)
+    assert first["success"] and second["success"] is True
+    assert "replayed" not in second
+    assert len(seen["tools"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_fanout_invalid_request_key_rejected(env, monkeypatch) -> None:
+    """超长/非法 request_key 在校验阶段拒绝，不产生执行副作用。"""
+    contexts = {"agent-general": _ctx("agent-general")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="结果")
+
+    seen = _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-badkey",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[{"agent_id": "agent-general", "task": "任意"}],
+        request_key="k" * 129,
+    )
+    assert result["success"] is False
+    assert result["llm_payload"]["code"] == "SUBAGENT_INVALID_REQUEST_KEY"
+    assert seen["tools"] == []
+
+
+# --- WP2 产物闭环 ---------------------------------------------------------
+
+
+def _patch_storage(tmp_path, monkeypatch):
+    """把 path_factory/storage_backend 指向临时目录。"""
+    from cygnusx.infrastructure.config.storage_config import StorageConfig
+    from cygnusx.infrastructure.storage.backend import LocalStorageBackend
+    from cygnusx.infrastructure.storage.path_factory import StoragePathFactory
+
+    pf = StoragePathFactory(StorageConfig(data_root=str(tmp_path), users_subdir="users"))
+    backend = LocalStorageBackend(pf)
+    monkeypatch.setattr("cygnusx.infrastructure.storage.get_path_factory", lambda: pf)
+    monkeypatch.setattr("cygnusx.infrastructure.storage.get_storage_backend", lambda: backend)
+    return pf, backend
+
+
+@pytest.mark.asyncio
+async def test_fanout_publishes_child_artifacts_to_parent_workspace(env, monkeypatch) -> None:
+    """R22/R23/R25：子 workdir 产物实测 → 发布父 chat-output → 父回读 hash 一致。"""
+    _patch_storage(env.tmp_path, monkeypatch)
+    contexts = {"agent-code": _ctx("agent-code")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+    png_bytes = b"\x89PNG\r\n\x1a\n" + bytes(range(256)) * 8
+
+    async def fake_child_loop(*_args, workdir, **_kwargs):
+        (workdir / "figures").mkdir(parents=True, exist_ok=True)
+        (workdir / "figures" / "scatter.png").write_bytes(png_bytes)
+        (workdir / "hello_stdout.txt").write_text("hello\npython=3.11\n", encoding="utf-8")
+        return {
+            "status": "ok",
+            "answer": "已完成绘图与执行。",
+            "error": None,
+            "tool_receipts": [
+                {"tool_name": "sandbox_execute", "success": True, "summary": "ok", "duration_ms": 1},
+                {"tool_name": "workspace_write", "success": True, "summary": "ok", "duration_ms": 1},
+                {"tool_name": "artifact_register", "success": True, "summary": "ok", "duration_ms": 1},
+            ],
+            "usage": None,
+        }
+
+    monkeypatch.setattr(pss.ParallelSubAgentService, "_child_loop", fake_child_loop)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[
+            {
+                "agent_id": "agent-code",
+                "task": "绘图并写 stdout",
+                "requires": ["python.execute", "artifact.write", "artifact.publish"],
+                "workspace_access": True,
+            }
+        ],
+    )
+
+    item = result["llm_payload"]["results"][0]
+    assert item["outcome_status"] == "succeeded"
+    assert item["reason_code"] == "ARTIFACT_RECEIPT_VERIFIED"
+    # 实测产物经父回读对账 → artifact_status 升级为 published
+    assert item["artifact_status"] == "published"
+    artifacts = result["ui_payload"]["artifacts"]
+    assert len(artifacts) == 2
+    for artifact in artifacts:
+        assert artifact["published_ref"].startswith(
+            "workspace/chat-output/sess-1/output/subagents/"
+        )
+        assert artifact["sha256"]
+    # 每路明细带父回读对账结果
+    for entry in item["artifacts"]:
+        assert entry["parent_reopen_check"] == "passed"
+        assert entry["lifecycle"] == "published"
+    # 父空间重读：文件真实存在且 hash 一致
+    for artifact in artifacts:
+        host_copy = env.tmp_path / artifact["published_ref"]
+        assert host_copy.is_file()
+        import hashlib
+
+        assert hashlib.sha256(host_copy.read_bytes()).hexdigest() == artifact["sha256"]
+    # result.json 属于审计记录，不得作为产物发布
+    assert all(a["path"] != "result.json" for a in artifacts)
+    # run 级 manifest 落盘且带 hash
+    run_id = result["ui_payload"]["fanout_run_id"]
+    manifest = json.loads(
+        (env.tmp_path / "subagents" / run_id / "manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["schema_version"] == 1
+    entries = manifest["tasks"][0]["entries"]
+    assert {e["path"] for e in entries} == {"figures/scatter.png", "hello_stdout.txt"}
+    assert all(e["sha256"] for e in entries)
+    assert all(e["parent_reopen_check"] == "passed" for e in entries)
+    assert "产物 2 件已发布" in result["llm_payload"]["summary"]
+
+
+@pytest.mark.asyncio
+async def test_fanout_publish_reopen_mismatch_marks_failed(env, monkeypatch) -> None:
+    """父空间回读 hash 不一致（文件被篡改/写入失败）→ publish_failed，不冒充交付。"""
+    _pf, backend = _patch_storage(env.tmp_path, monkeypatch)
+    service = pss.ParallelSubAgentService()
+    workdir = env.tmp_path / "subagents" / "runx" / "1"
+    workdir.mkdir(parents=True)
+    (workdir / "out.txt").write_text("original", encoding="utf-8")
+    results = [
+        {
+            "index": 1,
+            "task_id": "t1",
+            "agent_id": "agent-code",
+            "status": "ok",
+            "workdir": str(workdir),
+            "answer": "done",
+        }
+    ]
+    first = await service._collect_and_publish_artifacts(
+        results=results,
+        workdir_root=env.tmp_path / "subagents" / "runx",
+        run_id="runx",
+        user_id="user-1",
+        parent_session_id="sess-1",
+    )
+    assert first and first[0]["published_ref"].endswith("out.txt")
+
+    # 篡改父空间副本后再次发布（幂等重试场景）：不得覆盖、必须检出 hash 不一致
+    published_path = env.tmp_path / first[0]["published_ref"]
+    published_path.write_text("tampered", encoding="utf-8")
+    second = await service._collect_and_publish_artifacts(
+        results=results,
+        workdir_root=env.tmp_path / "subagents" / "runx",
+        run_id="runx",
+        user_id="user-1",
+        parent_session_id="sess-1",
+    )
+    assert second == [], "回读 hash 不一致的产物不得标记为已发布"
+    manifest = json.loads(
+        (env.tmp_path / "subagents" / "runx" / "manifest.json").read_text(encoding="utf-8")
+    )
+    entry = manifest["tasks"][0]["entries"][0]
+    assert entry["lifecycle"] == "publish_failed"
+    assert entry["parent_reopen_check"] == "failed"
+    # 子产物原文件未被篡改动作影响
+    assert (workdir / "out.txt").read_text(encoding="utf-8") == "original"
+
+
+@pytest.mark.asyncio
+async def test_fanout_contract_without_artifacts_stays_not_created(env, monkeypatch) -> None:
+    """R24：无产物产出时不得推断"已交付"；契约任务保持 not_created 并 blocked。"""
+    contexts = {"agent-code": _ctx("agent-code")}
+    monkeypatch.setattr(pss, "AgentService", lambda db: AgentServiceStub(contexts))
+
+    async def handler(messages, _kwargs):
+        yield ChatChunk(type="text", content="只是文字回答，没有写任何文件")
+
+    _patch_provider(monkeypatch, handler)
+    result = await pss.ParallelSubAgentService().run(
+        user_id="user-1",
+        parent_agent_id="manager",
+        parent_session_id="sess-1",
+        context_summary="",
+        db=SimpleNamespace(),
+        tasks=[
+            {
+                "agent_id": "agent-code",
+                "task": "声称写了文件但实际没写",
+                "requires": ["artifact.write"],
+                "workspace_access": True,
+            }
+        ],
+    )
+
+    item = result["llm_payload"]["results"][0]
+    assert item["status"] == "ok"
+    assert item["outcome_status"] == "blocked"
+    assert item["reason_code"] == "ARTIFACT_NOT_VERIFIED"
+    assert item["artifact_status"] == "not_created"
+    assert "artifacts" not in item
+    assert result["ui_payload"]["artifacts"] == []

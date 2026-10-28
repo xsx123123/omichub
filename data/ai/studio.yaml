@@ -105,7 +105,7 @@ studio:
       # 环境链路（见 application/services/workspace_env_restore_service.py）。
       # mirrors.nju.edu.cn 必配：ustc anaconda 镜像对部分频道（实测 menpo）302 重定向到
       # nju，不放行则容器内任何涉及该频道的 conda 事务整体失败（WP2 环境还原链路实测）。
-      allow: [conda.anaconda.org, pypi.org, files.pythonhosted.org, mirrors.aliyun.com, mirrors.ustc.edu.cn, mirrors.nju.edu.cn, pypi.mirrors.ustc.edu.cn]
+      allow: [conda.anaconda.org, pypi.org, files.pythonhosted.org, mirrors.aliyun.com, pypi.tuna.tsinghua.edu.cn, mirrors.ustc.edu.cn, mirrors.nju.edu.cn, pypi.mirrors.ustc.edu.cn]
   mounts:
     workspace: '{storage_path}/studio'
   tools:

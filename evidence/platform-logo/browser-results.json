@@ -1,0 +1,7 @@
+{
+  "checks": [
+    "Desktop uses the exact supplied image, correct aspect ratio and accessible name, without duplicated wordmark",
+    "Dark theme and 390px mobile drawer render the same complete logo"
+  ],
+  "errors": []
+}

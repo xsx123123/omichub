@@ -1,0 +1,13 @@
+{
+  "port": 18401,
+  "pid": 554,
+  "app_debug": false,
+  "pool_size": 4,
+  "max_overflow": 0,
+  "legacy_wrappers": false,
+  "request_identity_cache": true,
+  "telemetry_route_cache_size": 0,
+  "audit_call": "AuditMiddleware.__call__",
+  "cookie_call": "CookieRequiredMiddleware.__call__",
+  "lifecycle": "read-only capacity startup; real routes and request middleware"
+}

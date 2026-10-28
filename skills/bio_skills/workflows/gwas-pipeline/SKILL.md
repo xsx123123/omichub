@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-gwas-pipeline
 description: Orchestrates the GWAS pipeline from genotypes to association results, chaining PLINK2 QC (variant-then-sample missingness, controls-only HWE, KING relatedness), panel harmonization + joint phasing/imputation to dosages, long-range-LD-excluded PCA, and an engine chosen by sample structure (PLINK2-GLM / regenie / SAIGE / BOLT-LMM), with LDSC-intercept diagnostics. Use when committing the genome build + ancestry-matched imputation panel once (ancestry match > panel size), running the strand/allele harmonization gate (drop intermediate-frequency palindromes), imputing cases+controls TOGETHER on dosages, excluding long-range-LD regions before PCA, choosing an LMM when relatedness/structure is present (PCs cannot remove a covariance), or separating polygenicity from confounding via the LDSC intercept. Hands mechanism to the population-genetics and phasing-imputation component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: GWAS 全流程分析
+display_name_en: GWAS Pipeline
+description_zh: >-
+  从基因型到关联结果的 GWAS 全流程，涵盖 PLINK2 质控、面板协调与联合定相插补、排除长程 LD 的 PCA、按样本结构选择 PLINK2/regenie/SAIGE/BOLT-LMM，以及 LDSC 截距诊断。
+description_en: >-
+  Orchestrates the GWAS pipeline from genotypes to association results, chaining PLINK2 QC (variant-then-sample missingness, controls-only HWE, KING relatedness), panel harmonization + joint phasing/imputation to dosages, long-range-LD-excluded PCA, and an engine chosen by sample structure (PLINK2-GLM / regenie / SAIGE / BOLT-LMM), with LDSC-intercept diagnostics. Use when committing the genome build + ancestry-matched imputation panel once (ancestry match > panel size), running the strand/allele harmonization gate (drop intermediate-frequency palindromes), imputing cases+controls TOGETHER on dosages, excluding long-range-LD regions before PCA, choosing an LMM when relatedness/structure is present (PCs cannot remove a covariance), or separating polygenicity from confounding via the LDSC intercept. Hands mechanism to the population-genetics and phasing-imputation component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "对这批基因型数据跑完整 GWAS 并做质控"
+  - "帮我选择 regenie 还是 SAIGE"
+  - "用 LDSC 截距检查人群分层"
+examples_en:
+  - "Run a complete GWAS with QC on these genotypes"
+  - "Should I use regenie or SAIGE for this cohort?"
+  - "Check for population stratification with the LDSC intercept"
 tool_type: mixed
 primary_tool: PLINK2
 workflow: true
@@ -97,7 +113,7 @@ plink2 --vcf input.vcf.gz \
     --out study   # load --pheno at conversion so PHENO1 is in the .fam for the controls-only HWE gate below
 ```
 
-QC order is critical (-> population-genetics/plink-basics): variant missingness runs FIRST, in its own invocation, so a sample is not dropped for missingness driven by variants slated for removal.
+QC order is critical (-> references/population-genetics--plink-basics.md): variant missingness runs FIRST, in its own invocation, so a sample is not dropped for missingness driven by variants slated for removal.
 
 ### Variant call-rate (first)
 
@@ -139,9 +155,9 @@ plink2 --bfile study_qc --freq --out study_qc
 
 Most GWAS impute the QC'd array genotypes up to a dense reference panel before association, to increase variant density and harmonize across platforms and studies. This stage is owned by the phasing-imputation skills; the workflow only orchestrates the handoff. The decisions that matter here, in order:
 
-1. **Select and prepare the panel** (-> phasing-imputation/reference-panels). Match the panel ancestry to the cohort (TOPMed for diverse/admixed, HRC or 1000G for European, HGDP+1kGP for diverse-and-downloadable), reconcile genome build, and run the strand/allele harmonization check; a flipped palindromic SNP or build mismatch corrupts results without erroring.
-2. **Phase, then impute** (-> phasing-imputation/haplotype-phasing, phasing-imputation/genotype-imputation). Pre-phase the QC'd VCF (Eagle2/SHAPEIT5) and impute against the panel per chromosome (Beagle/Minimac4/IMPUTE5), or upload to the Michigan/TOPMed server for controlled-access panels. Impute cases and controls TOGETHER; separate imputation manufactures false associations. The output carries dosages (DS), not hard calls.
-3. **Filter by quality** (-> phasing-imputation/imputation-qc). Drop variants below an INFO/R2/DR2 cutoff paired with a MAF floor, MAF-stratified, because a flat cutoff is a hidden rare-variant filter. Carry dosages forward.
+1. **Select and prepare the panel** (-> references/phasing-imputation--reference-panels.md). Match the panel ancestry to the cohort (TOPMed for diverse/admixed, HRC or 1000G for European, HGDP+1kGP for diverse-and-downloadable), reconcile genome build, and run the strand/allele harmonization check; a flipped palindromic SNP or build mismatch corrupts results without erroring.
+2. **Phase, then impute** (-> references/phasing-imputation--haplotype-phasing.md, references/phasing-imputation--genotype-imputation.md). Pre-phase the QC'd VCF (Eagle2/SHAPEIT5) and impute against the panel per chromosome (Beagle/Minimac4/IMPUTE5), or upload to the Michigan/TOPMed server for controlled-access panels. Impute cases and controls TOGETHER; separate imputation manufactures false associations. The output carries dosages (DS), not hard calls.
+3. **Filter by quality** (-> references/phasing-imputation--imputation-qc.md). Drop variants below an INFO/R2/DR2 cutoff paired with a MAF floor, MAF-stratified, because a flat cutoff is a hidden rare-variant filter. Carry dosages forward.
 
 **Goal:** Increase variant density and harmonize across platforms by imputing the QC'd genotypes against a dense ancestry-matched panel, carrying dosages (not hard calls) into association.
 
@@ -205,15 +221,15 @@ ggsave('pca_plot.pdf', width = 8, height = 6)
 
 Run the association on imputed DOSAGES, not hard calls, so the imputation uncertainty is propagated (PLINK2 reads dosages with `--vcf imputed.qc.vcf.gz dosage=DS`, or use a `.pgen` built from dosages). The examples below use the QC'd best-guess genotypes for brevity; substitute the dosage input for an imputed analysis.
 
-The engine choice is set by sample structure, not convenience (-> population-genetics/association-testing). PC-covariate GLM (below) is valid only for unrelated samples whose confounding is continuous ancestry; any related, family-based, or fine-scale-structured cohort needs a linear mixed model with leave-one-chromosome-out, because PCs cannot remove a covariance structure.
+The engine choice is set by sample structure, not convenience (-> references/population-genetics--association-testing.md). PC-covariate GLM (below) is valid only for unrelated samples whose confounding is continuous ancestry; any related, family-based, or fine-scale-structured cohort needs a linear mixed model with leave-one-chromosome-out, because PCs cannot remove a covariance structure.
 
 | Situation | Engine | Hand off to |
 |-----------|--------|-------------|
-| Unrelated, continuous-ancestry confounding only | PLINK2 `--glm` (PC covariates) | population-genetics/association-testing |
-| Relatedness / family / fine-scale structure | LMM (regenie / SAIGE / BOLT-LMM) with LOCO | population-genetics/association-testing |
-| Biobank binary, case:control worse than ~1:10 or low MAC | SAIGE (SPA) or regenie (`--firth`/`--spa`) | population-genetics/association-testing |
-| Rare-variant, aggregate by gene | burden/SKAT/SKAT-O via SAIGE-GENE+/regenie | population-genetics/rare-variant-association |
-| Threshold | 5e-8 is EUR-common-array folklore; ~1e-8-3e-8 (African LD), ~5e-9 (WGS/rare) | population-genetics/association-testing |
+| Unrelated, continuous-ancestry confounding only | PLINK2 `--glm` (PC covariates) | references/population-genetics--association-testing.md |
+| Relatedness / family / fine-scale structure | LMM (regenie / SAIGE / BOLT-LMM) with LOCO | references/population-genetics--association-testing.md |
+| Biobank binary, case:control worse than ~1:10 or low MAC | SAIGE (SPA) or regenie (`--firth`/`--spa`) | references/population-genetics--association-testing.md |
+| Rare-variant, aggregate by gene | burden/SKAT/SKAT-O via SAIGE-GENE+/regenie | references/population-genetics--rare-variant-association.md |
+| Threshold | 5e-8 is EUR-common-array folklore; ~1e-8-3e-8 (African LD), ~5e-9 (WGS/rare) | references/population-genetics--association-testing.md |
 
 ### Case-Control (Binary Trait)
 
@@ -380,13 +396,13 @@ echo "Results: ${OUTDIR}/gwas.*.glm.*"
 
 - database-access/ensembl-rest - VEP annotation for top GWAS variants (per-variant); local VEP for >1K
 - database-access/biomart-queries - Bulk SNP-to-gene mapping via BioMart
-- population-genetics/plink-basics - PLINK file formats and commands
-- phasing-imputation/reference-panels - Select and prepare the reference panel; strand/build harmonization
-- phasing-imputation/haplotype-phasing - Pre-phase the QC'd genotypes before imputation
-- phasing-imputation/genotype-imputation - Impute to dosages against the panel
-- phasing-imputation/imputation-qc - Filter imputed variants by R2 and MAF before association
-- population-genetics/population-structure - PCA and admixture
-- population-genetics/association-testing - Single-variant models (PC-GLM vs LMM, SPA/Firth) on dosages
-- population-genetics/rare-variant-association - Gene-based burden/SKAT/SKAT-O for rare variants
-- population-genetics/linkage-disequilibrium - LD concepts
+- references/population-genetics--plink-basics.md - PLINK file formats and commands
+- references/phasing-imputation--reference-panels.md - Select and prepare the reference panel; strand/build harmonization
+- references/phasing-imputation--haplotype-phasing.md - Pre-phase the QC'd genotypes before imputation
+- references/phasing-imputation--genotype-imputation.md - Impute to dosages against the panel
+- references/phasing-imputation--imputation-qc.md - Filter imputed variants by R2 and MAF before association
+- references/population-genetics--population-structure.md - PCA and admixture
+- references/population-genetics--association-testing.md - Single-variant models (PC-GLM vs LMM, SPA/Firth) on dosages
+- references/population-genetics--rare-variant-association.md - Gene-based burden/SKAT/SKAT-O for rare variants
+- references/population-genetics--linkage-disequilibrium.md - LD concepts
 - workflows/causal-genomics-pipeline - Downstream: the emitted sumstats (CHR/POS/EA/OA/EAF/BETA/SE/P/N, build documented) are its input contract

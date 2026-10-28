@@ -1,0 +1,8 @@
+{
+  "source_sha256": "cc79fc71f7ac95f56c9669966691c694bd44e868aeac466599fb57e4ae785ab1",
+  "built_sha256": "cc79fc71f7ac95f56c9669966691c694bd44e868aeac466599fb57e4ae785ab1",
+  "served_sha256": "cc79fc71f7ac95f56c9669966691c694bd44e868aeac466599fb57e4ae785ab1",
+  "built_matches_source": true,
+  "served_matches_build": true,
+  "scope": "STATIC_ASSETS_ONLY; Node and execution gates are unchanged"
+}

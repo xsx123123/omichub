@@ -1,0 +1,6 @@
+ ARCHITECTURE_DESIGN/CygnusX_frontend.md            |   1 +
+ ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md   |  10 ++
+ .../ai-assistant/GlobalAiAssistantSidebar.vue      |  13 ++
+ pipelines/Treasure-Seeking_Mouse                   |   2 +-
+ scripts/poc/chat-input-editing-browser.mjs         | 151 +++++++++++++++++++++
+ 5 files changed, 176 insertions(+), 1 deletion(-)

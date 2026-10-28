@@ -1,0 +1,6 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+✅ 迁移文件内部依赖检查通过。
+✅ 迁移链拓扑连通。
+✅ Alembic head 唯一。
+
+🎉 迁移链健康检查全部通过。

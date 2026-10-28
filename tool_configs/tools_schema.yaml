@@ -98,6 +98,11 @@ tools:
       type: object
       properties:
         context_summary: {type: string, description: 各子 Agent 共享的自包含背景（数据、约束、文件路径）}
+        request_key:
+          type: string
+          description: >-
+            可选幂等键：相同 request_key 且相同任务 payload 的重放将返回原 run 结果而不重复执行；
+            相同 request_key 携带不同 payload 将返回 SUBAGENT_REQUEST_CONFLICT。不超过 128 字符。
         tasks:
           type: array
           minItems: 1
@@ -107,7 +112,22 @@ tools:
             type: object
             properties:
               agent_id: {type: string, description: 目标 Agent ID，须标记 subagents_spawnable}
-              task: {type: string, description: 自包含的子任务指令，不超过 2000 字}
+              task: {type: string, description: 自包含的子任务指令，不超过 20000 字}
+              requires:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - research.retrieve
+                    - workspace.read
+                    - python.execute
+                    - artifact.write
+                    - artifact.publish
+                    - approval.request
+                description: >-
+                  声明子任务依赖的能力，服务端按实际装配的有效工具求交预检；
+                  缺失能力将标记 blocked/CAPABILITY_MISSING 而不静默成功。
+                  需要真实代码执行或文件产物时必须显式声明。
             required: [agent_id, task]
       required: [context_summary, tasks]
     llm_result_fields: [summary, results, success, error]

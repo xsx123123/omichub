@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-biomarker-pipeline
 description: End-to-end biomarker discovery workflow from expression data to validated biomarker panels. Covers feature selection with Boruta/LASSO, leakage-safe cross-validation, calibration, and SHAP interpretation. Use when building and validating diagnostic or prognostic biomarker signatures from omics data.
+version: 1.0.0
+display_name: 生物标志物发现流程
+display_name_en: Biomarker Discovery Pipeline
+description_zh: >-
+  从表达数据到经验证生物标志物组合的端到端流程，涵盖 Boruta/LASSO 特征选择、防泄漏交叉验证、模型校准与 SHAP 解释，适用于诊断或预后标志物的构建与验证。
+description_en: >-
+  End-to-end biomarker discovery workflow from expression data to validated biomarker panels. Covers feature selection with Boruta/LASSO, leakage-safe cross-validation, calibration, and SHAP interpretation. Use when building and validating diagnostic or prognostic biomarker signatures from omics data.
+author: JZHANG
+examples_zh:
+  - "用 RNA-seq 表达矩阵筛选并验证一个诊断标志物组合"
+  - "帮我搭建无数据泄漏的交叉验证和模型校准流程"
+  - "解释这个标志物模型的 SHAP 贡献"
+examples_en:
+  - "Build and validate a diagnostic biomarker panel from my RNA-seq expression matrix"
+  - "Set up leakage-safe cross-validation and model calibration for these omics features"
+  - "Explain the SHAP contributions of this biomarker model"
 tool_type: python
 primary_tool: sklearn
 workflow: true
@@ -201,7 +217,7 @@ print(f'Leakage-safe CV AUC: {cv_scores.mean():.3f} +/- {cv_scores.std():.3f}')
 **QC Checkpoint 3:**
 - AUC reported with its fold spread, not a bare number (small-n CV is high-variance)
 - Confirm selection is inside the pipeline and folds are group-aware; selection-before-CV inflates AUC toward 1.0 even on noise
-- For imbalanced data report AUPRC/MCC, not accuracy; check the model predicts biology not batch (machine-learning/omics-classifiers)
+- For imbalanced data report AUPRC/MCC, not accuracy; check the model predicts biology not batch (references/machine-learning--omics-classifiers.md)
 
 ## Step 4: Model Interpretation
 
@@ -230,7 +246,7 @@ mean_shap = np.abs(shap_values.values).mean(axis=0)
 ```
 
 **QC Checkpoint 4:**
-- SHAP is an audit, not a selection method: use it to confirm the model is not keying on batch/housekeeping shortcuts (machine-learning/prediction-explanation)
+- SHAP is an audit, not a selection method: use it to confirm the model is not keying on batch/housekeeping shortcuts (references/machine-learning--prediction-explanation.md)
 - Aggregate SHAP over co-expression modules before ranking; within-module order is not a finding
 - SHAP directions should be biologically plausible; treat top-SHAP genes as hypotheses, not a validated panel
 
@@ -238,7 +254,7 @@ mean_shap = np.abs(shap_values.values).mean(axis=0)
 
 **Goal:** Report honest held-out performance, including calibration when risks will be used.
 
-**Approach:** Report discrimination with an interval, but if the panel will produce risk estimates, also check calibration: AUC is invariant to any monotone transform of the score, so a high AUC says nothing about whether the probabilities are honest (machine-learning/model-validation). External validation on an independent cohort is the real bar.
+**Approach:** Report discrimination with an interval, but if the panel will produce risk estimates, also check calibration: AUC is invariant to any monotone transform of the score, so a high AUC says nothing about whether the probabilities are honest (references/machine-learning--model-validation.md). External validation on an independent cohort is the real bar.
 
 ```python
 from sklearn.metrics import roc_auc_score
@@ -258,7 +274,7 @@ ci_lower, ci_upper = np.percentile(boot, [2.5, 97.5])
 print(f'Hold-out AUC: {test_auc:.3f}  95% CI [{ci_lower:.3f}, {ci_upper:.3f}]')
 print(f'Brier score (calibration + refinement): {brier_score_loss(y_test, y_prob):.3f}')   # y must be 0/1-encoded; string labels raise unless pos_label is passed
 # If risks will be used, recalibrate on a disjoint fold and report a reliability curve
-# (machine-learning/model-validation); do not resample for imbalance -- it breaks calibration.
+# (references/machine-learning--model-validation.md); do not resample for imbalance -- it breaks calibration.
 ```
 
 ## Parameter Recommendations
@@ -310,10 +326,10 @@ joblib.dump(scaler, 'feature_scaler.joblib')
 - database-access/geo-data - Public expression cohorts for validation sets
 - database-access/sra-data - Pull raw FASTQ for re-quantified validation cohorts
 - database-access/uniprot-access - Protein-level features (sequence, GO terms, PTMs) for protein biomarkers
-- machine-learning/biomarker-discovery - Detailed feature selection methods
-- machine-learning/model-validation - Nested CV implementation details
-- machine-learning/omics-classifiers - Classifier options and tuning
-- machine-learning/prediction-explanation - SHAP and LIME interpretation
+- references/machine-learning--biomarker-discovery.md - Detailed feature selection methods
+- references/machine-learning--model-validation.md - Nested CV implementation details
+- references/machine-learning--omics-classifiers.md - Classifier options and tuning
+- references/machine-learning--prediction-explanation.md - SHAP and LIME interpretation
 - differential-expression/de-results - Pre-filter with DE genes
 - pathway-analysis/go-enrichment - Functional enrichment of biomarkers
 

@@ -18,7 +18,8 @@ export function useResearchWorkflow(session: Ref<ResearchSession | null>) {
   const view = reactive<ResearchWorkflowView>(empty())
   let generation = 0
   const proposalVersions = new Map<string, { dataset: string; version: string }>()
-  watch(() => [session.value?.session_id, session.value?.project_id], () => { ++generation; Object.assign(view, empty(!!session.value?.project_id), { accession: undefined, versionId: undefined, datasetId: undefined, manifestHash: undefined, error: undefined, status: undefined }); proposalVersions.clear() }, { flush: 'sync' })
+  const sharedProposals = new Map<string, 'downloads.prepare' | 'analysis.prepare'>()
+  watch(() => [session.value?.session_id, session.value?.project_id], () => { ++generation; Object.assign(view, empty(!!session.value?.project_id), { accession: undefined, versionId: undefined, datasetId: undefined, manifestHash: undefined, error: undefined, status: undefined }); proposalVersions.clear(); sharedProposals.clear() }, { flush: 'sync' })
   function proposal(value: unknown, kind: 'import' | 'analysis') {
     const item = row(value), preview = row(item.preview)
     const id = str(kind === 'import' ? item.ingestion_id : item.analysis_proposal_id)
@@ -60,9 +61,10 @@ export function useResearchWorkflow(session: Ref<ResearchSession | null>) {
           datasetId: undefined, manifestHash: undefined, status: undefined, error: '',
         })
         proposalVersions.clear()
+        sharedProposals.clear()
       }
       view.allowedTools = allowedTools
-      view.catalogStatus = 'AVAILABLE'
+      view.catalogStatus = allowedTools.length ? 'AVAILABLE' : 'UNAVAILABLE'
       if (view.allowedTools.includes('downloads.describe_capabilities')) {
         const description = row(await invoke('downloads.describe_capabilities'))
         if (!valid()) return
@@ -71,7 +73,7 @@ export function useResearchWorkflow(session: Ref<ResearchSession | null>) {
           // A UI projection cannot grant execution, even if a malformed response says true.
           executionAllowed: false as const,
         }))
-      } else { view.downloadCapabilities = []; view.catalogStatus = 'UNAVAILABLE' }
+      } else { view.downloadCapabilities = [] }
       if (intent.type === 'capabilities.refresh') return
       if (intent.type === 'dataset.inspect') {
         Object.assign(view, { open: true, busy: true, accession: intent.discoveryRef, datasetId: undefined, versionId: undefined, manifestHash: undefined, files: [], sources: [], samples: [], gaps: [], assets: [] })
@@ -125,7 +127,24 @@ export function useResearchWorkflow(session: Ref<ResearchSession | null>) {
         const links = await agentToolsApi.related(current.session_id)
         if (!valid()) return
         view.proposals = []; view.tasks = []
+        proposalVersions.clear(); sharedProposals.clear()
         for (const link of links) {
+          const capability = link.capability_id
+          const shared = link.proposal
+          if (shared && (capability === 'downloads.prepare' || capability === 'analysis.prepare')
+            && view.allowedTools.includes(capability)
+            && shared.conversation_id === current.session_id && shared.project_id === (current.project_id || null)
+            && shared.operation === (capability === 'downloads.prepare' ? 'downloads.submit' : 'analysis.submit')) {
+            // The durable Gateway record determines both identity and approval
+            // route; model output and UI kind cannot choose the endpoint.
+            const details = Object.entries(row(shared.preview))
+              .filter(([key]) => ['operation', 'accession', 'flow_id', 'flow_name', 'sample_count', 'comparison_count', 'bytes_estimate'].includes(key))
+              .filter(([, value]) => typeof value === 'string' || typeof value === 'number')
+              .map(([label, value]) => ({ label, value: String(value) }))
+            view.proposals.push({ id: shared.proposal_id, kind: capability === 'downloads.prepare' ? 'import' : 'analysis',
+              capabilityId: capability, state: shared.state, hash: shared.parameters_hash, expires: shared.expires_at, details })
+            sharedProposals.set(shared.proposal_id, capability)
+          }
           if (link.dataset_import) {
             proposal(link.dataset_import, 'import')
             for (const task of link.dataset_import.tasks ?? []) view.tasks.push({ id: task.task_id, status: task.status })
@@ -165,8 +184,18 @@ export function useResearchWorkflow(session: Ref<ResearchSession | null>) {
         if (view.reports.length) view.deliveryStatus = 'RECORDED_REFERENCES'
       } else if (intent.type === 'proposal.decide') {
         if (!current.project_id) return
-        if (!view.allowedTools.includes(intent.kind === 'import' ? 'dataset.prepare_import' : 'analysis.prepare_from_dataset')) throw { response: { status: 403 } }
-        if (intent.kind === 'import') {
+        const displayed = view.proposals.find(item => item.id === intent.proposalId && item.kind === intent.kind)
+        if (!displayed) { view.error = 'REOPEN_PROPOSAL_REQUIRED'; return }
+        const sharedCapability = sharedProposals.get(intent.proposalId)
+        const capability = sharedCapability || (intent.kind === 'import' ? 'dataset.prepare_import' : 'analysis.prepare_from_dataset')
+        if (!view.allowedTools.includes(capability)) throw { response: { status: 403 } }
+        if (sharedCapability) {
+          if (!['PENDING', 'pending', 'PREPARED'].includes(displayed.state)) return
+          const expires = Date.parse(displayed.expires)
+          if (!Number.isFinite(expires) || expires <= Date.now()) { view.error = 'CONFIRMATION_EXPIRED'; return }
+          const result = await agentToolsApi.decide(current.session_id, intent.proposalId, intent.approve)
+          if (valid()) view.proposals = view.proposals.map(item => item.id === intent.proposalId ? { ...item, state: result.state } : item)
+        } else if (intent.kind === 'import') {
           const result = await datasetsApi.decide(current.project_id, intent.proposalId, intent.approve)
           if (valid()) proposal(result, 'import')
         } else {
@@ -186,6 +215,7 @@ export function useResearchWorkflow(session: Ref<ResearchSession | null>) {
           error: researchFailure(error), catalogStatus: 'UNAVAILABLE',
         })
         proposalVersions.clear()
+        sharedProposals.clear()
       }
     }
     finally { if (valid()) view.busy = false }

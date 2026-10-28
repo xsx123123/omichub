@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Actual production Vue route",
+    "Authenticated all/week leaderboard",
+    "Actual persisted totals",
+    "Actual platform usage and missing historical tokens"
+  ],
+  "errors": []
+}

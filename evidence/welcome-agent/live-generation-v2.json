@@ -1,0 +1,755 @@
+[
+  {
+    "batch_id": "e92ae283-638f-498d-810f-f30d6ad54630",
+    "audience": "admin",
+    "status": "scheduled",
+    "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+    "run_id": "75fb5190-1cfd-4724-84ec-faae6cc4d53b",
+    "qa": {
+      "valid": true,
+      "topics": [
+        "discovery",
+        "evidence",
+        "general",
+        "research",
+        "workflow"
+      ],
+      "rejections": {
+        "duplicate": 2,
+        "topic_mismatch": 3
+      },
+      "valid_count": 24,
+      "policy_version": "v2"
+    },
+    "calls": [
+      {
+        "usage": {
+          "total_tokens": 4042,
+          "cached_tokens": 128,
+          "prompt_tokens": 1928,
+          "completion_tokens": 2114,
+          "prompt_tokens_details": {
+            "cached_tokens": 128
+          },
+          "prompt_cache_hit_tokens": 128,
+          "prompt_cache_miss_tokens": 1800,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1894
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 0,
+        "agent_run_id": "75fb5190-1cfd-4724-84ec-faae6cc4d53b",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "54d1a217f771d2e19a97fd507f4c26b34d9e5d59963c54c0793ea2af4f82c397",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 4042,
+              "cached_tokens": 128,
+              "prompt_tokens": 1928,
+              "completion_tokens": 2114,
+              "prompt_tokens_details": {
+                "cached_tokens": 128
+              },
+              "prompt_cache_hit_tokens": 128,
+              "prompt_cache_miss_tokens": 1800,
+              "completion_tokens_details": {
+                "reasoning_tokens": 1894
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.0020768
+      },
+      {
+        "usage": {
+          "total_tokens": 4400,
+          "cached_tokens": 384,
+          "prompt_tokens": 1935,
+          "completion_tokens": 2465,
+          "prompt_tokens_details": {
+            "cached_tokens": 384
+          },
+          "prompt_cache_hit_tokens": 384,
+          "prompt_cache_miss_tokens": 1551,
+          "completion_tokens_details": {
+            "reasoning_tokens": 2249
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 1,
+        "agent_run_id": "75fb5190-1cfd-4724-84ec-faae6cc4d53b",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "9ffb0478bc343c1cf03e72a1234412e418fedaaed405e3004bd6b7e5aaf818b5",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 4400,
+              "cached_tokens": 384,
+              "prompt_tokens": 1935,
+              "completion_tokens": 2465,
+              "prompt_tokens_details": {
+                "cached_tokens": 384
+              },
+              "prompt_cache_hit_tokens": 384,
+              "prompt_cache_miss_tokens": 1551,
+              "completion_tokens_details": {
+                "reasoning_tokens": 2249
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.002359
+      },
+      {
+        "usage": {
+          "total_tokens": 10290,
+          "cached_tokens": 2176,
+          "prompt_tokens": 3856,
+          "completion_tokens": 6434
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 2,
+        "agent_run_id": "75fb5190-1cfd-4724-84ec-faae6cc4d53b",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "0ae2329ecefed8d6fbff233f7383369df5cc1749bddb1e7ce903451d9b7ff65b",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 6024,
+              "cached_tokens": 384,
+              "prompt_tokens": 1928,
+              "completion_tokens": 4096,
+              "prompt_tokens_details": {
+                "cached_tokens": 384
+              },
+              "prompt_cache_hit_tokens": 384,
+              "prompt_cache_miss_tokens": 1544,
+              "completion_tokens_details": {
+                "reasoning_tokens": 4096
+              }
+            },
+            "finish_reason": "length"
+          },
+          {
+            "usage": {
+              "total_tokens": 4266,
+              "cached_tokens": 1792,
+              "prompt_tokens": 1928,
+              "completion_tokens": 2338,
+              "prompt_tokens_details": {
+                "cached_tokens": 1792
+              },
+              "prompt_cache_hit_tokens": 1792,
+              "prompt_cache_miss_tokens": 136,
+              "completion_tokens_details": {
+                "reasoning_tokens": 2114
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.005918400000000001
+      },
+      {
+        "usage": {
+          "total_tokens": 4141,
+          "cached_tokens": 256,
+          "prompt_tokens": 1928,
+          "completion_tokens": 2213,
+          "prompt_tokens_details": {
+            "cached_tokens": 256
+          },
+          "prompt_cache_hit_tokens": 256,
+          "prompt_cache_miss_tokens": 1672,
+          "completion_tokens_details": {
+            "reasoning_tokens": 2121
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 3,
+        "agent_run_id": "75fb5190-1cfd-4724-84ec-faae6cc4d53b",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "5a2b28c6657893951cb2e93a4a8325bb3324a05ace35854f3e4ba9ab2355118c",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 4141,
+              "cached_tokens": 256,
+              "prompt_tokens": 1928,
+              "completion_tokens": 2213,
+              "prompt_tokens_details": {
+                "cached_tokens": 256
+              },
+              "prompt_cache_hit_tokens": 256,
+              "prompt_cache_miss_tokens": 1672,
+              "completion_tokens_details": {
+                "reasoning_tokens": 2121
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.002156
+      },
+      {
+        "usage": {
+          "total_tokens": 3801,
+          "cached_tokens": 256,
+          "prompt_tokens": 1926,
+          "completion_tokens": 1875,
+          "prompt_tokens_details": {
+            "cached_tokens": 256
+          },
+          "prompt_cache_hit_tokens": 256,
+          "prompt_cache_miss_tokens": 1670,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1809
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 4,
+        "agent_run_id": "75fb5190-1cfd-4724-84ec-faae6cc4d53b",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "539a85273aa2e427f6c46eb594b13c5c4e29b0b65f15335a65cd979c9775129c",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 3801,
+              "cached_tokens": 256,
+              "prompt_tokens": 1926,
+              "completion_tokens": 1875,
+              "prompt_tokens_details": {
+                "cached_tokens": 256
+              },
+              "prompt_cache_hit_tokens": 256,
+              "prompt_cache_miss_tokens": 1670,
+              "completion_tokens_details": {
+                "reasoning_tokens": 1809
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.0018852
+      }
+    ],
+    "messages": [
+      {
+        "text": "愿每次核对都为结论留下清晰依据。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "把步骤理顺，让维护与复核从容衔接。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "愿每个假设都被认真追问，也被耐心记录。",
+        "topic": "research",
+        "tone": "warm"
+      },
+      {
+        "text": "好奇常在细微观察中发芽，请多留一点耐心。",
+        "topic": "discovery",
+        "tone": "playful"
+      },
+      {
+        "text": "并肩推进时，也记得给彼此留一处从容。",
+        "topic": "general",
+        "tone": "warm"
+      },
+      {
+        "text": "让追溯路径清楚，使复核有据可依。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，先把任务脉络铺平，再稳步展开。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "把记录留得清楚，让每次复核都有依据。",
+        "topic": "evidence",
+        "tone": "warm"
+      },
+      {
+        "text": "先理顺任务次序，再稳稳推进各环节。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "忙碌之间，也给专注留些从容。",
+        "topic": "general",
+        "tone": "warm"
+      },
+      {
+        "text": "好奇藏在细微观察里，请多给耐心留些位置。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "让假设被认真追问，也让思路慢慢成形。",
+        "topic": "research",
+        "tone": "professional"
+      },
+      {
+        "text": "把复核做成习惯，让结论站得更稳。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，愿整理让后续推进更从容。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "先把维护任务排成清晰的次序，再逐项推进。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "复核时多看记录，结论会更踏实。",
+        "topic": "evidence",
+        "tone": "warm"
+      },
+      {
+        "text": "好奇常在细处闪光，留些耐心把它看清。",
+        "topic": "discovery",
+        "tone": "playful"
+      },
+      {
+        "text": "忙而不乱，给协作与休整都留出位置。",
+        "topic": "general",
+        "tone": "professional"
+      },
+      {
+        "text": "让每次核对都有据可查，让后续维护更安心。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "把步骤脉络理顺，后续推进自然从容。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "并肩处理琐碎，也别忘了为专注留白。",
+        "topic": "general",
+        "tone": "warm"
+      },
+      {
+        "text": "让好奇慢慢展开，也给专注留些从容。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "把核对做在平常，让结论经得起回看。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，把任务次序理顺，再安心推进。",
+        "topic": "workflow",
+        "tone": "warm"
+      }
+    ]
+  },
+  {
+    "batch_id": "69d33817-09ca-463d-b725-b346c17e6444",
+    "audience": "general",
+    "status": "scheduled",
+    "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+    "run_id": "6fdfc946-ac10-4b25-b369-5fa828356542",
+    "qa": {
+      "valid": true,
+      "topics": [
+        "discovery",
+        "evidence",
+        "general",
+        "research",
+        "workflow"
+      ],
+      "rejections": {
+        "duplicate": 10,
+        "topic_mismatch": 6
+      },
+      "valid_count": 22,
+      "policy_version": "v2"
+    },
+    "calls": [
+      {
+        "usage": {
+          "total_tokens": 3970,
+          "cached_tokens": 256,
+          "prompt_tokens": 1924,
+          "completion_tokens": 2046,
+          "prompt_tokens_details": {
+            "cached_tokens": 256
+          },
+          "prompt_cache_hit_tokens": 256,
+          "prompt_cache_miss_tokens": 1668,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1809
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 0,
+        "agent_run_id": "6fdfc946-ac10-4b25-b369-5fa828356542",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "e7dc1b716d65f1789db7356210044f9770db0256f25cb6499d2e43c61e4f8260",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 3970,
+              "cached_tokens": 256,
+              "prompt_tokens": 1924,
+              "completion_tokens": 2046,
+              "prompt_tokens_details": {
+                "cached_tokens": 256
+              },
+              "prompt_cache_hit_tokens": 256,
+              "prompt_cache_miss_tokens": 1668,
+              "completion_tokens_details": {
+                "reasoning_tokens": 1809
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.0020216
+      },
+      {
+        "usage": {
+          "total_tokens": 3266,
+          "cached_tokens": 384,
+          "prompt_tokens": 1930,
+          "completion_tokens": 1336,
+          "prompt_tokens_details": {
+            "cached_tokens": 384
+          },
+          "prompt_cache_hit_tokens": 384,
+          "prompt_cache_miss_tokens": 1546,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1117
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 1,
+        "agent_run_id": "6fdfc946-ac10-4b25-b369-5fa828356542",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "243a4e476923f1cb9c7150d3a7f2413c31f2dd61661231fc4b2515f13dac16c8",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 3266,
+              "cached_tokens": 384,
+              "prompt_tokens": 1930,
+              "completion_tokens": 1336,
+              "prompt_tokens_details": {
+                "cached_tokens": 384
+              },
+              "prompt_cache_hit_tokens": 384,
+              "prompt_cache_miss_tokens": 1546,
+              "completion_tokens_details": {
+                "reasoning_tokens": 1117
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.0014548
+      },
+      {
+        "usage": {
+          "total_tokens": 5096,
+          "cached_tokens": 384,
+          "prompt_tokens": 1927,
+          "completion_tokens": 3169,
+          "prompt_tokens_details": {
+            "cached_tokens": 384
+          },
+          "prompt_cache_hit_tokens": 384,
+          "prompt_cache_miss_tokens": 1543,
+          "completion_tokens_details": {
+            "reasoning_tokens": 2938
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 2,
+        "agent_run_id": "6fdfc946-ac10-4b25-b369-5fa828356542",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "7a8acc0c0a6b6c86a213fd2ed74992dd8501fe74d92517e4e4a1f508458d27ae",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 5096,
+              "cached_tokens": 384,
+              "prompt_tokens": 1927,
+              "completion_tokens": 3169,
+              "prompt_tokens_details": {
+                "cached_tokens": 384
+              },
+              "prompt_cache_hit_tokens": 384,
+              "prompt_cache_miss_tokens": 1543,
+              "completion_tokens_details": {
+                "reasoning_tokens": 2938
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.0029206
+      },
+      {
+        "usage": {
+          "total_tokens": 4549,
+          "cached_tokens": 384,
+          "prompt_tokens": 1931,
+          "completion_tokens": 2618,
+          "prompt_tokens_details": {
+            "cached_tokens": 384
+          },
+          "prompt_cache_hit_tokens": 384,
+          "prompt_cache_miss_tokens": 1547,
+          "completion_tokens_details": {
+            "reasoning_tokens": 2396
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 3,
+        "agent_run_id": "6fdfc946-ac10-4b25-b369-5fa828356542",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "9835b64197ed529bbe90a332833152705610671b0fac9d5fae1c67858fb99224",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 4549,
+              "cached_tokens": 384,
+              "prompt_tokens": 1931,
+              "completion_tokens": 2618,
+              "prompt_tokens_details": {
+                "cached_tokens": 384
+              },
+              "prompt_cache_hit_tokens": 384,
+              "prompt_cache_miss_tokens": 1547,
+              "completion_tokens_details": {
+                "reasoning_tokens": 2396
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.0024806000000000003
+      },
+      {
+        "usage": {
+          "total_tokens": 2921,
+          "cached_tokens": 256,
+          "prompt_tokens": 1931,
+          "completion_tokens": 990,
+          "prompt_tokens_details": {
+            "cached_tokens": 256
+          },
+          "prompt_cache_hit_tokens": 256,
+          "prompt_cache_miss_tokens": 1675,
+          "completion_tokens_details": {
+            "reasoning_tokens": 812
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 4,
+        "agent_run_id": "6fdfc946-ac10-4b25-b369-5fa828356542",
+        "prompt_sha256": "bcccddc795d4c4fe3e38277af0f3eb25c70d7b95675db1129f466d10595d4b0c",
+        "model_provider": "openai_compatible",
+        "prompt_version": "v2",
+        "request_sha256": "64a8bca5c32ae4bbc6204dd061a56f54e6b99f15943ea8720a12eff57450be56",
+        "usage_complete": true,
+        "model_config_id": "2ca33dac-18b8-4470-83f8-2c75f86b669d",
+        "provider_attempts": [
+          {
+            "usage": {
+              "total_tokens": 2921,
+              "cached_tokens": 256,
+              "prompt_tokens": 1931,
+              "completion_tokens": 990,
+              "prompt_tokens_details": {
+                "cached_tokens": 256
+              },
+              "prompt_cache_hit_tokens": 256,
+              "prompt_cache_miss_tokens": 1675,
+              "completion_tokens_details": {
+                "reasoning_tokens": 812
+              }
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "estimated_cost_cny": 0.0011782000000000001
+      }
+    ],
+    "messages": [
+      {
+        "text": "让一个问题在心里多留一会儿，答案往往更稳。",
+        "topic": "research",
+        "tone": "warm"
+      },
+      {
+        "text": "先把要做的步骤排成一条清楚的线，再逐段推进。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "好奇带路时不必急着下结论，多看两眼再走 🔍",
+        "topic": "discovery",
+        "tone": "playful"
+      },
+      {
+        "text": "欢迎回来，愿每处记录都经得起日后的追问。",
+        "topic": "evidence",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，愿你在忙碌里留一点从容。",
+        "topic": "general",
+        "tone": "warm"
+      },
+      {
+        "text": "好奇常从细微处冒头，多看一眼再走 🔍",
+        "topic": "discovery",
+        "tone": "playful"
+      },
+      {
+        "text": "先把任务次序铺开，再逐段稳稳推进。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "把记录留得清楚，日后回看才有依据。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "灵感藏在观察里，耐心会把它慢慢照亮。",
+        "topic": "discovery",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，愿忙碌与专注之间留着从容。",
+        "topic": "general",
+        "tone": "warm"
+      },
+      {
+        "text": "好奇常从细小的观察里冒头，多看看再走。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "先把手上的步骤排成清楚的次序，再逐项推进。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "把记录留得明白，日后的复核才有据可依。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "愿每个假设都被耐心追问，也在思考里慢慢成形。",
+        "topic": "research",
+        "tone": "warm"
+      },
+      {
+        "text": "让好奇带路，也把走过的脚印留清。",
+        "topic": "discovery",
+        "tone": "professional"
+      },
+      {
+        "text": "把流程里的岔路口标清，推进会更笃定。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，愿好奇从细微观察里慢慢发芽。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "把步骤串成清楚的线，推进更笃定。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "好奇常藏在细节里，慢一点看，也许会有新发现。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "让问题多停留片刻，思路会在追问中逐渐清晰。",
+        "topic": "research",
+        "tone": "professional"
+      },
+      {
+        "text": "先理清任务脉络，再让每一步稳稳落位。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "把观察如实记下，日后回看便有可靠依据。",
+        "topic": "evidence",
+        "tone": "warm"
+      }
+    ]
+  }
+]

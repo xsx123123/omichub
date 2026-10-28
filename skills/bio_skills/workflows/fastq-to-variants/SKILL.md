@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-fastq-to-variants
 description: Orchestrates the end-to-end germline short-variant pipeline from FASTQ to a filtered, normalized, benchmarked VCF, chaining QC/trim, BWA-MEM2 alignment, duplicate marking, optional BQSR, calling (bcftools/GATK HaplotypeCaller/DeepVariant/DRAGEN), normalization, site+genotype filtering, annotation, and hap.py/vcfeval benchmarking. Use when deciding the pipeline-wide reference-genome commitment (GRCh38 analysis set vs T2T, ALT/decoy handling), sequencing the steps in the defensible order (normalize BEFORE annotate, filter site- then genotype-level), choosing the calling engine and single-sample vs cohort joint-calling, picking a filtering strategy by cohort size, or benchmarking stratified within GIAB confident regions. Hands off mechanism to the variant-calling and read-alignment component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 胚系变异检测流程
+display_name_en: FASTQ to Variants Pipeline
+description_zh: >-
+  从 FASTQ 到过滤、标准化并基准评测 VCF 的胚系短变异全流程，涵盖质控修剪、BWA-MEM2 比对、去重、可选 BQSR、bcftools/GATK/DeepVariant 调用、过滤、注释与 hap.py 评测。
+description_en: >-
+  Orchestrates the end-to-end germline short-variant pipeline from FASTQ to a filtered, normalized, benchmarked VCF, chaining QC/trim, BWA-MEM2 alignment, duplicate marking, optional BQSR, calling (bcftools/GATK HaplotypeCaller/DeepVariant/DRAGEN), normalization, site+genotype filtering, annotation, and hap.py/vcfeval benchmarking. Use when deciding the pipeline-wide reference-genome commitment (GRCh38 analysis set vs T2T, ALT/decoy handling), sequencing the steps in the defensible order (normalize BEFORE annotate, filter site- then genotype-level), choosing the calling engine and single-sample vs cohort joint-calling, picking a filtering strategy by cohort size, or benchmarking stratified within GIAB confident regions. Hands off mechanism to the variant-calling and read-alignment component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用我的全外显子 FASTQ 跑完整胚系变异检测"
+  - "帮我比较 bcftools 和 DeepVariant 的结果"
+  - "对 VCF 做标准化、过滤并用 hap.py 评测"
+examples_en:
+  - "Run the full germline variant pipeline on my whole-exome FASTQ files"
+  - "Compare bcftools and DeepVariant calls for this sample"
+  - "Normalize and filter the VCF, then benchmark it with hap.py"
 tool_type: cli
 primary_tool: bcftools
 workflow: true
@@ -15,6 +31,8 @@ depends_on:
   - variant-calling/filtering-best-practices
   - variant-calling/variant-annotation
   - variant-calling/vcf-statistics
+  - variant-calling/gatk-variant-calling
+  - variant-calling/deepvariant
 qc_checkpoints:
   - after_qc: "Q30 >85%, adapter content <1%"
   - after_alignment: "Mapping rate >95%, properly paired >90%"
@@ -54,32 +72,32 @@ A germline pipeline is a chain of commitments, and the two that decide whether t
 
 ```
 FASTQ
-  | [1] QC & trim -------------------> fastp            (read-qc/fastp-workflow)
+  | [1] QC & trim -------------------> fastp            (references/read-qc--fastp-workflow.md)
   v
-  | [2] Align ----------------------> bwa-mem2          (read-alignment/bwa-alignment)
+  | [2] Align ----------------------> bwa-mem2          (references/read-alignment--bwa-alignment.md)
   v     ^-- reference commitment: GRCh38 analysis set / T2T, ALT/decoy handling
-  | [3] Mark duplicates ------------> samtools markdup  (alignment-files/duplicate-handling)
+  | [3] Mark duplicates ------------> samtools markdup  (references/alignment-files--duplicate-handling.md)
   v
   | [4] (BQSR? optional on modern binned-quality instruments)
   v
   | [5] Call -----------------------> bcftools | GATK HaplotypeCaller | DeepVariant | DRAGEN
-  v     ^-- single-sample OR per-sample gVCF -> joint-genotype (variant-calling/joint-calling)
-  | [6] Normalize (BEFORE annotate) -> bcftools norm -m-any -f ref  (variant-calling/variant-normalization)
+  v     ^-- single-sample OR per-sample gVCF -> joint-genotype (references/variant-calling--joint-calling.md)
+  | [6] Normalize (BEFORE annotate) -> bcftools norm -m-any -f ref  (references/variant-calling--variant-normalization.md)
   v
-  | [7] Filter: site-level THEN genotype-level         (variant-calling/filtering-best-practices)
+  | [7] Filter: site-level THEN genotype-level         (references/variant-calling--filtering-best-practices.md)
   v
   | [8] Recompute cohort QC on the genotype-filtered matrix  (missingness, Ti/Tv, het/hom, excess-het HWE)
   v
-  | [9] Annotate -------------------> VEP / SnpEff      (variant-calling/variant-annotation)
+  | [9] Annotate -------------------> VEP / SnpEff      (references/variant-calling--variant-annotation.md)
   v
-  | [10] Benchmark & QC ------------> hap.py/vcfeval, bcftools stats  (variant-calling/vcf-statistics)
+  | [10] Benchmark & QC ------------> hap.py/vcfeval, bcftools stats  (references/variant-calling--vcf-statistics.md)
   v
 Filtered, normalized, benchmarked VCF
 ```
 
 ## Reference genome: the pipeline-wide commitment
 
-**Decision made once, before alignment; everything downstream inherits it.** Mechanism of building/indexing the reference lives in read-alignment/bwa-alignment; the deeper reasoning below is what a reviewer expects justified.
+**Decision made once, before alignment; everything downstream inherits it.** Mechanism of building/indexing the reference lives in references/read-alignment--bwa-alignment.md; the deeper reasoning below is what a reviewer expects justified.
 
 | Choice | Commit to it when | Consequence inherited downstream |
 |--------|-------------------|----------------------------------|
@@ -107,16 +125,16 @@ Each step assumes the previous; the order is defensible under review (canonical 
 
 ## Choosing the calling engine
 
-Pipeline-level selection only; the mechanism and full decision table live in variant-calling/variant-calling. Hand off there to pick, then return here for chaining.
+Pipeline-level selection only; the mechanism and full decision table live in references/variant-calling--variant-calling.md. Hand off there to pick, then return here for chaining.
 
 | Situation | Lean toward | Hand off to |
 |-----------|-------------|-------------|
-| Auditable open-source, large cohort, joint calling | GATK HaplotypeCaller GVCF -> GenomicsDBImport -> GenotypeGVCFs | variant-calling/gatk-variant-calling, variant-calling/joint-calling |
-| Best indel/difficult-region accuracy, single or cohort | DeepVariant (+ GLnexus for cohorts) | variant-calling/deepvariant |
-| Quick/exploratory, non-model organism, limited compute | bcftools mpileup + call | variant-calling/variant-calling |
-| Maximum throughput on Illumina, hardware available | DRAGEN (or GATK `--dragen-mode` for the open equivalent) | variant-calling/variant-calling |
+| Auditable open-source, large cohort, joint calling | GATK HaplotypeCaller GVCF -> GenomicsDBImport -> GenotypeGVCFs | references/variant-calling--gatk-variant-calling.md, references/variant-calling--joint-calling.md |
+| Best indel/difficult-region accuracy, single or cohort | DeepVariant (+ GLnexus for cohorts) | references/variant-calling--deepvariant.md |
+| Quick/exploratory, non-model organism, limited compute | bcftools mpileup + call | references/variant-calling--variant-calling.md |
+| Maximum throughput on Illumina, hardware available | DRAGEN (or GATK `--dragen-mode` for the open equivalent) | references/variant-calling--variant-calling.md |
 
-**Single-sample vs cohort is a chaining decision, not a caller feature.** For a cohort, emit per-sample gVCFs and joint-genotype them so a variant seen in one sample is evaluated in all (cohort rescue of low-coverage hets, squared-off genotype matrix). This is what makes the pipeline forward-compatible with new samples (the N+1 problem). Full mechanism: variant-calling/joint-calling.
+**Single-sample vs cohort is a chaining decision, not a caller feature.** For a cohort, emit per-sample gVCFs and joint-genotype them so a variant seen in one sample is evaluated in all (cohort rescue of low-coverage hets, squared-off genotype matrix). This is what makes the pipeline forward-compatible with new samples (the N+1 problem). Full mechanism: references/variant-calling--joint-calling.md.
 
 ## Primary path: BWA-MEM2 + bcftools
 
@@ -135,7 +153,7 @@ fastp -i sample_R1.fastq.gz -I sample_R2.fastq.gz \
 
 ### Step 2: Align with BWA-MEM2
 
-Read groups are mandatory; add `-Y` (soft-clip supplementary) if structural-variant calling is downstream, and `-K 100000000` for thread-count-invariant output. Reference/analysis-set choice: read-alignment/bwa-alignment.
+Read groups are mandatory; add `-Y` (soft-clip supplementary) if structural-variant calling is downstream, and `-K 100000000` for thread-count-invariant output. Reference/analysis-set choice: references/read-alignment--bwa-alignment.md.
 
 ```bash
 bwa-mem2 index reference.fa   # once
@@ -147,7 +165,7 @@ bwa-mem2 mem -t 8 -K 100000000 \
 
 ### Step 3: Mark duplicates
 
-Strict order (samtools convention): collate (name) -> fixmate `-m` -> sort (coordinate) -> markdup. Detail: alignment-files/duplicate-handling.
+Strict order (samtools convention): collate (name) -> fixmate `-m` -> sort (coordinate) -> markdup. Detail: references/alignment-files--duplicate-handling.md.
 
 ```bash
 # collate groups mates by name; fixmate -m adds the ms/MC tags markdup needs; markdup needs coordinate order.
@@ -173,7 +191,7 @@ bcftools norm -m-any -f reference.fa -Oz -o variants/sample.norm.vcf.gz variants
 bcftools index variants/sample.norm.vcf.gz
 ```
 
-For multi-sample cohorts, bcftools can call several BAMs jointly, but the GATK/DeepVariant gVCF path is preferred at scale (variant-calling/joint-calling).
+For multi-sample cohorts, bcftools can call several BAMs jointly, but the GATK/DeepVariant gVCF path is preferred at scale (references/variant-calling--joint-calling.md).
 
 ### Step 5: Filter (site then genotype)
 
@@ -192,7 +210,7 @@ bcftools index variants/sample.filtered.vcf.gz
 
 ## Alternative path: BWA-MEM2 + GATK HaplotypeCaller
 
-Local reassembly + PairHMM; the auditable reference implementation, strong on indels. Full mechanism: variant-calling/gatk-variant-calling.
+Local reassembly + PairHMM; the auditable reference implementation, strong on indels. Full mechanism: references/variant-calling--gatk-variant-calling.md.
 
 ```bash
 gatk CreateSequenceDictionary -R reference.fa
@@ -210,7 +228,7 @@ gatk GenotypeGVCFs -R reference.fa -V gendb://genomicsdb -O variants/cohort.vcf.
 
 ## Filtering strategy depends on cohort size
 
-The site-level filter is chosen by cohort size, platform, and organism; genotype-level filtering is always applied on top. Full mechanism and thresholds: variant-calling/filtering-best-practices.
+The site-level filter is chosen by cohort size, platform, and organism; genotype-level filtering is always applied on top. Full mechanism and thresholds: references/variant-calling--filtering-best-practices.md.
 
 | Cohort / data | Site-level filter | Why |
 |---------------|-------------------|-----|
@@ -243,7 +261,7 @@ Discipline that separates a senior benchmark from a naive one:
 - **Refuse the global F1.** Report SNP and INDEL separately, and show the low-complexity/segmental-duplication/MHC rows explicitly -- hiding them behind an all-regions average is the most common soft cheat.
 - **Do not benchmark an ML caller only on its training genome.** DeepVariant and DRAGEN-ML train on GIAB coordinates, so scoring on HG002 alone partly measures memorization; score on a held-out or semi-blinded sample (HG003/HG004).
 - **"We found variants GIAB missed" is almost always a category error** -- calls outside the confident region, which GIAB declined to adjudicate, not accuracy. Real hard-region claims cite CMRG or an assembly-based benchmark.
-- **When the sample is not a GIAB genome** (the usual case), there is no truth VCF; fall back to proxy QC -- Ti/Tv (~2.0-2.1 WGS, ~3.0-3.3 exome), dbSNP overlap, het/hom by ancestry, and trio Mendelian concordance if a family is available. These are proxies for the absence of a benchmark, not a substitute for one (variant-calling/vcf-statistics).
+- **When the sample is not a GIAB genome** (the usual case), there is no truth VCF; fall back to proxy QC -- Ti/Tv (~2.0-2.1 WGS, ~3.0-3.3 exome), dbSNP overlap, het/hom by ancestry, and trio Mendelian concordance if a family is available. These are proxies for the absence of a benchmark, not a substitute for one (references/variant-calling--vcf-statistics.md).
 
 ## QC checkpoints between steps
 
@@ -259,26 +277,26 @@ Discipline that separates a senior benchmark from a naive one:
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Annotation reports a known pathogenic variant as novel/absent | Annotated before normalizing; indel one base off the database coordinate | `bcftools norm -m-any -f ref` against the SAME build as the annotation DB, BEFORE annotation |
-| Cohort has impossible all-hom-ref genotypes at variant sites | Built the cohort by `bcftools merge` of single-sample VCFs | Emit per-sample gVCFs and joint-genotype (variant-calling/joint-calling) |
+| Cohort has impossible all-hom-ref genotypes at variant sites | Built the cohort by `bcftools merge` of single-sample VCFs | Emit per-sample gVCFs and joint-genotype (references/variant-calling--joint-calling.md) |
 | Every hom-alt site filtered out | Hand-written filter treats missing RankSum as failing | Treat missing annotation as PASS; RankSum is defined only at het sites |
 | VQSR "converged" on one exome but the callset is garbage | VQSR needs tens of thousands of variants across ~30+ samples | Use hard filters or VETS/NVScoreVariants for single samples/exomes |
 | Spurious variants in CBS/U2AF1/KCNE1B | GRCh38 false duplications collapse mapQ | Use a masked GRCh38 or T2T-CHM13; commit the reference before calling |
 | GATK error "sample ... has no read group" | Read groups omitted at alignment | Re-run `bwa-mem2 mem -R "@RG\t..."` (SM/ID/PL/LB) |
-| Different variant counts from vt vs bcftools on the same data | vt decomposes MNPs by default, bcftools does not | Standardize ONE normalization tool + flags across every cohort compared (variant-calling/variant-normalization) |
+| Different variant counts from vt vs bcftools on the same data | vt decomposes MNPs by default, bcftools does not | Standardize ONE normalization tool + flags across every cohort compared (references/variant-calling--variant-normalization.md) |
 
 ## Pipeline map (hand-offs)
 
-- read-qc/fastp-workflow -- QC/trim options and report interpretation
-- read-alignment/bwa-alignment -- BWA-MEM2 parameters, read groups, ALT/decoy analysis set, reference indexing
-- alignment-files/duplicate-handling -- the collate/fixmate/sort/markdup order and UMI cases
-- variant-calling/variant-calling -- engine selection (bcftools vs GATK vs DeepVariant vs DRAGEN) and ploidy
-- variant-calling/gatk-variant-calling -- HaplotypeCaller, GVCF, BQSR/DRAGSTR, edge cases
-- variant-calling/deepvariant -- CNN calling, platform models, DeepTrio, GLnexus cohorts
-- variant-calling/joint-calling -- per-sample gVCF -> cohort joint genotyping, the N+1 problem, scaling
-- variant-calling/variant-normalization -- left-align/parsimony, multiallelic split, MNP decomposition
-- variant-calling/filtering-best-practices -- VQSR vs hard vs ML by cohort size; site vs genotype filters
-- variant-calling/variant-annotation -- VEP/SnpEff on the normalized representation
-- variant-calling/vcf-statistics -- Ti/Tv, het/hom, contamination/relatedness identity QC
+- references/read-qc--fastp-workflow.md -- QC/trim options and report interpretation
+- references/read-alignment--bwa-alignment.md -- BWA-MEM2 parameters, read groups, ALT/decoy analysis set, reference indexing
+- references/alignment-files--duplicate-handling.md -- the collate/fixmate/sort/markdup order and UMI cases
+- references/variant-calling--variant-calling.md -- engine selection (bcftools vs GATK vs DeepVariant vs DRAGEN) and ploidy
+- references/variant-calling--gatk-variant-calling.md -- HaplotypeCaller, GVCF, BQSR/DRAGSTR, edge cases
+- references/variant-calling--deepvariant.md -- CNN calling, platform models, DeepTrio, GLnexus cohorts
+- references/variant-calling--joint-calling.md -- per-sample gVCF -> cohort joint genotyping, the N+1 problem, scaling
+- references/variant-calling--variant-normalization.md -- left-align/parsimony, multiallelic split, MNP decomposition
+- references/variant-calling--filtering-best-practices.md -- VQSR vs hard vs ML by cohort size; site vs genotype filters
+- references/variant-calling--variant-annotation.md -- VEP/SnpEff on the normalized representation
+- references/variant-calling--vcf-statistics.md -- Ti/Tv, het/hom, contamination/relatedness identity QC
 
 The complete runnable scripts for both paths are in this skill's examples/ (`bwa_bcftools_workflow.sh`, `bwa_gatk_workflow.sh`).
 
@@ -286,19 +304,19 @@ The complete runnable scripts for both paths are in this skill's examples/ (`bwa
 
 - database-access/sra-data - Pull public FASTQ for reanalysis (ENA mirror or STRIDES cloud)
 - database-access/ncbi-datasets-cli - Pull reference genome assembly via Datasets v2 CLI
-- read-qc/fastp-workflow - Detailed QC options
+- references/read-qc--fastp-workflow.md - Detailed QC options
 - sequence-io/fastq-quality - Confirm the FASTQ quality encoding (Phred+33 vs legacy Phred+64/Solexa) before trimming public or pre-2011 data
 - sequence-io/paired-end-fastq - Keep R1/R2 mates synchronized; independent per-mate filtering silently desyncs pairs
-- read-alignment/bwa-alignment - BWA-MEM2 parameters, read groups, ALT/decoy analysis set, the dedup ordering
-- alignment-files/duplicate-handling - Duplicate marking details
-- variant-calling/variant-calling - Engine selection and bcftools calling options
-- variant-calling/gatk-variant-calling - GATK HaplotypeCaller and DRAGEN mode
-- variant-calling/deepvariant - Deep-learning calling and GLnexus cohorts
-- variant-calling/joint-calling - Cohort joint genotyping and scaling
-- variant-calling/variant-normalization - Normalize before annotate/compare
-- variant-calling/filtering-best-practices - VQSR, hard filters, VETS
-- variant-calling/variant-annotation - Annotate variants with VEP
-- variant-calling/vcf-statistics - Ti/Tv, het/hom, and identity QC
+- references/read-alignment--bwa-alignment.md - BWA-MEM2 parameters, read groups, ALT/decoy analysis set, the dedup ordering
+- references/alignment-files--duplicate-handling.md - Duplicate marking details
+- references/variant-calling--variant-calling.md - Engine selection and bcftools calling options
+- references/variant-calling--gatk-variant-calling.md - GATK HaplotypeCaller and DRAGEN mode
+- references/variant-calling--deepvariant.md - Deep-learning calling and GLnexus cohorts
+- references/variant-calling--joint-calling.md - Cohort joint genotyping and scaling
+- references/variant-calling--variant-normalization.md - Normalize before annotate/compare
+- references/variant-calling--filtering-best-practices.md - VQSR, hard filters, VETS
+- references/variant-calling--variant-annotation.md - Annotate variants with VEP
+- references/variant-calling--vcf-statistics.md - Ti/Tv, het/hom, and identity QC
 
 ## References
 

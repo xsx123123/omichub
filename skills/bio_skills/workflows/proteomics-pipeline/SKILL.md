@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-proteomics-pipeline
 description: Orchestrates bottom-up proteomics from a search engine's output (MaxQuant/FragPipe/DIA-NN) to differential protein abundance with limma/DEqMS/MSstats. Use when committing the search database + acquisition mode (DDA vs DIA) up front, re-controlling FDR at PSM AND peptide AND protein-group level (not just PSM), removing contaminant/reverse rows and inspecting RAW distributions before normalizing, bridging cross-plex TMT with an IRS reference channel, modeling MNAR missingness rather than downshift-imputing on/off proteins, batching as a covariate (not pre-subtracted), and testing with treat()/DEqMS. Hands mechanism to the proteomics component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 蛋白质组差异分析流程
+display_name_en: Proteomics Pipeline
+description_zh: >-
+  从搜库结果（MaxQuant/FragPipe/DIA-NN）到差异蛋白丰度的自下而上蛋白质组流程，涵盖数据库与采集模式确认、PSM/肽段/蛋白组多级 FDR 控制、污染物去除、归一化与 limma/DEqMS/MSstats 分析。
+description_en: >-
+  Orchestrates bottom-up proteomics from a search engine's output (MaxQuant/FragPipe/DIA-NN) to differential protein abundance with limma/DEqMS/MSstats. Use when committing the search database + acquisition mode (DDA vs DIA) up front, re-controlling FDR at PSM AND peptide AND protein-group level (not just PSM), removing contaminant/reverse rows and inspecting RAW distributions before normalizing, bridging cross-plex TMT with an IRS reference channel, modeling MNAR missingness rather than downshift-imputing on/off proteins, batching as a covariate (not pre-subtracted), and testing with treat()/DEqMS. Hands mechanism to the proteomics component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 MaxQuant 结果做差异蛋白分析"
+  - "帮我同时控制 PSM、肽段和蛋白组层面的 FDR"
+  - "比较 DDA 和 DIA 数据的分析路径"
+examples_en:
+  - "Run differential protein abundance analysis on my MaxQuant output"
+  - "Control FDR at the PSM, peptide, and protein-group levels"
+  - "Compare the analysis paths for DDA and DIA data"
 tool_type: mixed
 primary_tool: limma
 workflow: true
@@ -138,7 +154,7 @@ cat('Proteins after per-group completeness filter:', nrow(filtered), '\n')
 
 # Missingness in label-free DDA is left-censored MNAR (missing BECAUSE low). The modern,
 # correct approach is to MODEL the missingness in the likelihood, NOT impute it. See
-# proteomics/differential-abundance for the decision (proDA / msqrob2 / MSstats-AFT). The
+# references/proteomics--differential-abundance.md for the decision (proDA / msqrob2 / MSstats-AFT). The
 # proDA path below is the RECOMMENDED route; the impute-then-limma path is a fallback.
 
 # --- RECOMMENDED: model the missingness with proDA (no imputation) ---
@@ -235,7 +251,7 @@ results <- groupComparison(contrast.matrix = comparison, data = processed)
 ## Workflow Variants
 
 ### TMT/iTRAQ Isobaric Labeling
-Reporter extraction is a spectra-level step, not a text-matrix read. Within a single plex the channels are co-isolated/co-fragmented in the same MS2 event, so relative ratios are stable; but MULTI-batch TMT CANNOT be compared across plexes without an IRS bridge (a pooled reference channel in every plex; Plubell 2017). Route to proteomics/quantification for the mechanics.
+Reporter extraction is a spectra-level step, not a text-matrix read. Within a single plex the channels are co-isolated/co-fragmented in the same MS2 event, so relative ratios are stable; but MULTI-batch TMT CANNOT be compared across plexes without an IRS bridge (a pooled reference channel in every plex; Plubell 2017). Route to references/proteomics--quantification.md for the mechanics.
 ```r
 library(MSnbase)
 
@@ -256,7 +272,7 @@ tmt_data <- purityCorrect(tmt_data, impurities)
 ```
 
 ### SILAC Workflow
-Caveat: heavy-Arg -> heavy-Pro metabolic conversion biases ratios for proline-containing peptides (under-counts the heavy channel), and labeling efficiency must be checked (residual light reads as down-regulation). Route to proteomics/quantification for the mechanics.
+Caveat: heavy-Arg -> heavy-Pro metabolic conversion biases ratios for proline-containing peptides (under-counts the heavy channel), and labeling efficiency must be checked (residual light reads as down-regulation). Route to references/proteomics--quantification.md for the mechanics.
 ```r
 # SILAC ratios from MaxQuant
 silac <- read.delim('proteinGroups.txt')
@@ -270,7 +286,7 @@ results <- apply(silac_log2, 1, function(x) t.test(x, mu = 0)$p.value)
 ```
 
 ### DIA-NN Workflow
-DIA-NN 1.9+ defaults to report.parquet (the only default in 2.0); read it with arrow, not read.delim. Filter on q-values BEFORE pivoting, or low-confidence rows enter the matrix. Route to proteomics/dia-analysis for the mechanics.
+DIA-NN 1.9+ defaults to report.parquet (the only default in 2.0); read it with arrow, not read.delim. Filter on q-values BEFORE pivoting, or low-confidence rows enter the matrix. Route to references/proteomics--dia-analysis.md for the mechanics.
 ```r
 library(arrow)
 library(dplyr)
@@ -317,11 +333,11 @@ protein_matrix <- diann_filt %>%
 
 ## Related Skills
 
-- proteomics/data-import - Load MS data formats
-- proteomics/proteomics-qc - Quality control before analysis
-- proteomics/quantification - Normalization, TMT IRS bridge, SILAC mechanics
-- proteomics/protein-inference - Razor/shared-peptide assignment to protein groups
-- proteomics/differential-abundance - Modeling missingness, moderated testing details
-- proteomics/dia-analysis - DIA-NN report parsing and q-value filtering
+- references/proteomics--data-import.md - Load MS data formats
+- references/proteomics--proteomics-qc.md - Quality control before analysis
+- references/proteomics--quantification.md - Normalization, TMT IRS bridge, SILAC mechanics
+- references/proteomics--protein-inference.md - Razor/shared-peptide assignment to protein groups
+- references/proteomics--differential-abundance.md - Modeling missingness, moderated testing details
+- references/proteomics--dia-analysis.md - DIA-NN report parsing and q-value filtering
 - proteomics/ptm-analysis - Phosphoproteomics and other PTMs
 - data-visualization/volcano-and-ma-plots - Volcano plots with LFC shrinkage

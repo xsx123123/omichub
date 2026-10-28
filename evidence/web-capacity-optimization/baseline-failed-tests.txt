@@ -1,0 +1,365 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/zj/zj_code_libarary/OmicHub
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, langsmith-0.10.16
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 16 items
+
+tests/unit/test_project_lifecycle.py F                                   [  6%]
+tests/unit/test_provider_retry_policy.py F                               [ 12%]
+tests/unit/test_report_snapshot.py F                                     [ 18%]
+tests/unit/test_reproducible_report_phase1.py F                          [ 25%]
+tests/unit/test_research_tool_pack_binding.py F                          [ 31%]
+tests/unit/test_studio_approval.py F                                     [ 37%]
+tests/unit/test_studio_manager.py F                                      [ 43%]
+tests/unit/tools/test_tool_error_codes.py FF                             [ 56%]
+tests/e2e/test_langgraph_chat_sandbox_approval.py FFFFFFF                [100%]
+
+=================================== FAILURES ===================================
+______ test_capability_owner_permissions_and_effective_export_dependency _______
+tests/unit/test_project_lifecycle.py:192: in test_capability_owner_permissions_and_effective_export_dependency
+    assert all(
+E   assert False
+E    +  where False = all(<generator object test_capability_owner_permissions_and_effective_export_dependency.<locals>.<genexpr> at 0x7dcff1f31e40>)
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:01.219[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+_____________ test_litellm_embedding_routes_custom_openai_endpoint _____________
+tests/unit/test_provider_retry_policy.py:116: in test_litellm_embedding_routes_custom_openai_endpoint
+    assert await provider.embeddings("hello") == [0.1]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/infrastructure/ai_provider/litellm_provider.py:468: in embeddings
+    config = await self._get_embedding_config()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/infrastructure/ai_provider/litellm_provider.py:454: in _get_embedding_config
+    raise ValueError("Explicit Provider conflicts with embedding Provider ID")
+E   ValueError: Explicit Provider conflicts with embedding Provider ID
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:01.389[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+____________ test_database_adapter_is_owner_scoped_and_never_writes ____________
+tests/unit/test_report_snapshot.py:476: in test_database_adapter_is_owner_scoped_and_never_writes
+    result = await source.read(synthetic_rna.owner, synthetic_rna.records.task.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/application/services/report_snapshot_sources.py:148: in read
+    research = await ResearchProvenanceService(self._db).task(
+src/cygnusx/application/services/research_provenance_service.py:241: in task
+    task, link = await self.task_scope(owner, task_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/application/services/research_provenance_service.py:113: in task_scope
+    user = await self.db.get(UserModel, owner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: object MagicMock can't be used in 'await' expression
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:01.401[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+______________ test_retry_budget_is_terminal_without_recollecting ______________
+tests/unit/test_reproducible_report_phase1.py:369: in test_retry_budget_is_terminal_without_recollecting
+    await run_reproducible_report(db, job.id)
+src/cygnusx/application/services/reproducible_report_service.py:305: in run_reproducible_report
+    await ResearchProvenanceService(db).task_scope(job.user_id, job.task_id)
+src/cygnusx/application/services/research_provenance_service.py:115: in task_scope
+    raise NotFoundError("User unavailable")
+E   cygnusx.core.exceptions.NotFoundError: User unavailable
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:01.417[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+________________ test_research_pack_binds_database_mcp_presets _________________
+tests/unit/test_research_tool_pack_binding.py:16: in test_research_pack_binds_database_mcp_presets
+    assert len(pack["mcp_tools"][research_id]) == 26
+E   AssertionError: assert 28 == 26
+E    +  where 28 = len(['cygnusx_genome_lookup', 'cygnusx_genome_homology', 'cygnusx_genome_region', 'cygnusx_genome_sequence', 'cygnusx_plant_search', 'cygnusx_plant_get', ...])
+_____________ test_approval_required_tools_cover_write_and_execute _____________
+tests/unit/test_studio_approval.py:226: in test_approval_required_tools_cover_write_and_execute
+    assert {
+E   AssertionError: assert {'artifact_re...kspace_write'} == frozenset({'a...e_edit', ...})
+E     
+E     Extra items in the right set:
+E     'network_request'
+E     Use -v to get more diff
+_________________________ test_container_mounts_match __________________________
+tests/unit/test_studio_manager.py:153: in test_container_mounts_match
+    assert StudioSandboxManager._container_mounts_match(ok, expected) is True
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: StudioSandboxManager._container_mounts_match() missing 1 required positional argument: 'expected_platform_source'
+_______________ test_requires_confirm_carries_confirmation_code ________________
+src/cygnusx/infrastructure/cache/redis_client.py:38: in get_redis
+    socket.getaddrinfo(
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/socket.py:974: in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   socket.gaierror: [Errno -3] Temporary failure in name resolution
+
+The above exception was the direct cause of the following exception:
+src/cygnusx/application/services/tool_confirmation_service.py:264: in _get_store
+    store = _RedisStore(get_redis())
+                        ^^^^^^^^^^^
+src/cygnusx/infrastructure/cache/redis_client.py:46: in get_redis
+    raise ConnectionError("Redis host is unavailable") from exc
+E   ConnectionError: Redis host is unavailable
+
+The above exception was the direct cause of the following exception:
+tests/unit/tools/test_tool_error_codes.py:310: in test_requires_confirm_carries_confirmation_code
+    result = await service.execute(
+src/cygnusx/application/services/tool_bridge_service.py:164: in execute
+    record = await confirmation_service.create_for_tool(
+src/cygnusx/application/services/tool_confirmation_service.py:344: in create_for_tool
+    store = await self._get_store()
+            ^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/application/services/tool_confirmation_service.py:270: in _get_store
+    raise DependencyUnavailableError(code="CONFIRMATION_STORE_UNAVAILABLE") from exc
+E   cygnusx.core.exceptions.DependencyUnavailableError: Required dependency unavailable
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:01.440[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+----------------------------- Captured stdout call -----------------------------
+[32m2026-10-27 02:16:01.447[0m | [1mINFO    [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [1mtool_invocation user_id=u1 tool=cygnusx_plot_volcano mode=backend_shim[0m
+[32m2026-10-27 02:16:01.452[0m | [33m[1mWARNING [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [33m[1m确认共享存储不可用；拒绝创建或消费凭证[0m
+------------------------------ Captured log call -------------------------------
+INFO     cygnusx.application.services.tool_bridge_service:tool_bridge_service.py:119 tool_invocation user_id=u1 tool=cygnusx_plot_volcano mode=backend_shim
+WARNING  cygnusx.application.services.tool_confirmation_service:tool_confirmation_service.py:269 确认共享存储不可用；拒绝创建或消费凭证
+_________________ test_control_params_not_reported_as_ignored __________________
+src/cygnusx/application/services/tool_confirmation_service.py:264: in _get_store
+    store = _RedisStore(get_redis())
+                        ^^^^^^^^^^^
+src/cygnusx/infrastructure/cache/redis_client.py:35: in get_redis
+    raise ConnectionError("Redis host resolution is temporarily disabled")
+E   ConnectionError: Redis host resolution is temporarily disabled
+
+The above exception was the direct cause of the following exception:
+tests/unit/tools/test_tool_error_codes.py:437: in test_control_params_not_reported_as_ignored
+    result = await service.execute(
+src/cygnusx/application/services/tool_bridge_service.py:164: in execute
+    record = await confirmation_service.create_for_tool(
+src/cygnusx/application/services/tool_confirmation_service.py:344: in create_for_tool
+    store = await self._get_store()
+            ^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/application/services/tool_confirmation_service.py:270: in _get_store
+    raise DependencyUnavailableError(code="CONFIRMATION_STORE_UNAVAILABLE") from exc
+E   cygnusx.core.exceptions.DependencyUnavailableError: Required dependency unavailable
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:01.476[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+----------------------------- Captured stdout call -----------------------------
+[32m2026-10-27 02:16:01.477[0m | [1mINFO    [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [1mtool_invocation user_id=u1 tool=cygnusx_plot_volcano mode=backend_shim[0m
+[32m2026-10-27 02:16:01.477[0m | [33m[1mWARNING [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [33m[1m确认共享存储不可用；拒绝创建或消费凭证[0m
+------------------------------ Captured log call -------------------------------
+INFO     cygnusx.application.services.tool_bridge_service:tool_bridge_service.py:119 tool_invocation user_id=u1 tool=cygnusx_plot_volcano mode=backend_shim
+WARNING  cygnusx.application.services.tool_confirmation_service:tool_confirmation_service.py:269 确认共享存储不可用；拒绝创建或消费凭证
+________________ test_supervised_approval_approve_then_execute _________________
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/locks.py:213: in wait
+    await fut
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+tests/e2e/test_langgraph_chat_sandbox_approval.py:183: in test_supervised_approval_approve_then_execute
+    chunks, collector, _, holder = await _run_stream_until_approval(runtime, sandbox_execute)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/e2e/test_langgraph_chat_sandbox_approval.py:160: in _run_stream_until_approval
+    await asyncio.wait_for(approval_seen.wait(), timeout=15)
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:01.493[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+_______________ test_supervised_approval_reject_blocks_execution _______________
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/locks.py:213: in wait
+    await fut
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+tests/e2e/test_langgraph_chat_sandbox_approval.py:230: in test_supervised_approval_reject_blocks_execution
+    chunks, collector, _, holder = await _run_stream_until_approval(runtime, sandbox_execute)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/e2e/test_langgraph_chat_sandbox_approval.py:160: in _run_stream_until_approval
+    await asyncio.wait_for(approval_seen.wait(), timeout=15)
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:16.524[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+_________________ test_supervised_approval_edited_args_execute _________________
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/locks.py:213: in wait
+    await fut
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+tests/e2e/test_langgraph_chat_sandbox_approval.py:266: in test_supervised_approval_edited_args_execute
+    chunks, collector, _, holder = await _run_stream_until_approval(runtime, sandbox_execute)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/e2e/test_langgraph_chat_sandbox_approval.py:160: in _run_stream_until_approval
+    await asyncio.wait_for(approval_seen.wait(), timeout=15)
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:31.541[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+________________ test_no_permission_mode_keeps_current_behavior ________________
+tests/e2e/test_langgraph_chat_sandbox_approval.py:302: in test_no_permission_mode_keeps_current_behavior
+    chunks = [
+tests/e2e/test_langgraph_chat_sandbox_approval.py:302: in <listcomp>
+    chunks = [
+src/cygnusx/application/services/chat/runtimes/langgraph_runtime.py:322: in _stream_agent_chat_langgraph
+    provider_result = await self._service._db.execute(
+                            ^^^^^^^^^^^^^^^^^
+E   AttributeError: '_Service' object has no attribute '_db'
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:46.571[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+__________________ test_supervised_timeout_records_audit_log ___________________
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/locks.py[32m2026-10-27 02:17:01.923[0m | [31m[1mERROR   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [31m[1mTask exception was never retrieved
+future: <Task finished name='Task-21' coro=<_run_stream_until_approval.<locals>._collect() done, defined at /home/zj/zj_code_libarary/OmicHub/tests/e2e/test_langgraph_chat_sandbox_approval.py:138> exception=AttributeError("'_Service' object has no attribute '_db'")>[0m
+[33m[1mTraceback (most recent call last):[0m
+
+> File "[32m/home/zj/zj_code_libarary/OmicHub/tests/e2e/[0m[32m[1mtest_langgraph_chat_sandbox_approval.py[0m", line [33m139[0m, in [35m_collect[0m
+    [35m[1masync[0m [35m[1mfor[0m [1mchunk[0m [35m[1min[0m [1mruntime[0m[35m[1m.[0m[1m_stream_agent_chat_langgraph[0m[1m([0m
+    [36m                   │       └ [0m[36m[1m<function LangGraphChatRuntime._stream_agent_chat_langgraph at 0x7dd05df785e0>[0m
+    [36m                   └ [0m[36m[1m<cygnusx.application.services.chat.runtimes.langgraph_runtime.LangGraphChatRuntime object at 0x7dcff2ed7210>[0m
+
+  File "[32m/home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/services/chat/runtimes/[0m[32m[1mlanggraph_runtime.py[0m", line [33m322[0m, in [35m_stream_agent_chat_langgraph[0m
+    [1mprovider_result[0m [35m[1m=[0m [35m[1mawait[0m [1mself[0m[35m[1m.[0m[1m_service[0m[35m[1m.[0m[1m_db[0m[35m[1m.[0m[1mexecute[0m[1m([0m
+    [36m                        │    └ [0m[36m[1m<test_langgraph_chat_sandbox_approval._Service object at 0x7dcff1b284d0>[0m
+    [36m                        └ [0m[36m[1m<cygnusx.application.services.chat.runtimes.langgraph_runtime.LangGraphChatRuntime object at 0x7dcff2ed7210>[0m
+
+[31m[1mAttributeError[0m:[1m '_Service' object has no attribute '_db'[0m
+[32m2026-10-27 02:17:01.924[0m | [31m[1mERROR   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [31m[1mTask exception was never retrieved
+future: <Task finished name='Task-28' coro=<_run_stream_until_approval.<locals>._collect() done, defined at /home/zj/zj_code_libarary/OmicHub/tests/e2e/test_langgraph_chat_sandbox_approval.py:138> exception=AttributeError("'_Service' object has no attribute '_db'")>[0m
+[33m[1mTraceback (most recent call last):[0m
+
+> File "[32m/home/zj/zj_code_libarary/OmicHub/tests/e2e/[0m[32m[1mtest_langgraph_chat_sandbox_approval.py[0m", line [33m139[0m, in [35m_collect[0m
+    [35m[1masync[0m [35m[1mfor[0m [1mchunk[0m [35m[1min[0m [1mruntime[0m[35m[1m.[0m[1m_stream_agent_chat_langgraph[0m[1m([0m
+    [36m                   │       └ [0m[36m[1m<function LangGraphChatRuntime._stream_agent_chat_langgraph at 0x7dd05df785e0>[0m
+    [36m                   └ [0m[36m[1m<cygnusx.application.services.chat.runtimes.langgraph_runtime.LangGraphChatRuntime object at 0x7dcff1dc4d10>[0m
+
+  File "[32m/home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/services/chat/runtimes/[0m[32m[1mlanggraph_runtime.py[0m", line [33m322[0m, in [35m_stream_agent_chat_langgraph[0m
+    [1mprovider_result[0m [35m[1m=[0m [35m[1mawait[0m [1mself[0m[35m[1m.[0m[1m_service[0m[35m[1m.[0m[1m_db[0m[35m[1m.[0m[1mexecute[0m[1m([0m
+    [36m                        │    └ [0m[36m[1m<test_langgraph_chat_sandbox_approval._Service object at 0x7dcff1baa450>[0m
+    [36m                        └ [0m[36m[1m<cygnusx.application.services.chat.runtimes.langgraph_runtime.LangGraphChatRuntime object at 0x7dcff1dc4d10>[0m
+
+[31m[1mAttributeError[0m:[1m '_Service' object has no attribute '_db'[0m
+[32m2026-10-27 02:17:01.925[0m | [31m[1mERROR   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [31m[1mTask exception was never retrieved
+future: <Task finished name='Task-35' coro=<_run_stream_until_approval.<locals>._collect() done, defined at /home/zj/zj_code_libarary/OmicHub/tests/e2e/test_langgraph_chat_sandbox_approval.py:138> exception=AttributeError("'_Service' object has no attribute '_db'")>[0m
+[33m[1mTraceback (most recent call last):[0m
+
+> File "[32m/home/zj/zj_code_libarary/OmicHub/tests/e2e/[0m[32m[1mtest_langgraph_chat_sandbox_approval.py[0m", line [33m139[0m, in [35m_collect[0m
+    [35m[1masync[0m [35m[1mfor[0m [1mchunk[0m [35m[1min[0m [1mruntime[0m[35m[1m.[0m[1m_stream_agent_chat_langgraph[0m[1m([0m
+    [36m                   │       └ [0m[36m[1m<function LangGraphChatRuntime._stream_agent_chat_langgraph at 0x7dd05df785e0>[0m
+    [36m                   └ [0m[36m[1m<cygnusx.application.services.chat.runtimes.langgraph_runtime.LangGraphChatRuntime object at 0x7dcff1bad490>[0m
+
+  File "[32m/home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/services/chat/runtimes/[0m[32m[1mlanggraph_runtime.py[0m", line [33m322[0m, in [35m_stream_agent_chat_langgraph[0m
+    [1mprovider_result[0m [35m[1m=[0m [35m[1mawait[0m [1mself[0m[35m[1m.[0m[1m_service[0m[35m[1m.[0m[1m_db[0m[35m[1m.[0m[1mexecute[0m[1m([0m
+    [36m                        │    └ [0m[36m[1m<test_langgraph_chat_sandbox_approval._Service object at 0x7dcff1bd4d90>[0m
+    [36m                        └ [0m[36m[1m<cygnusx.application.services.chat.runtimes.langgraph_runtime.LangGraphChatRuntime object at 0x7dcff1bad490>[0m
+
+[31m[1mAttributeError[0m:[1m '_Service' object has no attribute '_db'[0m
+[32m2026-10-27 02:17:01.926[0m | [31m[1mERROR   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [31m[1mTask exception was never retrieved
+future: <Task finished name='Task-48' coro=<_run_stream_until_approval.<locals>._collect() done, defined at /home/zj/zj_code_libarary/OmicHub/tests/e2e/test_langgraph_chat_sandbox_approval.py:138> exception=AttributeError("'_Service' object has no attribute '_db'")>[0m
+[33m[1mTraceback (most recent call last):[0m
+
+> File "[32m/home/zj/zj_code_libarary/OmicHub/tests/e2e/[0m[32m[1mtest_langgraph_chat_sandbox_approval.py[0m", line [33m139[0m, in [35m_collect[0m
+    [35m[1masync[0m [35m[1mfor[0m [1mchunk[0m [35m[1min[0m [1mruntime[0m[35m[1m.[0m[1m_stream_agent_chat_langgraph[0m[1m([0m
+    [36m                   │       └ [0m[36m[1m<function LangGraphChatRuntime._stream_agent_chat_langgraph at 0x7dd05df785e0>[0m
+    [36m                   └ [0m[36m[1m<cygnusx.application.services.chat.runtimes.langgraph_runtime.LangGraphChatRuntime object at 0x7dcff2d13b90>[0m
+
+  File "[32m/home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/services/chat/runtimes/[0m[32m[1mlanggraph_runtime.py[0m", line [33m322[0m, in [35m_stream_agent_chat_langgraph[0m
+    [1mprovider_result[0m [35m[1m=[0m [35m[1mawait[0m [1mself[0m[35m[1m.[0m[1m_service[0m[35m[1m.[0m[1m_db[0m[35m[1m.[0m[1mexecute[0m[1m([0m
+    [36m                        │    └ [0m[36m[1m<test_langgraph_chat_sandbox_approval._Service object at 0x7dcff1b70a10>[0m
+    [36m                        └ [0m[36m[1m<cygnusx.application.services.chat.runtimes.langgraph_runtime.LangGraphChatRuntime object at 0x7dcff2d13b90>[0m
+
+[31m[1mAttributeError[0m:[1m '_Service' object has no attribute '_db'[0m
+:213: in wait
+    await fut
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+tests/e2e/test_langgraph_chat_sandbox_approval.py:354: in test_supervised_timeout_records_audit_log
+    chunks, collector, _, holder = await _run_stream_until_approval(runtime, sandbox_execute)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/e2e/test_langgraph_chat_sandbox_approval.py:160: in _run_stream_until_approval
+    await asyncio.wait_for(approval_seen.wait(), timeout=15)
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:16:46.585[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+___________ test_always_allow_session_skip_and_user_resolution_audit ___________
+tests/e2e/test_langgraph_chat_sandbox_approval.py:409: in test_always_allow_session_skip_and_user_resolution_audit
+    chunks = [
+tests/e2e/test_langgraph_chat_sandbox_approval.py:409: in <listcomp>
+    chunks = [
+src/cygnusx/application/services/chat/runtimes/langgraph_runtime.py:322: in _stream_agent_chat_langgraph
+    provider_result = await self._service._db.execute(
+                            ^^^^^^^^^^^^^^^^^
+E   AttributeError: '_Service' object has no attribute '_db'
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:17:01.616[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+________________ test_auto_approve_skips_approval_gate_entirely ________________
+tests/e2e/test_langgraph_chat_sandbox_approval.py:490: in test_auto_approve_skips_approval_gate_entirely
+    async for chunk in runtime._stream_agent_chat_langgraph(
+src/cygnusx/application/services/chat/runtimes/langgraph_runtime.py:322: in _stream_agent_chat_langgraph
+    provider_result = await self._service._db.execute(
+                            ^^^^^^^^^^^^^^^^^
+E   AttributeError: '_Service' object has no attribute '_db'
+---------------------------- Captured stdout setup -----------------------------
+[32m2026-10-27 02:17:01.629[0m | [34m[1mDEBUG   [0m | [36mapp[0m | [36mlogging[0m:[36mcallHandlers[0m:[36m1706[0m | [34m[1mUsing selector: EpollSelector[0m
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/_pytest/config/__init__.py:1345
+  /home/zj/zj_code_libarary/OmicHub/.venv/lib/python3.11/site-packages/_pytest/config/__init__.py:1345: PytestAssertRewriteWarning: Module already imported so cannot be rewritten; anyio
+    self._mark_plugins_for_rewrite(hook, disable_autoload)
+
+src/cygnusx/application/schemas/ai_provider.py:36
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/schemas/ai_provider.py:36: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AIProviderConfigDTO(AIProviderConfigBaseDTO):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_project_lifecycle.py::test_capability_owner_permissions_and_effective_export_dependency
+FAILED tests/unit/test_provider_retry_policy.py::test_litellm_embedding_routes_custom_openai_endpoint
+FAILED tests/unit/test_report_snapshot.py::test_database_adapter_is_owner_scoped_and_never_writes
+FAILED tests/unit/test_reproducible_report_phase1.py::test_retry_budget_is_terminal_without_recollecting
+FAILED tests/unit/test_research_tool_pack_binding.py::test_research_pack_binds_database_mcp_presets
+FAILED tests/unit/test_studio_approval.py::test_approval_required_tools_cover_write_and_execute
+FAILED tests/unit/test_studio_manager.py::test_container_mounts_match - TypeE...
+FAILED tests/unit/tools/test_tool_error_codes.py::test_requires_confirm_carries_confirmation_code
+FAILED tests/unit/tools/test_tool_error_codes.py::test_control_params_not_reported_as_ignored
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_approve_then_execute
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_reject_blocks_execution
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_edited_args_execute
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_no_permission_mode_keeps_current_behavior
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_timeout_records_audit_log
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_always_allow_session_skip_and_user_resolution_audit
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_auto_approve_skips_approval_gate_entirely
+================== 16 failed, 2 warnings in 60.83s (0:01:00) ===================

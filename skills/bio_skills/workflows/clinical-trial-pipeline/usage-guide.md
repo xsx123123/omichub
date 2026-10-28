@@ -98,16 +98,16 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- clinical-biostatistics/cdisc-data-handling - CDISC SDTM/ADaM, Pinnacle 21, ADTTE conventions
-- clinical-biostatistics/logistic-regression - Marginal vs conditional, g-computation, Brant test, Firth
-- clinical-biostatistics/categorical-tests - Boschloo, mid-p McNemar, Wilson/MN CIs
-- clinical-biostatistics/effect-measures - NNT Bender 2002, profile likelihood, modified Poisson
-- clinical-biostatistics/subgroup-analysis - Causal forests, STEPP, EXNEX, Yadlowsky RATE
-- clinical-biostatistics/trial-reporting - ICH E9(R1) 5 estimand strategies, CONSORT 2025
-- clinical-biostatistics/missing-data-sensitivity - MMRM/KR, J2R/CR/CIR, Permutt tipping point
-- clinical-biostatistics/multiplicity-graphical - Bretz-Maurer graphs, closed-testing admissibility
-- clinical-biostatistics/survival-analysis - Cox/RMST/Fine-Gray/MaxCombo/recurrent events
-- clinical-biostatistics/power-and-sample-size - Schoenfeld/Lakatos, NI margin, MCID
+- references/clinical-biostatistics--cdisc-data-handling.md - CDISC SDTM/ADaM, Pinnacle 21, ADTTE conventions
+- references/clinical-biostatistics--logistic-regression.md - Marginal vs conditional, g-computation, Brant test, Firth
+- references/clinical-biostatistics--categorical-tests.md - Boschloo, mid-p McNemar, Wilson/MN CIs
+- references/clinical-biostatistics--effect-measures.md - NNT Bender 2002, profile likelihood, modified Poisson
+- references/clinical-biostatistics--subgroup-analysis.md - Causal forests, STEPP, EXNEX, Yadlowsky RATE
+- references/clinical-biostatistics--trial-reporting.md - ICH E9(R1) 5 estimand strategies, CONSORT 2025
+- references/clinical-biostatistics--missing-data-sensitivity.md - MMRM/KR, J2R/CR/CIR, Permutt tipping point
+- references/clinical-biostatistics--multiplicity-graphical.md - Bretz-Maurer graphs, closed-testing admissibility
+- references/clinical-biostatistics--survival-analysis.md - Cox/RMST/Fine-Gray/MaxCombo/recurrent events
+- references/clinical-biostatistics--power-and-sample-size.md - Schoenfeld/Lakatos, NI margin, MCID
 - clinical-biostatistics/adaptive-designs - Group-sequential, SSR, platform trials
 - clinical-biostatistics/bayesian-trials - BOIN, MAP priors, RWE
 - reporting/rmarkdown-reports - Formatted statistical report generation

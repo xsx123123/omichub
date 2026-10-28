@@ -1,0 +1,31 @@
+{
+  "productionApp": true,
+  "defaultCollapsed": true,
+  "manualExpandPreserved": true,
+  "mobileDrawer": true,
+  "counters": {
+    "capabilities": 4,
+    "sessions": 1,
+    "messages": 1,
+    "streams": 1,
+    "titles": 1,
+    "prematureAbort": false
+  },
+  "baseline": {
+    "sessions": 1,
+    "messages": 1
+  },
+  "trace": {
+    "started": true,
+    "emptyFrames": 0,
+    "paths": [
+      "/treasure-mouse",
+      "/treasure-mouse",
+      "/treasure-mouse",
+      "/treasure-mouse",
+      "/treasure-mouse",
+      "/treasure-mouse"
+    ]
+  },
+  "errors": []
+}

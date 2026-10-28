@@ -23,7 +23,7 @@ import { usePresentation } from '../presentation-context';
 export function FullPresentation({ props }: { props: TreasureIslandProps }): React.ReactElement {
   const { t } = useI18n();
   const presentation = usePresentation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const [board, setBoard] = useState(false);
   const [stats, setStats] = useState(false);
@@ -115,8 +115,8 @@ export function FullPresentation({ props }: { props: TreasureIslandProps }): Rea
     {props.paperWorkspace?.open && props.onPaperAction ? <PaperWorkspace view={props.paperWorkspace} action={props.onPaperAction} /> : null}
     <TreasureMouse event={petEvent} startQuiet />
     {petPanel ? <><div className="fixed inset-0 z-[60]" onClick={() => setPetPanel(false)} /><div className="fixed right-3 top-14 z-[60]"><PetSettingsPanel onClose={() => setPetPanel(false)} /></div></> : null}
-    <Leaderboard open={board} onClose={() => setBoard(false)} />
-    <UsageStatsDialog open={stats} onClose={() => setStats(false)} />
+    <Leaderboard platform open={board} onClose={() => setBoard(false)} />
+    <UsageStatsDialog platform open={stats} onClose={() => setStats(false)} />
     {about ? <div role="dialog" aria-modal="true" aria-label={t('header.about')} className="fixed inset-0 z-50 overflow-auto bg-background" onKeyDown={event => { if (event.key === 'Escape') setAbout(false); }}><button className="absolute right-3 top-3 rounded p-2 text-muted-foreground" aria-label={t('lit.close')} onClick={() => setAbout(false)}><X size={18} /></button><AboutPresentation onBack={() => setAbout(false)} theme={props.context.theme} onThemeChange={() => props.onThemeChange?.()} /></div> : null}
   </div>;
 }

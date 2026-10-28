@@ -69,6 +69,12 @@ function dismissHint() {
 }
 
 const inputValue = ref('')
+const isComposing = ref(false)
+let lastCompositionEndTime = 0
+function onCompositionEnd() {
+  isComposing.value = false
+  lastCompositionEndTime = Date.now()
+}
 const listEl = ref<HTMLElement | null>(null)
 
 // 流式回复期间输入框已有内容时才提示"消息将排队等待"
@@ -128,6 +134,11 @@ function onSend() {
 
 function onEnter(e: KeyboardEvent) {
   if (e.key !== 'Enter' || e.shiftKey) return
+  // Candidate confirmation can arrive as Enter even after compositionend.
+  if (
+    isComposing.value || e.isComposing || e.keyCode === 229 ||
+    Date.now() - lastCompositionEndTime < 200
+  ) return
   e.preventDefault()
   onSend()
 }
@@ -335,6 +346,8 @@ function errorSummary(error: string): string {
               :autosize="{ minRows: 1, maxRows: 6 }"
               placeholder="输入问题，Enter 发送，Shift+Enter 换行"
               @keydown="onEnter"
+              @compositionstart="isComposing = true"
+              @compositionend="onCompositionEnd"
             />
             <NTooltip v-if="store.isStreaming">
               <template #trigger>

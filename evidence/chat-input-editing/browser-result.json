@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "Treasure welcome: insertion, replacement, caret, deletion, Chinese text, multiline",
+    "Treasure conversation: insertion, replacement, caret, deletion, Chinese text, multiline",
+    "Treasure: unrelated render preserves selection; external prefill; CDP composition in middle",
+    "AI assistant shared KimiChatInput: insertion, replacement, caret, deletion, Chinese text, multiline",
+    "AI studio shared KimiChatInput: insertion, replacement, caret, deletion, Chinese text, multiline",
+    "AI sidebar: insertion, replacement, caret, deletion, Chinese text, multiline",
+    "AI sidebar: IME Enter guarded; normal Enter sends"
+  ],
+  "errors": []
+}

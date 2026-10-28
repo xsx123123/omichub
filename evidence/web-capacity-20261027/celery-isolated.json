@@ -1,0 +1,59 @@
+{
+  "queue": "webperf_6b9240ae43b9",
+  "worker_concurrency": 4,
+  "prefetch_multiplier": 1,
+  "max_tasks_per_child": 10,
+  "synthetic_service_ms": 10,
+  "stages": [
+    {
+      "users": 10,
+      "submitted": 100,
+      "completed": 100,
+      "errors": [],
+      "elapsed_s": 0.847,
+      "completed_tasks_per_s": 118.0,
+      "end_to_end_p95_ms": 237.96,
+      "publish_to_start_p95_ms": 218.06,
+      "service_p95_ms": 10.07,
+      "max_sampled_queue_depth": 6
+    },
+    {
+      "users": 20,
+      "submitted": 200,
+      "completed": 200,
+      "errors": [],
+      "elapsed_s": 3.641,
+      "completed_tasks_per_s": 54.93,
+      "end_to_end_p95_ms": 370.66,
+      "publish_to_start_p95_ms": 352.36,
+      "service_p95_ms": 10.07,
+      "max_sampled_queue_depth": 16
+    },
+    {
+      "users": 50,
+      "submitted": 500,
+      "completed": 500,
+      "errors": [],
+      "elapsed_s": 10.054,
+      "completed_tasks_per_s": 49.73,
+      "end_to_end_p95_ms": 752.38,
+      "publish_to_start_p95_ms": 735.33,
+      "service_p95_ms": 10.07,
+      "max_sampled_queue_depth": 46
+    },
+    {
+      "users": 100,
+      "submitted": 1000,
+      "completed": 1000,
+      "errors": [],
+      "elapsed_s": 10.217,
+      "completed_tasks_per_s": 97.88,
+      "end_to_end_p95_ms": 1155.45,
+      "publish_to_start_p95_ms": 1138.06,
+      "service_p95_ms": 10.07,
+      "max_sampled_queue_depth": 96
+    }
+  ],
+  "scope": "synthetic broker/worker/result round trip, excludes Web submission and business tasks",
+  "worker_stopped": true
+}

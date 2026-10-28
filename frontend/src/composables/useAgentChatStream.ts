@@ -13,6 +13,8 @@ import type { PlanAgentSummary, PlanConfirmation } from '@/components/ai-chat/ty
 
 export interface AgentChatStreamOptions {
   agentId: string
+  /** Optional first-party SSE route for a server-bound, capability-restricted session. */
+  endpoint?: string
   messages: { role: string; content: string; metadata?: Record<string, unknown> }[]
   sessionId?: string
   /** 当前会话运行模式；Studio 模式会由后端装配工作区工具与上下文。 */
@@ -606,7 +608,7 @@ export function useAgentChatStream() {
 
       try {
         const token = localStorage.getItem('access_token')
-        const response = await fetch('/api/v1/chat/stream', {
+        const response = await fetch(options.endpoint || '/api/v1/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

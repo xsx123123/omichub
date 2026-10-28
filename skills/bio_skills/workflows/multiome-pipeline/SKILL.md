@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-multiome-pipeline
 description: Orchestrates the end-to-end 10x Multiome (paired scRNA + scATAC) pipeline from Cell Ranger ARC output to a jointly-embedded, annotated object, chaining per-modality QC, AMULET fragment-based ATAC doublet detection, per-modality normalization (RNA SCT/PCA; ATAC TF-IDF/LSI), WNN (or MultiVI) integration, joint clustering, RNA-based annotation, and LinkPeaks peak-to-gene linking. Use when enforcing the shared cell-barcode intersection between modalities (cellranger-ARC not -atac), keeping per-modality QC/doublets before the joint embedding, dropping the depth-correlated LSI component, annotating identity from RNA (ATAC is regulatory state), treating peak-to-gene links as correlational hypotheses, or aggregating to pseudobulk for cross-condition DE. Hands mechanism to the single-cell and atac-seq component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 10x Multiome 分析流程
+display_name_en: 10x Multiome Pipeline
+description_zh: >-
+  从 Cell Ranger ARC 输出到联合嵌入与注释的 10x Multiome 全流程，涵盖分模态质控、AMULET 双联体检测、RNA SCT 与 ATAC TF-IDF、WNN 整合、联合聚类、RNA 注释与 LinkPeaks 峰-基因连接。
+description_en: >-
+  Orchestrates the end-to-end 10x Multiome (paired scRNA + scATAC) pipeline from Cell Ranger ARC output to a jointly-embedded, annotated object, chaining per-modality QC, AMULET fragment-based ATAC doublet detection, per-modality normalization (RNA SCT/PCA; ATAC TF-IDF/LSI), WNN (or MultiVI) integration, joint clustering, RNA-based annotation, and LinkPeaks peak-to-gene linking. Use when enforcing the shared cell-barcode intersection between modalities (cellranger-ARC not -atac), keeping per-modality QC/doublets before the joint embedding, dropping the depth-correlated LSI component, annotating identity from RNA (ATAC is regulatory state), treating peak-to-gene links as correlational hypotheses, or aggregating to pseudobulk for cross-condition DE. Hands mechanism to the single-cell and atac-seq component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 10x Multiome 数据做 RNA 和 ATAC 联合分析"
+  - "帮我检查两种模态的细胞条形码交集"
+  - "构建联合嵌入并注释细胞类型"
+examples_en:
+  - "Analyze my 10x Multiome data jointly across RNA and ATAC"
+  - "Check that both modalities share the same cell barcodes"
+  - "Build the joint embedding and annotate cell types"
 tool_type: r
 primary_tool: Seurat
 goal_approach_exempt: true
@@ -52,12 +68,12 @@ This is a workflow skill: it owns the chaining decisions and hand-offs, not the 
 ## Pipeline orchestration: the joint-modality decisions that make or break the result
 
 Multiome's defining feature is that RNA and ATAC are measured in the SAME nucleus, so the two assays share one barcode universe and must be reconciled, not analyzed independently. The orchestration decisions:
-- The paired-cell anchor is the whole point: keep only barcodes that pass QC in BOTH modalities. RNA and ATAC QC use different metrics (RNA: gene count, mito %; ATAC: TSS enrichment, nucleosome signal, fragment count) and are computed per modality, but the surviving cell set is their intersection. cellranger-arc (not cellranger-atac) produces the paired barcodes; their universes differ. See single-cell/preprocessing and single-cell/scatac-analysis.
-- Per-modality QC and doublet detection run BEFORE the joint embedding. ATAC doublets are missed by RNA-based callers (scDblFinder/Scrublet, see single-cell/doublet-detection) and need a fragment-based detector such as AMULET (see single-cell/scatac-analysis); resolving them after WNN lets fake intermediate states drive the joint clustering.
+- The paired-cell anchor is the whole point: keep only barcodes that pass QC in BOTH modalities. RNA and ATAC QC use different metrics (RNA: gene count, mito %; ATAC: TSS enrichment, nucleosome signal, fragment count) and are computed per modality, but the surviving cell set is their intersection. cellranger-arc (not cellranger-atac) produces the paired barcodes; their universes differ. See references/single-cell--preprocessing.md and references/single-cell--scatac-analysis.md.
+- Per-modality QC and doublet detection run BEFORE the joint embedding. ATAC doublets are missed by RNA-based callers (scDblFinder/Scrublet, see single-cell/doublet-detection) and need a fragment-based detector such as AMULET (see references/single-cell--scatac-analysis.md); resolving them after WNN lets fake intermediate states drive the joint clustering.
 - Drop the depth-correlated LSI component before joint analysis. The first ATAC LSI/SVD component usually (not always) captures sequencing depth rather than biology; check with DepthCor and exclude whichever component correlates with depth (commonly #1, hence dims 2:30 in WNN). Forgetting this lets depth dominate the ATAC contribution to the joint graph.
-- WNN vs a generative joint embedding is a real choice. Seurat/Signac WNN learns a per-cell modality weight on precomputed PCA + LSI and is the default when both modalities are well processed; MultiVI (scvi-tools) jointly models RNA + ATAC counts end-to-end and handles batch and mosaic (RNA-only or ATAC-only) cells better. WNN cannot integrate cells missing a modality. See single-cell/multimodal-integration; verify current best practice against installed docs.
-- Embed (WNN) then cluster then annotate, and annotate from RNA primarily. Gene-activity scores derived from ATAC are an approximation of expression, so cell-type labels come from RNA markers; ATAC informs the regulatory state, not the identity call. See single-cell/clustering, single-cell/markers-annotation, single-cell/cell-annotation.
-- Peak-to-gene linking is correlational, not causal. LinkPeaks correlates peak accessibility with gene expression across cells within a window; a link is a hypothesis to validate, not a proven enhancer-target pair. For genome-wide enhancer-gene mapping use ABC/ENCODE-rE2G. See atac-seq/co-accessibility and atac-seq/enhancer-gene-linking.
+- WNN vs a generative joint embedding is a real choice. Seurat/Signac WNN learns a per-cell modality weight on precomputed PCA + LSI and is the default when both modalities are well processed; MultiVI (scvi-tools) jointly models RNA + ATAC counts end-to-end and handles batch and mosaic (RNA-only or ATAC-only) cells better. WNN cannot integrate cells missing a modality. See references/single-cell--multimodal-integration.md; verify current best practice against installed docs.
+- Embed (WNN) then cluster then annotate, and annotate from RNA primarily. Gene-activity scores derived from ATAC are an approximation of expression, so cell-type labels come from RNA markers; ATAC informs the regulatory state, not the identity call. See references/single-cell--clustering.md, single-cell/markers-annotation, single-cell/cell-annotation.
+- Peak-to-gene linking is correlational, not causal. LinkPeaks correlates peak accessibility with gene expression across cells within a window; a link is a hypothesis to validate, not a proven enhancer-target pair. For genome-wide enhancer-gene mapping use ABC/ENCODE-rE2G. See references/atac-seq--co-accessibility.md and atac-seq/enhancer-gene-linking.
 - Cross-condition questions still need pseudobulk and separate composition testing. Condition DE on either modality aggregates RAW counts per sample x cell type (cells-as-replicates is pseudoreplication, Squair 2021); proportion shifts between conditions are tested separately and can masquerade as DE. See single-cell/differential-abundance and differential-expression/deseq2-basics.
 
 ## Workflow Overview
@@ -178,7 +194,7 @@ DepthCor(seurat_obj)
 
 ## Step 3b: Doublet detection (per modality, BEFORE WNN)
 
-Remove doublets before the joint embedding, or fake intermediate states drive the joint clustering. RNA-based callers (scDblFinder/Scrublet) MISS ATAC doublets -- ATAC needs a fragment-based caller (AMULET), run on the same nuclei. Detect per modality, drop the union of doublets, then build WNN. Mechanism: single-cell/doublet-detection (RNA) and single-cell/scatac-analysis (AMULET).
+Remove doublets before the joint embedding, or fake intermediate states drive the joint clustering. RNA-based callers (scDblFinder/Scrublet) MISS ATAC doublets -- ATAC needs a fragment-based caller (AMULET), run on the same nuclei. Detect per modality, drop the union of doublets, then build WNN. Mechanism: single-cell/doublet-detection (RNA) and references/single-cell--scatac-analysis.md (AMULET).
 
 ## Step 4: Weighted Nearest Neighbors (WNN)
 
@@ -340,19 +356,19 @@ cat('Clusters:', length(unique(seurat_obj$seurat_clusters)), '\n')
 
 ## Related Skills
 
-- single-cell/data-io - Loading 10X, h5ad, RDS, and h5mu formats
-- single-cell/preprocessing - Per-modality QC and normalization choice
+- references/single-cell--data-io.md - Loading 10X, h5ad, RDS, and h5mu formats
+- references/single-cell--preprocessing.md - Per-modality QC and normalization choice
 - single-cell/doublet-detection - RNA-based and hashing doublet removal
-- single-cell/clustering - Resolution sweep and cluster validation on the joint graph
+- references/single-cell--clustering.md - Resolution sweep and cluster validation on the joint graph
 - single-cell/markers-annotation - Marker discovery, manual labeling, and pseudobulk condition DE
 - single-cell/cell-annotation - Automated reference-based label transfer from the RNA modality
 - single-cell/differential-abundance - Test whether cell-type proportions shifted between conditions
-- single-cell/multimodal-integration - WNN, totalVI/MultiVI, and MOFA joint-embedding details
-- single-cell/scatac-analysis - ATAC-specific processing, LSI, gene activity, and AMULET fragment-based doublet detection
+- references/single-cell--multimodal-integration.md - WNN, totalVI/MultiVI, and MOFA joint-embedding details
+- references/single-cell--scatac-analysis.md - ATAC-specific processing, LSI, gene activity, and AMULET fragment-based doublet detection
 - differential-expression/deseq2-basics - Pseudobulk condition DE engine for aggregated counts
-- atac-seq/single-cell-atac - Signac / ArchR / SnapATAC2 ecosystem decision; AMULET; cellranger-arc
-- atac-seq/co-accessibility - Cicero / ArchR getCoAccessibility for cis-regulatory inference
+- references/atac-seq--single-cell-atac.md - Signac / ArchR / SnapATAC2 ecosystem decision; AMULET; cellranger-arc
+- references/atac-seq--co-accessibility.md - Cicero / ArchR getCoAccessibility for cis-regulatory inference
 - atac-seq/enhancer-gene-linking - ABC / ENCODE-rE2G for enhancer-gene mapping
-- atac-seq/motif-deviation - chromVAR for per-cell TF motif activity
+- references/atac-seq--motif-deviation.md - chromVAR for per-cell TF motif activity
 - atac-seq/footprinting - scprinter for sc footprinting
 - workflows/grn-pipeline - Downstream: the paired object feeds SCENIC+ enhancer-GRN inference (Path B)

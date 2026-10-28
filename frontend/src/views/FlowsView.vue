@@ -217,7 +217,7 @@ onMounted(fetchFlows)
         <NButton v-if="activeType" class="header-btn-secondary" @click="router.push('/flows')">
           查看全部流程
         </NButton>
-        <NButton class="header-btn-secondary" tag="a" href="https://github.com/xsx123123/omichub" target="_blank" rel="noopener noreferrer">
+        <NButton class="header-btn-secondary" tag="a" href="https://github.com/CygnusX-Labs" target="_blank" rel="noopener noreferrer">
           <template #icon><component :is="CodeSlashOutline" /></template>
           GitHub 开源代码
         </NButton>

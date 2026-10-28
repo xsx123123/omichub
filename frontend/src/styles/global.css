@@ -7,8 +7,15 @@
   --motion-quick: 140ms;
   --motion-standard: 220ms;
   --motion-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --card-state-duration: 300ms;
-  --card-state-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --card-state-duration: 200ms;
+  --card-state-easing: ease;
+  --card-selected-background: linear-gradient(135deg, #f5f7ff 0%, #eef1ff 100%);
+  --card-selected-border: #c7d2fe;
+  --card-selected-accent: #6366f1;
+  --card-indicator-inset: 6px;
+  --card-selected-arrow: #4f6ef7;
+  --card-default-arrow: #9ca3af;
+  --card-hover-background: #f8faff;
   /* ===== 火山方舟 / Arco Design 色彩体系 ===== */
   --arco-primary: var(--brand-primary);
   --arco-primary-hover: var(--brand-primary-hover);
@@ -279,63 +286,69 @@ body {
   background-color: var(--neutral-card);
 }
 
-:where(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card) {
+/* Shared card states: no hover marker; the full 4px selected marker stays inside the clip. */
+:is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card) {
   position: relative;
-  transition:
-    background-color var(--card-state-duration) var(--card-state-easing),
-    border-color var(--card-state-duration) var(--card-state-easing),
-    box-shadow var(--card-state-duration) var(--card-state-easing),
-    transform var(--card-state-duration) var(--card-state-easing);
+  transition: transform var(--card-state-duration) var(--card-state-easing),
+    opacity var(--card-state-duration) var(--card-state-easing),
+    background var(--card-state-duration) var(--card-state-easing),
+    box-shadow var(--card-state-duration) var(--card-state-easing);
 }
 
-:where(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card)::before {
+:is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card)::before {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 8px;
+  left: var(--card-indicator-inset);
+  top: 12px;
+  bottom: 12px;
   width: 4px;
-  height: 32px;
-  border-radius: 999px;
-  background: var(--arco-primary);
+  border-radius: 2px;
+  background: var(--card-selected-accent);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-50%) scaleY(0.45);
-  transform-origin: center;
-  transition:
-    opacity var(--card-state-duration) var(--card-state-easing),
-    transform var(--card-state-duration) var(--card-state-easing);
+  transition: opacity var(--card-state-duration) var(--card-state-easing);
 }
 
-:where(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):not(:is(.is-selected, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [data-selected='true'])):hover {
-  /* 在卡片自身底色上叠色（不透明），避免替换为透明色导致悬停时透出背后内容 */
-  background-color: color-mix(in srgb, var(--arco-primary, #4080ff) 4%, var(--n-color, var(--neutral-card, #fff)));
-  border-color: color-mix(in srgb, var(--arco-primary, #4080ff) 14%, var(--n-border-color, var(--neutral-border)));
+@media (hover: hover) {
+  :root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):not(:is(.is-selected, .is-highlighted, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [aria-pressed='true'], [data-selected='true'], .cygnusx-selectable-card:active)):hover {
+    background: var(--card-hover-background);
+  }
 }
 
-:where(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):not(:is(.is-selected, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [data-selected='true'])):hover::before {
-  opacity: 0.28;
-  transform: translateY(-50%) scaleY(0.72);
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):not(:is(.is-selected, .is-highlighted, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [aria-pressed='true'], [data-selected='true'], .cygnusx-selectable-card:active)):hover {
+    transform: translateY(-1px);
+  }
 }
 
-:where(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):is(.is-selected, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [data-selected='true']) {
-  background-color: color-mix(in srgb, var(--arco-primary, #4080ff) 7%, var(--n-color, var(--neutral-card, #fff)));
-  border-color: color-mix(in srgb, var(--arco-primary, #4080ff) 20%, var(--n-border-color, var(--neutral-border)));
-  box-shadow: inset 0 0 0 1px var(--arco-primary);
+:root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):is(.is-selected, .is-highlighted, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [aria-pressed='true'], [data-selected='true'], .cygnusx-selectable-card:active) {
+  background: var(--card-selected-background);
+  border: 1px solid var(--card-selected-border);
+  /* The existing NCard/Arco base fixes border-left with !important. */
+  border-left-color: var(--card-selected-border) !important;
+  box-shadow: var(--shadow-card);
+  transform: none;
 }
 
-:where(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):is(.is-selected, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [data-selected='true'])::before {
-  opacity: 1;
-  transform: translateY(-50%) scaleY(1);
+:root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):is(.is-selected, .is-highlighted, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [aria-pressed='true'], [data-selected='true'], .cygnusx-selectable-card:active)::before { opacity: 1; }
+:root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card) .card-state-arrow { color: var(--card-default-arrow); }
+:root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):is(.is-selected, .is-highlighted, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [aria-pressed='true'], [data-selected='true'], .cygnusx-selectable-card:active) .card-state-arrow { color: var(--card-selected-arrow); }
+
+.cygnusx-selectable-card { overflow: hidden; }
+.cygnusx-selectable-card:focus-visible { outline: 2px solid var(--card-selected-accent); outline-offset: 3px; }
+
+:root[data-theme="dark"] {
+  --card-hover-background: var(--surface-highlight);
+  --card-selected-background: linear-gradient(135deg, var(--surface-highlight), #282d4e);
+  --card-selected-border: #626bb5;
+  --card-selected-arrow: #9aaeff;
 }
 
-:root[data-theme="dark"] :where(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):not(:is(.is-selected, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [data-selected='true'])):hover {
-  background-color: var(--surface-highlight);
-  border-color: var(--border-default);
-}
-
-:root[data-theme="dark"] :where(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):is(.is-selected, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [data-selected='true']) {
-  background-color: var(--surface-highlight);
-  border-color: var(--border-focus);
+@media (prefers-reduced-motion: reduce) {
+  :root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card),
+  :root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card)::before { transition: none; }
+  :root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):hover,
+  :root :is(.n-card, .arco-card, .cygnusx-card, .cygnusx-selectable-card):active { transform: none; }
 }
 
 /* 弹窗 / 抽屉内的卡片必须保持不透明，并禁用全局卡片的左侧装饰条
@@ -697,7 +710,7 @@ body {
 }
 
 /* Native-feeling response without changing the visual language. */
-:where(.n-button, button, [role="button"]):not(:disabled):active {
+:where(.n-button, button, [role="button"]):not(:disabled):not(.cygnusx-selectable-card):active {
   transform: scale(0.97);
   transition-duration: 100ms !important;
 }

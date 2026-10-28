@@ -18,10 +18,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import inspect
+import itertools
 import json
 import logging
 import time
+from collections import OrderedDict
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -101,10 +104,118 @@ _OVERDRIVE_WORKSPACE_TOOL_NAMES = frozenset(
     }
 )
 
+# --- 任务能力契约（优化方案 §3.1）---
+# 子任务可声明 requires（能力名单），prepare 阶段按装配后的有效工具求交；
+# 缺失能力在 spawn 前即 blocked/CAPABILITY_MISSING，严禁静默成功。
+CAPABILITY_RESEARCH_RETRIEVE = "research.retrieve"
+CAPABILITY_WORKSPACE_READ = "workspace.read"
+CAPABILITY_PYTHON_EXECUTE = "python.execute"
+CAPABILITY_ARTIFACT_WRITE = "artifact.write"
+CAPABILITY_ARTIFACT_PUBLISH = "artifact.publish"
+CAPABILITY_APPROVAL_REQUEST = "approval.request"
+
+_KNOWN_CAPABILITIES = frozenset(
+    {
+        CAPABILITY_RESEARCH_RETRIEVE,
+        CAPABILITY_WORKSPACE_READ,
+        CAPABILITY_PYTHON_EXECUTE,
+        CAPABILITY_ARTIFACT_WRITE,
+        CAPABILITY_ARTIFACT_PUBLISH,
+        CAPABILITY_APPROVAL_REQUEST,
+    }
+)
+
+# capability → 满足该能力所需的有效工具（任一命中即视为授予）
+_CAPABILITY_SATISFY_TOOLS: dict[str, frozenset[str]] = {
+    CAPABILITY_RESEARCH_RETRIEVE: frozenset({"knowledge_search", "web_search"}),
+    CAPABILITY_WORKSPACE_READ: frozenset({"workspace_read", "workspace_list"}),
+    CAPABILITY_PYTHON_EXECUTE: frozenset({"sandbox_execute"}),
+    CAPABILITY_ARTIFACT_WRITE: frozenset({"workspace_write", "workspace_edit"}),
+    CAPABILITY_ARTIFACT_PUBLISH: frozenset({"artifact_register"}),
+    CAPABILITY_APPROVAL_REQUEST: frozenset({"ask_user"}),
+}
+# outcome evaluator 判定"真实执行/产物"的收据工具族
+_EXECUTION_RECEIPT_TOOLS = frozenset({"sandbox_execute"})
+_ARTIFACT_WRITE_RECEIPT_TOOLS = frozenset({"workspace_write", "workspace_edit"})
+_ARTIFACT_PUBLISH_RECEIPT_TOOLS = frozenset({"artifact_register"})
+
 # 子任务正式产物会落盘，不能再用 8,000 字截断代码、研究计划等长交付物。
 # 20K tokens 的英文/代码输出可能超过 40K 字符，保留足够空间让 Agent 配置生效。
 _ANSWER_CAP_CHARS = 100_000
 _MAX_LENGTH_CONTINUATIONS = 2
+# 父轮回灌 llm_payload 的预算（chat_service 对 fan-out 结果有 12,000 字护栏，
+# 预留骨架余量）：超出预算的长正文降级为「短摘要 + detail_ref 引用」。
+_LLM_PAYLOAD_BUDGET_CHARS = 10_000
+# 降级后随父上下文回灌的单路摘要长度
+_DETAIL_SUMMARY_CHARS = 500
+# 单路子结果落盘为 detail_ref 的最小正文长度（低于此直接随信封携带）
+_DETAIL_PERSIST_MIN_CHARS = 2_000
+# 幂等重放缓存：R04 相同 request_key+payload 重放返回原 run 结果；R05 同 key 异 payload 报冲突。
+# 进程内实现（多 worker 部署需共享存储，见 docs/subagents/01_current_runtime_audit.md §6）。
+_REPLAY_CACHE_MAX_ENTRIES = 128
+_REPLAY_CACHE_TTL_SECONDS = 1_800.0
+_REQUEST_KEY_MAX_CHARS = 128
+# 单子任务发布到父工作区的产物文件数上限（超出保留在子 workdir，manifest 记 truncated）
+_PUBLISH_MAX_FILES_PER_CHILD = 50
+
+
+class _FanoutReplayCache:
+    """fan-out 结果重放缓存：(scope, key) → (payload_digest, envelope, stored_at)。"""
+
+    def __init__(self, *, max_entries: int, ttl_seconds: float) -> None:
+        self._max_entries = max_entries
+        self._ttl = ttl_seconds
+        self._entries: OrderedDict[tuple[str, str], tuple[str, dict[str, Any], float]] = (
+            OrderedDict()
+        )
+
+    def lookup(self, scope: str, key: str) -> tuple[str, dict[str, Any]] | None:
+        entry = self._entries.get((scope, key))
+        if entry is None:
+            return None
+        _digest, envelope, stored_at = entry
+        if time.monotonic() - stored_at > self._ttl:
+            del self._entries[(scope, key)]
+            return None
+        self._entries.move_to_end((scope, key))
+        return _digest, envelope
+
+    def store(self, scope: str, key: str, digest: str, envelope: dict[str, Any]) -> None:
+        self._entries[(scope, key)] = (digest, envelope, time.monotonic())
+        self._entries.move_to_end((scope, key))
+        while len(self._entries) > self._max_entries:
+            self._entries.popitem(last=False)
+
+
+_replay_cache = _FanoutReplayCache(
+    max_entries=_REPLAY_CACHE_MAX_ENTRIES, ttl_seconds=_REPLAY_CACHE_TTL_SECONDS
+)
+
+
+def _canonical_payload_digest(prepared: FanoutPrepared, context_summary: str) -> str:
+    """fan-out 请求规范化 digest：context + 全部子任务字段，任意差异即不同 payload。"""
+    canonical = {
+        "context_summary": (context_summary or "").strip(),
+        "tasks": [
+            {
+                key: child.item.get(key)
+                for key in (
+                    "agent_id",
+                    "task",
+                    "requires",
+                    "model_id",
+                    "workspace_access",
+                    "timeout_seconds",
+                    "deep_thinking",
+                    "task_id",
+                )
+                if child.item.get(key) is not None
+            }
+            for child in prepared.children
+        ],
+    }
+    blob = json.dumps(canonical, ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
 def _has_unfinished_json_fence(text: str) -> bool:
@@ -128,6 +239,8 @@ _CONTEXT_SUMMARY_MAX_CHARS = 12000
 # 真正的死循环仍会被 max_rounds 兜底终止。
 _MAX_DUPLICATE_TOOL_CALLS = 100
 _MAX_REPEATED_TOOL_RESULTS = 2
+# 单子任务随结果透出的工具回执上限（超出保留最近 N 条）
+_MAX_TOOL_RECEIPTS = 20
 
 _WEB_SEARCH_TOOL_SCHEMA: dict[str, Any] = {
     "type": "function",
@@ -203,15 +316,18 @@ def _collaboration_packet(*, answer: str | None, error: str | None, status: str)
 def subagent_child_event_metadata(event: dict[str, Any]) -> dict[str, Any] | None:
     """把子循环 worker 事件映射为 chat SSE `subagents` chunk 的 metadata。
 
-    仅透出有 UI 语义的相位（started/retrying/finished）；heartbeat 等高频或
-    内部事件返回 None，由调用方丢弃。
+    仅透出有 UI 语义的相位（queued/started/retrying/finished）；heartbeat 等高频或
+    内部事件返回 None，由调用方丢弃。seq 为 run 内单调序号，供前端乱序/重复去重。
     """
     event_type = str(event.get("type") or "")
     base: dict[str, Any] = {
         "index": int(event.get("index") or 0),
         "agent_id": str(event.get("agent_id") or ""),
         "name": str(event.get("agent_name") or event.get("agent_id") or ""),
+        "seq": int(event.get("seq") or 0),
     }
+    if event_type == "worker_queued":
+        return {"phase": "child_queued", **base}
     if event_type == "worker_started":
         return {"phase": "child_started", **base}
     if event_type == "worker_retrying":
@@ -248,6 +364,9 @@ class FanoutPreparedChild:
     item: dict[str, Any]
     ctx: Any
     child_tools: list[dict[str, Any]]
+    requires: tuple[str, ...] = ()
+    capabilities_granted: tuple[str, ...] = ()
+    blocked_capabilities: tuple[str, ...] = ()
 
 
 @dataclass
@@ -326,14 +445,31 @@ class ParallelSubAgentService:
                     "（需在 Agent YAML 的 features 增加 subagents_spawnable: true）",
                     code="SUBAGENT_NOT_SPAWNABLE",
                 )
+            child_tools = self._prepare_child_tools(
+                ctx,
+                workspace_access=bool(item.get("workspace_access")) and not safe_only,
+                safe_only=safe_only,
+            )
+            tool_names = {
+                str((tool.get("function") or {}).get("name") or "")
+                for tool in child_tools
+                if isinstance(tool, dict)
+            }
+            requires = tuple(item.get("requires") or ())
+            granted = tuple(
+                capability
+                for capability, satisfy in _CAPABILITY_SATISFY_TOOLS.items()
+                if tool_names & satisfy
+            )
             prepared.append(
                 FanoutPreparedChild(
                     item=item,
                     ctx=ctx,
-                    child_tools=self._prepare_child_tools(
-                        ctx,
-                        workspace_access=bool(item.get("workspace_access")) and not safe_only,
-                        safe_only=safe_only,
+                    child_tools=child_tools,
+                    requires=requires,
+                    capabilities_granted=granted,
+                    blocked_capabilities=tuple(
+                        capability for capability in requires if capability not in granted
                     ),
                 )
             )
@@ -357,12 +493,50 @@ class ParallelSubAgentService:
         approved_tool_calls: list[dict[str, Any]] | None = None,
         control_check: Callable[[], Awaitable[str | None] | str | None] | None = None,
         max_rounds: int | None = None,
+        request_key: str | None = None,
     ) -> dict[str, Any]:
         """执行已通过 prepare() 校验的 fan-out，返回统一信封 {success, llm_payload, ui_payload}。"""
         settings = get_settings()
         run_id = prepared.run_id
         workdir_root = prepared.workdir_root
         children = prepared.children
+        if request_key is not None:
+            if (
+                not isinstance(request_key, str)
+                or not request_key.strip()
+                or len(request_key) > _REQUEST_KEY_MAX_CHARS
+            ):
+                return self._error(
+                    "request_key 必须是非空字符串且不超过 128 字符",
+                    code="SUBAGENT_INVALID_REQUEST_KEY",
+                )
+            request_key = request_key.strip()
+        payload_digest = _canonical_payload_digest(prepared, prepared.context_summary)
+        replay_scope = f"{user_id}:{parent_session_id}"
+        # 幂等契约只在显式提供 request_key 时生效：无键的同 payload 调用视为新的业务请求
+        #（用户在会话中"再跑一次"合法），不做隐式重放。
+        replay_lookup_key = request_key
+        cached = _replay_cache.lookup(replay_scope, replay_lookup_key) if replay_lookup_key else None
+        if cached is not None:
+            cached_digest, cached_envelope = cached
+            if cached_digest != payload_digest:
+                # R05：相同 request_key 携带不同 payload → 明确冲突，不得静默重跑
+                return self._error(
+                    "相同 request_key 已受理过不同内容的 fan-out 请求（SUBAGENT_REQUEST_CONFLICT）",
+                    code="SUBAGENT_REQUEST_CONFLICT",
+                )
+            import copy
+
+            replayed = copy.deepcopy(cached_envelope)
+            replayed["replayed"] = True
+            replayed.setdefault("ui_payload", {})["replayed"] = True
+            logger.info(
+                "subagent fan-out 幂等重放命中: scope=%s key=%s run_id=%s",
+                replay_scope,
+                (replay_lookup_key or "")[:16],
+                (replayed.get("ui_payload") or {}).get("fanout_run_id"),
+            )
+            return replayed
         semaphore = asyncio.Semaphore(max(1, settings.subagent_max_concurrent))
         started = time.monotonic()
         logger.info(
@@ -382,6 +556,9 @@ class ParallelSubAgentService:
                     context_summary=prepared.context_summary,
                     ctx=child.ctx,
                     child_tools=child.child_tools,
+                    requires=child.requires,
+                    capabilities_granted=child.capabilities_granted,
+                    blocked_capabilities=child.blocked_capabilities,
                     workspace_access=bool(child.item.get("workspace_access")),
                     user_id=user_id,
                     parent_session_id=parent_session_id,
@@ -424,6 +601,18 @@ class ParallelSubAgentService:
                 )
             else:
                 results.append(item)
+        # WP2 产物闭环：子 workdir 实测（stat/sha256）→ 发布父工作区 → 父回读对账
+        try:
+            published_artifacts = await self._collect_and_publish_artifacts(
+                results=results,
+                workdir_root=workdir_root,
+                run_id=run_id,
+                user_id=user_id,
+                parent_session_id=parent_session_id,
+            )
+        except Exception as exc:  # noqa: BLE001 — 产物闭环失败不颠覆已完成的子任务
+            logger.warning("subagent 产物发布异常 run_id=%s: %s", run_id, exc)
+            published_artifacts = []
         elapsed = round(time.monotonic() - started, 1)
         ok_count = sum(1 for item in results if item["status"] == "ok")
         interrupted_count = sum(
@@ -433,34 +622,122 @@ class ParallelSubAgentService:
         for item in results:
             merged_usage = merge_token_usage(merged_usage, item.get("usage"))
         total = len(results)
-        summary = (
-            f"{ok_count}/{total} 个子任务成功，总墙钟 {elapsed}s"
-            if ok_count == total
-            else f"{interrupted_count}/{total} 个子任务等待用户处理，总墙钟 {elapsed}s"
-            if interrupted_count and ok_count + interrupted_count == total
-            else f"{ok_count}/{total} 个子任务成功，总墙钟 {elapsed}s（含失败/超时项，见明细）"
-        )
-        return {
+        views = [self._llm_view(item) for item in results]
+        # R15 退化检测：子循环正常结束却没有任何正文时显式标记，禁止静默丢失
+        for view in views:
+            if view.get("status") == "ok" and not (view.get("answer") or "").strip():
+                view["body_missing"] = True
+        body_missing_count = sum(1 for view in views if view.get("body_missing"))
+        missing_suffix = "（部分子任务正文缺失，见明细）" if body_missing_count else ""
+        contract_evaluated = any("outcome_status" in item for item in results)
+        if contract_evaluated:
+            # 契约化任务：按验收口径汇总，"成功"只代表已验证完成
+            verified_count = sum(1 for item in results if item.get("outcome_status") == "succeeded")
+            blocked_count = sum(1 for item in results if item.get("outcome_status") == "blocked")
+            unverified_count = sum(
+                1 for item in results if item.get("outcome_status") == "answered_unverified"
+            )
+            partial_count = sum(1 for item in results if item.get("outcome_status") == "partial")
+            failed_count = total - verified_count - blocked_count - unverified_count - partial_count
+            parts = [f"{verified_count} 已验证完成"]
+            if blocked_count:
+                parts.append(f"{blocked_count} 受阻")
+            if unverified_count:
+                parts.append(f"{unverified_count} 未验证问答")
+            if partial_count:
+                parts.append(f"{partial_count} 部分完成")
+            if failed_count:
+                parts.append(f"{failed_count} 失败/超时")
+            summary = "，".join(parts) + f"；总墙钟 {elapsed}s{missing_suffix}"
+        else:
+            summary = (
+                f"{ok_count}/{total} 个子任务成功，总墙钟 {elapsed}s{missing_suffix}"
+                if ok_count == total
+                else f"{interrupted_count}/{total} 个子任务等待用户处理，总墙钟 {elapsed}s{missing_suffix}"
+                if interrupted_count and ok_count + interrupted_count == total
+                else f"{ok_count}/{total} 个子任务成功，总墙钟 {elapsed}s（含失败/超时项，见明细）{missing_suffix}"
+            )
+        if published_artifacts:
+            summary = (
+                f"{summary}；产物 {len(published_artifacts)} 件已发布到"
+                f"父工作区 subagents/{run_id}/"
+            )
+        llm_payload: dict[str, Any] = {"summary": summary, "results": views}
+        # R16：父轮回灌预算内逐路降级，长正文走 detail_ref，杜绝父轮 12k 静默截断
+        if len(json.dumps(llm_payload, ensure_ascii=False, default=str)) > _LLM_PAYLOAD_BUDGET_CHARS:
+            order = sorted(
+                range(len(views)),
+                key=lambda i: len(views[i].get("answer") or ""),
+                reverse=True,
+            )
+            for i in order:
+                if (
+                    len(json.dumps(llm_payload, ensure_ascii=False, default=str))
+                    <= _LLM_PAYLOAD_BUDGET_CHARS
+                ):
+                    break
+                views[i] = self._compact_view_for_budget(views[i])
+                llm_payload["results"][i] = views[i]
+        envelope: dict[str, Any] = {
             "success": ok_count + interrupted_count > 0,
             "usage": merged_usage,
-            "llm_payload": {
-                "summary": summary,
-                "results": [self._llm_view(item) for item in results],
-            },
+            "llm_payload": llm_payload,
             "ui_payload": {
                 "fanout_run_id": run_id,
                 "elapsed_s": elapsed,
+                "artifacts": published_artifacts,
                 "progress": [
                     {
                         "index": item["index"],
                         "agent_id": item["agent_id"],
                         "status": item["status"],
+                        "outcome_status": item.get("outcome_status"),
+                        "reason_code": item.get("reason_code"),
                         "elapsed_s": item["elapsed_s"],
+                        **(
+                            {
+                                "answer_summary": (item.get("answer") or "")[:200],
+                                "detail_ref": item.get("detail_ref"),
+                                "payload_truncated": item.get("payload_truncated", False),
+                                "body_missing": item.get("body_missing", False),
+                            }
+                            if isinstance(item.get("answer"), str)
+                            or item.get("detail_ref")
+                            or item.get("body_missing")
+                            else {}
+                        ),
                     }
-                    for item in results
+                    for item in views
                 ],
             },
         }
+        if replay_lookup_key:
+            _replay_cache.store(replay_scope, replay_lookup_key, payload_digest, envelope)
+        return envelope
+
+    @staticmethod
+    def _compact_view_for_budget(view: dict[str, Any]) -> dict[str, Any]:
+        """把单路 view 的长正文降级为「短摘要 + detail_ref 引用」，并显式标记截断。"""
+        answer = str(view.get("answer") or "")
+        compacted = dict(view)
+        detail_ref = view.get("detail_ref")
+        if detail_ref:
+            compacted["answer"] = (
+                answer[:_DETAIL_SUMMARY_CHARS]
+                + f"\n\n[完整结果已持久化，请按 detail_ref 读取: {detail_ref}]"
+            )
+        else:
+            compacted["answer"] = answer[:_DETAIL_SUMMARY_CHARS]
+        packet = view.get("packet")
+        if isinstance(packet, dict) and len(str(packet.get("final_answer") or "")) > len(
+            compacted["answer"]
+        ):
+            compacted["packet"] = {
+                **packet,
+                "final_answer": str(packet.get("final_answer") or "")[:_DETAIL_SUMMARY_CHARS],
+            }
+        compacted["payload_truncated"] = True
+        return compacted
 
     async def run(
         self,
@@ -479,6 +756,7 @@ class ParallelSubAgentService:
         approved_tool_calls: list[dict[str, Any]] | None = None,
         control_check: Callable[[], Awaitable[str | None] | str | None] | None = None,
         max_rounds: int | None = None,
+        request_key: str | None = None,
     ) -> dict[str, Any]:
         """prepare + execute 的组合便捷入口（供超频/会诊/scout/Goal 等既有调用方使用）。"""
         prepared = await self.prepare(
@@ -502,6 +780,7 @@ class ParallelSubAgentService:
             approved_tool_calls=approved_tool_calls,
             control_check=control_check,
             max_rounds=max_rounds,
+            request_key=request_key,
         )
 
     # --- 校验 ---
@@ -535,6 +814,22 @@ class ParallelSubAgentService:
                     code="SUBAGENT_INVALID_TASKS",
                 )
             normalized_item: dict[str, Any] = {"agent_id": agent_id, "task": task}
+            raw_requires = item.get("requires")
+            if raw_requires is not None:
+                if not isinstance(raw_requires, list) or not all(
+                    isinstance(cap, str) for cap in raw_requires
+                ):
+                    return ParallelSubAgentService._error(
+                        f"子任务 #{index} 的 requires 必须是字符串数组",
+                        code="SUBAGENT_INVALID_TASKS",
+                    )
+                unknown = [cap for cap in raw_requires if cap not in _KNOWN_CAPABILITIES]
+                if unknown:
+                    return ParallelSubAgentService._error(
+                        f"子任务 #{index} 声明了未知能力：{'、'.join(unknown)}",
+                        code="SUBAGENT_INVALID_TASKS",
+                    )
+                normalized_item["requires"] = list(dict.fromkeys(raw_requires))
             if item.get("model_id"):
                 normalized_item["model_id"] = item["model_id"]
             if item.get("deep_thinking") is not None:
@@ -671,6 +966,9 @@ class ParallelSubAgentService:
         context_summary: str,
         ctx: Any,
         child_tools: list[dict[str, Any]],
+        requires: tuple[str, ...] = (),
+        capabilities_granted: tuple[str, ...] = (),
+        blocked_capabilities: tuple[str, ...] = (),
         workspace_access: bool,
         user_id: str,
         parent_session_id: str,
@@ -697,65 +995,85 @@ class ParallelSubAgentService:
             logger.warning("子任务工作目录创建失败 %s: %s", workdir, exc)
         max_attempts = max(1, min(5, int(retry.get("max_attempts") or 1)))
         backoff_seconds = max(0, min(300, int(retry.get("backoff_seconds") or 0)))
-        async with semaphore:
+        outcome: dict[str, Any] = {}
+        if blocked_capabilities:
+            # 能力预检在 spawn 前阻断：子循环不启动、不占 provider 调用，
+            # 以 blocked/CAPABILITY_MISSING 明示缺失，杜绝静默成功。
             await self._emit_event(on_event, {"type": "worker_started", **base})
-            outcome: dict[str, Any] = {}
-            for attempt in range(1, max_attempts + 1):
-                await self._emit_event(
-                    on_event, {"type": "worker_heartbeat", "attempt": attempt, **base}
-                )
-                try:
-                    await self._check_control(control_check)
-                    async with asyncio.timeout(float(max(1, timeout_seconds))):
-                        outcome = await self._child_loop(
-                            agent_id=agent_id,
-                            task=task,
-                            context_summary=context_summary,
-                            ctx=ctx,
-                            child_tools=child_tools,
-                            workspace_access=workspace_access,
-                            user_id=user_id,
-                            parent_session_id=parent_session_id,
-                            run_id=run_id,
-                            index=index,
-                            workdir=workdir,
-                            max_rounds=max_rounds,
-                            on_event=on_event,
-                            control_check=control_check,
-                            approved_tool_calls=approved_tool_calls,
-                            deep_thinking=deep_thinking,
-                        )
-                    await self._check_control(control_check)
-                except SubagentControlError as exc:
-                    outcome = {
-                        "status": exc.action,
-                        "answer": None,
-                        "error": None,
-                    }
-                except TimeoutError:
-                    outcome = {"status": "timeout", "answer": None, "error": "子任务超时"}
-                except Exception as exc:  # noqa: BLE001 — 失败隔离，不影响兄弟子任务
-                    logger.warning("子任务 #%d (%s) 执行异常: %s", index, agent_id, exc)
-                    outcome = {"status": "failed", "answer": None, "error": str(exc)[:500]}
-                if outcome.get("status") not in {"timeout", "failed"}:
-                    break
-                error = str(outcome.get("error") or "").lower()
-                transient = outcome.get("status") == "timeout" or any(
-                    marker in error
-                    for marker in ("timeout", "timed out", "502", "503", "504", "5xx")
-                )
-                if not transient or attempt >= max_attempts:
-                    break
-                await self._emit_event(
-                    on_event,
-                    {
-                        "type": "worker_retrying",
-                        "attempt": attempt + 1,
-                        "backoff_seconds": backoff_seconds * (2 ** (attempt - 1)),
-                        **base,
-                    },
-                )
-                await asyncio.sleep(backoff_seconds * (2 ** (attempt - 1)))
+            missing = "、".join(blocked_capabilities)
+            outcome = {
+                "status": "blocked",
+                "answer": None,
+                "error": (
+                    f"缺少必需能力：{missing}（当前执行上下文未授予，"
+                    "子任务未启动；请改派具备该能力的 Agent 或改用受权工作台模式）"
+                ),
+                "tool_receipts": [],
+            }
+        else:
+            # 排队观测：semaphore acquire 之前即发 queued（R17/R30 需要可见的排队期），
+            # 同一进程 monotonic 钟，timing 可直接比较。
+            queued_monotonic = time.monotonic()
+            await self._emit_event(on_event, {"type": "worker_queued", **base})
+            async with semaphore:
+                started_monotonic = time.monotonic()
+                await self._emit_event(on_event, {"type": "worker_started", **base})
+                for attempt in range(1, max_attempts + 1):
+                    await self._emit_event(
+                        on_event, {"type": "worker_heartbeat", "attempt": attempt, **base}
+                    )
+                    try:
+                        await self._check_control(control_check)
+                        async with asyncio.timeout(float(max(1, timeout_seconds))):
+                            outcome = await self._child_loop(
+                                agent_id=agent_id,
+                                task=task,
+                                context_summary=context_summary,
+                                ctx=ctx,
+                                child_tools=child_tools,
+                                workspace_access=workspace_access,
+                                user_id=user_id,
+                                parent_session_id=parent_session_id,
+                                run_id=run_id,
+                                index=index,
+                                workdir=workdir,
+                                max_rounds=max_rounds,
+                                on_event=on_event,
+                                control_check=control_check,
+                                approved_tool_calls=approved_tool_calls,
+                                deep_thinking=deep_thinking,
+                            )
+                        await self._check_control(control_check)
+                    except SubagentControlError as exc:
+                        outcome = {
+                            "status": exc.action,
+                            "answer": None,
+                            "error": None,
+                        }
+                    except TimeoutError:
+                        outcome = {"status": "timeout", "answer": None, "error": "子任务超时"}
+                    except Exception as exc:  # noqa: BLE001 — 失败隔离，不影响兄弟子任务
+                        logger.warning("子任务 #%d (%s) 执行异常: %s", index, agent_id, exc)
+                        outcome = {"status": "failed", "answer": None, "error": str(exc)[:500]}
+                    if outcome.get("status") not in {"timeout", "failed"}:
+                        break
+                    error = str(outcome.get("error") or "").lower()
+                    transient = outcome.get("status") == "timeout" or any(
+                        marker in error
+                        for marker in ("timeout", "timed out", "502", "503", "504", "5xx")
+                    )
+                    if not transient or attempt >= max_attempts:
+                        break
+                    await self._emit_event(
+                        on_event,
+                        {
+                            "type": "worker_retrying",
+                            "attempt": attempt + 1,
+                            "backoff_seconds": backoff_seconds * (2 ** (attempt - 1)),
+                            **base,
+                        },
+                    )
+                    await asyncio.sleep(backoff_seconds * (2 ** (attempt - 1)))
         packet = outcome.get("packet") or _collaboration_packet(
             answer=outcome.get("answer"), error=outcome.get("error"), status=outcome["status"]
         )
@@ -780,8 +1098,255 @@ class ParallelSubAgentService:
             result["partial"] = True
         if outcome.get("guard_triggered"):
             result["guard_triggered"] = True
+        if requires:
+            # 契约化任务：附 outcome/artifact 判定与回执，供汇总诚实口径与父 Agent 审计
+            evaluated = self._evaluate_outcome(
+                requires=requires,
+                status=effective_status,
+                receipts=outcome.get("tool_receipts") or [],
+                blocked_capabilities=blocked_capabilities,
+            )
+            result["outcome_status"] = evaluated["outcome_status"]
+            result["reason_code"] = evaluated["reason_code"]
+            result["artifact_status"] = evaluated["artifact_status"]
+            result["capabilities_required"] = list(requires)
+            result["capabilities_granted"] = list(capabilities_granted)
+            result["tool_receipts"] = list(outcome.get("tool_receipts") or [])[-_MAX_TOOL_RECEIPTS:]
+        detail_ref = self._persist_child_detail(result=result, workdir=workdir)
+        if detail_ref:
+            result["detail_ref"] = detail_ref
         await self._emit_event(on_event, {"type": "worker_finished", **result})
         return result
+
+    @staticmethod
+    def _persist_child_detail(*, result: dict[str, Any], workdir: Path) -> str | None:
+        """把单路子结果完整正文落盘为 detail_ref，父/前端按引用读取。
+
+        返回相对 storage 的引用（subagents/{run_id}/{index}/result.json）；
+        正文过短（随信封携带即可）或落盘失败时返回 None，不影响主流程。
+        """
+        answer = str(result.get("answer") or "")
+        if len(answer) < _DETAIL_PERSIST_MIN_CHARS:
+            return None
+        record = {
+            key: result.get(key)
+            for key in (
+                "task_id",
+                "agent_id",
+                "agent_name",
+                "status",
+                "answer",
+                "thought",
+                "error",
+                "outcome_status",
+                "reason_code",
+                "artifact_status",
+                "tool_receipts",
+                "usage",
+                "elapsed_s",
+            )
+            if key in result
+        }
+        try:
+            workdir.mkdir(parents=True, exist_ok=True)  # noqa: ASYNC240
+            (workdir / "result.json").write_text(
+                json.dumps(record, ensure_ascii=False, default=str), encoding="utf-8"
+            )
+        except OSError as exc:
+            logger.warning("子任务结果落盘失败 %s: %s", workdir, exc)
+            return None
+        try:
+            relative = workdir.relative_to(Path(get_settings().storage_path))
+        except ValueError:
+            relative = workdir
+        return str(relative / "result.json")
+
+    async def _collect_and_publish_artifacts(
+        self,
+        *,
+        results: list[dict[str, Any]],
+        workdir_root: Path,
+        run_id: str,
+        user_id: str,
+        parent_session_id: str,
+    ) -> list[dict[str, Any]]:
+        """子任务产物闭环：Produced（子 workdir 实测）→ Verified（size/sha256）→
+        Published（复制到父 chat-output 并父回读对账）→ 登记 file_records。
+
+        返回已发布产物扁平清单（供 ui_payload.artifacts）；单文件失败只降级该项，
+        不影响兄弟产物与主流程。run 级 manifest 落盘 workdir_root/manifest.json。
+        """
+        from cygnusx.infrastructure.storage import get_path_factory, get_storage_backend
+
+        path_factory = get_path_factory()
+        backend = get_storage_backend()
+        published: list[dict[str, Any]] = []
+        manifest_tasks: list[dict[str, Any]] = []
+        for item in results:
+            index = item.get("index")
+            task_label = str(item.get("task_id") or f"task-{index}")
+            # 发布路径安全化：仅保留字母数字与 -_:，防 ../ 与特殊字符逃逸
+            safe_label = "".join(
+                char if (char.isalnum() or char in "-_:") else "-" for char in task_label
+            )[:80]
+            workdir = Path(str(item.get("workdir") or ""))
+            dir_exists, files = await asyncio.to_thread(self._scan_workdir, workdir)
+            if not dir_exists:
+                continue
+            if not files:
+                continue
+            files_truncated = len(files) > _PUBLISH_MAX_FILES_PER_CHILD
+            from cygnusx.application.services.artifact_manifest import build_manifest
+
+            entries = build_manifest(workdir, files[:_PUBLISH_MAX_FILES_PER_CHILD])
+            dest_dir_rel = (
+                f"workspace/chat-output/{parent_session_id}/output"
+                f"/subagents/{run_id}/{safe_label}"
+            )
+            await backend.ensure_dir(dest_dir_rel)
+            task_entries: list[dict[str, Any]] = []
+            for entry in entries:
+                record: dict[str, Any] = {
+                    **entry,
+                    "index": index,
+                    "agent_id": item.get("agent_id"),
+                    "task_id": item.get("task_id"),
+                    "lifecycle": "produced",
+                    "published_ref": None,
+                    "parent_reopen_check": "not_run",
+                }
+                sha256 = entry.get("sha256")
+                if sha256:
+                    dst_rel = f"{dest_dir_rel}/{entry['path']}"
+                    src_rel = path_factory.relative_to_root(workdir / str(entry["path"]))
+                    try:
+                        # R26 幂等/重名：已存在不覆盖（run_id 命名空间内仅同 run 重试可能命中）
+                        if not await backend.exists(dst_rel):
+                            await backend.copy(src_rel, dst_rel)
+                        reopened_sha = hashlib.sha256(await backend.read(dst_rel)).hexdigest()
+                        if reopened_sha == sha256:
+                            record["lifecycle"] = "published"
+                            record["published_ref"] = dst_rel
+                            record["parent_reopen_check"] = "passed"
+                        else:
+                            record["lifecycle"] = "publish_failed"
+                            record["parent_reopen_check"] = "failed"
+                            record["error"] = "父空间回读 hash 与产物不一致"
+                    except Exception as exc:  # noqa: BLE001 — 单文件失败不颠覆整批
+                        record["lifecycle"] = "publish_failed"
+                        record["error"] = f"{type(exc).__name__}: {exc}"[:200]
+                task_entries.append(record)
+                if record["lifecycle"] == "published":
+                    published.append(
+                        {
+                            "index": index,
+                            "agent_id": item.get("agent_id"),
+                            "task_id": item.get("task_id"),
+                            "path": entry["path"],
+                            "size": entry.get("size"),
+                            "sha256": entry.get("sha256"),
+                            "published_ref": record["published_ref"],
+                        }
+                    )
+            published_count = sum(1 for e in task_entries if e.get("lifecycle") == "published")
+            verified_count = sum(1 for e in task_entries if e.get("sha256"))
+            if "artifact_status" in item:
+                # 契约任务：用实测产物刷新产物状态（outcome 仍由回执判定）
+                if published_count:
+                    item["artifact_status"] = "published"
+                elif verified_count:
+                    item["artifact_status"] = "verified"
+            item["artifacts"] = task_entries
+            manifest_tasks.append(
+                {
+                    "index": index,
+                    "agent_id": item.get("agent_id"),
+                    "task_id": item.get("task_id"),
+                    "status": item.get("status"),
+                    "files_truncated": files_truncated,
+                    "entries": task_entries,
+                }
+            )
+            await self._register_artifact_records(
+                path_factory=path_factory,
+                user_id=user_id,
+                directory=dest_dir_rel,
+                records=[
+                    entry for entry in task_entries if entry.get("lifecycle") == "published"
+                ],
+            )
+        if manifest_tasks:
+            try:
+                (workdir_root / "manifest.json").write_text(
+                    json.dumps(
+                        {
+                            "schema_version": 1,
+                            "run_id": run_id,
+                            "parent_session_id": parent_session_id,
+                            "tasks": manifest_tasks,
+                        },
+                        ensure_ascii=False,
+                        default=str,
+                    ),
+                    encoding="utf-8",
+                )
+            except OSError as exc:
+                logger.warning("subagent manifest 落盘失败 run_id=%s: %s", run_id, exc)
+        return published
+
+    @staticmethod
+    def _scan_workdir(workdir: Path) -> tuple[bool, list[Path]]:
+        """同步扫描子任务产物目录（含符号链接排除），供 to_thread 调用。"""
+        try:
+            if not workdir.is_dir():
+                return False, []
+            return True, sorted(
+                path
+                for path in workdir.rglob("*")
+                if path.is_file() and not path.is_symlink() and path.name != "result.json"
+            )
+        except OSError as exc:
+            logger.warning("子任务产物目录扫描失败 %s: %s", workdir, exc)
+            return False, []
+
+    @staticmethod
+    async def _register_artifact_records(
+        *,
+        path_factory: Any,
+        user_id: str,
+        directory: str,
+        records: list[dict[str, Any]],
+    ) -> None:
+        """已发布产物登记 file_records（source=CHAT_SANDBOX），供文件中心/下载端点发现。"""
+        if not records:
+            return
+        from uuid import UUID
+
+        from cygnusx.domain.file.value_objects import FileSource
+        from cygnusx.infrastructure.storage.file_registry import FileRegistry
+
+        workspace_root = path_factory.workspace_dir(str(user_id))
+        try:
+            async with get_session_factory()() as session:
+                registry = FileRegistry(session)
+                for record in records:
+                    try:
+                        abs_path = (
+                            workspace_root
+                            / directory.removeprefix("workspace/")
+                            / str(record["path"])
+                        )
+                        await registry.register(
+                            UUID(str(user_id)),
+                            abs_path,
+                            source=FileSource.CHAT_SANDBOX,
+                            directory=directory,
+                            checksum=record.get("sha256"),
+                        )
+                    except Exception as exc:  # noqa: BLE001 — 单条登记失败不阻断
+                        logger.warning("子任务产物登记失败 %s: %s", record.get("path"), exc)
+        except Exception as exc:  # noqa: BLE001 — 登记失败不颠覆发布结果
+            logger.warning("子任务产物登记会话失败: %s", exc)
 
     async def _child_loop(
         self,
@@ -817,6 +1382,7 @@ class ParallelSubAgentService:
         successful_tool_calls = 0
         tool_call_signatures: list[str] = []
         result_signatures: list[str] = []
+        tool_receipts: list[dict[str, Any]] = []
         length_continuations = 0
         empty_response_retries = 0
         usage: dict[str, Any] | None = None
@@ -978,6 +1544,7 @@ class ParallelSubAgentService:
                         "status": "failed",
                         "answer": None,
                         "error": str(chunk.content or "模型调用失败")[:500],
+                        "tool_receipts": tool_receipts,
                         "usage": usage,
                     }
             self._record_agentteams_turn(
@@ -1024,6 +1591,7 @@ class ParallelSubAgentService:
                         "status": "failed",
                         "answer": None,
                         "error": "模型连续返回空内容，请稍后重试",
+                        "tool_receipts": tool_receipts,
                         "usage": usage,
                     }
                 if (
@@ -1078,6 +1646,7 @@ class ParallelSubAgentService:
                     "error": None,
                     "verified_evidence_refs": verified_evidence_refs,
                     "tool_call_count": successful_tool_calls,
+                    "tool_receipts": tool_receipts,
                     "usage": usage,
                 }
 
@@ -1129,6 +1698,7 @@ class ParallelSubAgentService:
                         "error": f"重复调用工具 {tool_name}，已触发运行保护",
                         "verified_evidence_refs": verified_evidence_refs,
                         "tool_call_count": successful_tool_calls,
+                        "tool_receipts": tool_receipts,
                         "usage": usage,
                     }
                 schema = schema_loader.get_tool(tool_name)
@@ -1145,6 +1715,7 @@ class ParallelSubAgentService:
                         "status": "awaiting_input",
                         "answer": str(questions[0].get("question") or "请补充必要信息"),
                         "error": None,
+                        "tool_receipts": tool_receipts,
                         "usage": usage,
                         "packet": {
                             "status": "awaiting_input",
@@ -1170,6 +1741,7 @@ class ParallelSubAgentService:
                             "status": "approval_pending",
                             "answer": f"需要你批准后才能执行 {tool_name}。",
                             "error": None,
+                            "tool_receipts": tool_receipts,
                             "usage": usage,
                             "packet": {
                                 "status": "approval_pending",
@@ -1213,6 +1785,14 @@ class ParallelSubAgentService:
                     tool_envelope, ensure_ascii=False, sort_keys=True, default=str
                 )
                 result_signatures.append(result_signature)
+                tool_receipts.append(
+                    {
+                        "tool_name": tool_name,
+                        "success": tool_envelope.get("success") is True,
+                        "summary": self._tool_result_summary(tool_envelope),
+                        "duration_ms": round((time.monotonic() - tool_started) * 1000),
+                    }
+                )
                 await self._emit_event(
                     on_event,
                     execution_metadata(
@@ -1276,6 +1856,7 @@ class ParallelSubAgentService:
                         "error": None,
                         "verified_evidence_refs": verified_evidence_refs,
                         "tool_call_count": successful_tool_calls,
+                        "tool_receipts": tool_receipts,
                         "usage": usage,
                     }
                 if tool_envelope.get("success") is True:
@@ -1344,6 +1925,7 @@ class ParallelSubAgentService:
             "error": f"子循环超过 {max_rounds} 轮工具上限，返回阶段性结论",
             "verified_evidence_refs": verified_evidence_refs,
             "tool_call_count": successful_tool_calls,
+            "tool_receipts": tool_receipts,
             "usage": usage,
         }
 
@@ -1408,6 +1990,97 @@ class ParallelSubAgentService:
         if isinstance(result, str) and result.strip():
             return result.strip()[:500]
         return "工具执行成功"
+
+    @staticmethod
+    def _evaluate_outcome(
+        *,
+        requires: tuple[str, ...],
+        status: str,
+        receipts: list[dict[str, Any]],
+        blocked_capabilities: tuple[str, ...] = (),
+    ) -> dict[str, str | None]:
+        """按任务契约与真实工具回执判定业务结果（不靠 LLM 自评）。
+
+        只在任务声明 requires 时调用；返回 outcome_status/reason_code/artifact_status。
+        """
+        if blocked_capabilities:
+            return {
+                "outcome_status": "blocked",
+                "reason_code": "CAPABILITY_MISSING",
+                "artifact_status": "not_created",
+            }
+        if status in {"failed", "timeout", "paused", "terminated"}:
+            reason = {
+                "failed": "EXECUTION_FAILED",
+                "timeout": "TOOL_TIMEOUT",
+            }.get(status, "EXECUTION_CANCELLED")
+            return {
+                "outcome_status": "failed",
+                "reason_code": reason,
+                "artifact_status": "not_created",
+            }
+        if status in {"awaiting_input", "approval_pending"}:
+            return {
+                "outcome_status": "blocked",
+                "reason_code": "AWAITING_USER",
+                "artifact_status": "not_created",
+            }
+        required = set(requires)
+        exec_ok = any(
+            receipt.get("success") and receipt.get("tool_name") in _EXECUTION_RECEIPT_TOOLS
+            for receipt in receipts
+        )
+        write_ok = any(
+            receipt.get("success") and receipt.get("tool_name") in _ARTIFACT_WRITE_RECEIPT_TOOLS
+            for receipt in receipts
+        )
+        publish_ok = any(
+            receipt.get("success") and receipt.get("tool_name") in _ARTIFACT_PUBLISH_RECEIPT_TOOLS
+            for receipt in receipts
+        )
+        if CAPABILITY_PYTHON_EXECUTE in required and not exec_ok:
+            return {
+                "outcome_status": "blocked",
+                "reason_code": "EXECUTION_NOT_VERIFIED",
+                "artifact_status": "not_created",
+            }
+        artifact_required = required & {CAPABILITY_ARTIFACT_WRITE, CAPABILITY_ARTIFACT_PUBLISH}
+        if artifact_required:
+            if not write_ok:
+                return {
+                    "outcome_status": "blocked",
+                    "reason_code": "ARTIFACT_NOT_VERIFIED",
+                    "artifact_status": "not_created",
+                }
+            if CAPABILITY_ARTIFACT_PUBLISH in required and not publish_ok:
+                return {
+                    "outcome_status": "partial",
+                    "reason_code": "ARTIFACT_NOT_PUBLISHED",
+                    "artifact_status": "produced",
+                }
+            return {
+                "outcome_status": "succeeded",
+                "reason_code": "ARTIFACT_RECEIPT_VERIFIED",
+                "artifact_status": "produced",
+            }
+        if exec_ok:
+            return {
+                "outcome_status": "succeeded",
+                "reason_code": "EXECUTION_RECEIPT_VERIFIED",
+                "artifact_status": "not_required",
+            }
+        if status == "ok":
+            return {
+                "outcome_status": "answered_unverified",
+                "reason_code": "ANSWER_WITHOUT_VERIFIER",
+                "artifact_status": "not_required",
+            }
+        # budget_exhausted / guarded 等阶段性收尾
+        return {
+            "outcome_status": "partial",
+            "reason_code": "RESULT_PARTIAL",
+            "artifact_status": "not_required",
+        }
 
     @staticmethod
     def _tool_evidence_refs(tool_name: str, args: dict[str, Any]) -> list[str]:
@@ -1631,6 +2304,20 @@ class ParallelSubAgentService:
             "packet": item.get("packet") or {},
             "verified_evidence_refs": item.get("verified_evidence_refs") or [],
         }
+        # 契约化任务（声明 requires）附带的验收判定与工具回执，随旧字段一并透传；
+        # detail_ref 为正文落盘引用（长正文才有）
+        for key in (
+            "outcome_status",
+            "reason_code",
+            "artifact_status",
+            "capabilities_required",
+            "capabilities_granted",
+            "tool_receipts",
+            "detail_ref",
+            "artifacts",
+        ):
+            if key in item:
+                view[key] = item[key]
         if item.get("partial"):
             view["partial"] = True
         if item.get("guard_triggered"):

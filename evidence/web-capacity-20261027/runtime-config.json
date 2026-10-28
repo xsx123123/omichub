@@ -1,0 +1,9 @@
+{
+  "service_name": "web",
+  "database_pool_size": 10,
+  "database_max_overflow": 20,
+  "database_pool_timeout_seconds": 30,
+  "rate_limit_enabled": true,
+  "rate_limit_max": 100,
+  "rate_limit_window": 60
+}

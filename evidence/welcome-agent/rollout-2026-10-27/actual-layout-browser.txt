@@ -1,0 +1,1 @@
+PASS: actual application DefaultLayout, admin, cross-session dedup, first-login priority, general off/on, mobile and receipts

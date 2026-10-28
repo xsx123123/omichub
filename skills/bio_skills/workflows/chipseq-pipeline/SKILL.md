@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-chipseq-pipeline
 description: Orchestrates the end-to-end ChIP-seq pipeline from FASTQ to blacklist-filtered, annotated peaks, chaining fastp QC, Bowtie2 alignment, pre-dedup library-complexity QC (NRF/PBC), duplicate removal, chrM + ENCODE-blacklist filtering, MACS3 peak calling against a matched input, IDR/consensus reproducibility, deepTools signal tracks, and ChIPseeker annotation. Use when committing the reference build + blacklist version + effective genome size once, pairing each IP with its matched control, computing complexity metrics BEFORE dedup, choosing narrow vs broad and MACS3 vs SEACR/Genrich, keeping per-replicate peaks for IDR, or avoiding depth-normalization that erases a spike-in global shift. Hands mechanism to the chip-seq component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: ChIP-seq 全流程分析
+display_name_en: ChIP-seq Pipeline
+description_zh: >-
+  从 FASTQ 到黑名单过滤与注释峰的 ChIP-seq 全流程，串联 fastp 质控、Bowtie2 比对、去重前复杂度评估、去重、chrM 与 ENCODE 黑名单过滤、MACS3 峰调用、IDR 可重复性、信号轨迹与 ChIPseeker 注释。
+description_en: >-
+  Orchestrates the end-to-end ChIP-seq pipeline from FASTQ to blacklist-filtered, annotated peaks, chaining fastp QC, Bowtie2 alignment, pre-dedup library-complexity QC (NRF/PBC), duplicate removal, chrM + ENCODE-blacklist filtering, MACS3 peak calling against a matched input, IDR/consensus reproducibility, deepTools signal tracks, and ChIPseeker annotation. Use when committing the reference build + blacklist version + effective genome size once, pairing each IP with its matched control, computing complexity metrics BEFORE dedup, choosing narrow vs broad and MACS3 vs SEACR/Genrich, keeping per-replicate peaks for IDR, or avoiding depth-normalization that erases a spike-in global shift. Hands mechanism to the chip-seq component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 IP 和 input 双端数据跑完整 ChIP-seq 分析"
+  - "帮我判断该用 narrow 还是 broad 峰模式"
+  - "生成去重前的 NRF/PBC 复杂度指标和 IDR 一致性结果"
+examples_en:
+  - "Run the complete ChIP-seq analysis with paired IP and input samples"
+  - "Help me choose narrow or broad peak mode for this factor"
+  - "Compute pre-dedup NRF/PBC metrics and check IDR reproducibility"
 tool_type: mixed
 primary_tool: MACS3
 workflow: true
@@ -14,6 +30,7 @@ depends_on:
   - chip-seq/differential-binding
   - chip-seq/chipseq-visualization
   - chip-seq/motif-analysis
+  - chip-seq/spike-in-normalization
 qc_checkpoints:
   - after_qc: "Q30 >85%, adapter content <5%"
   - after_alignment: "Mapping rate >80%, unique mapping >70%"
@@ -49,7 +66,7 @@ A ChIP-seq peakset is decided at four seams, not inside the caller.
 1. **The reference build + blacklist version + effective genome size is one coordinate commitment made once and inherited by everything downstream** — peak coordinates, signal-track scaling, and every overlap. Blacklist filtering is a committed pipeline step, not optional cleanup: ENCODE-blacklisted regions (satellite/rDNA/high-signal artifacts) produce reproducible false peaks in every dataset regardless of biology, so they are removed before calling (Amemiya 2019).
 2. **An IP is only interpretable against its matched control — the control IS the enrichment background.** Calling peaks without the right input/IgG fabricates peaks at open/accessible and copy-number-amplified regions. Pair each IP with its control at the calling step.
 3. **Library-complexity QC (NRF/PBC1/PBC2) is computed on the PRE-dedup BAM.** After `markdup -r` the duplicates are gone, so computing complexity afterward reads ~1.0 and is meaningless. Compute it on the filtered, position-sorted BAM before removing duplicates.
-4. **Normalization must not silently undo the experiment.** deepTools RPKM/CPM rescales every library to the same depth, which ERASES a spike-in global-shift signal (the whole point of ChIP-Rx). For spike-in experiments use `--scaleFactor` + `--normalizeUsing None`; for standard experiments RPKM/CPM is fine (chip-seq/spike-in-normalization).
+4. **Normalization must not silently undo the experiment.** deepTools RPKM/CPM rescales every library to the same depth, which ERASES a spike-in global-shift signal (the whole point of ChIP-Rx). For spike-in experiments use `--scaleFactor` + `--normalizeUsing None`; for standard experiments RPKM/CPM is fine (references/chip-seq--spike-in-normalization.md).
 
 Reproducibility corollary: pool replicates for a consensus peakset, but keep PER-REPLICATE peaks — IDR needs individual replicates plus pooled pseudo-replicates; running IDR on an already-pooled peakset is not IDR.
 
@@ -57,21 +74,21 @@ Reproducibility corollary: pool replicates for a consensus peakset, but keep PER
 
 ```
 FASTQ (IP + matched Input, replicates)
-  | [1] QC & trim -----------------> fastp                (read-qc/fastp-workflow)
+  | [1] QC & trim -----------------> fastp                (references/read-qc--fastp-workflow.md)
   v
-  | [2] Align ---------------------> bowtie2 (-q30 unique) (read-alignment/bowtie2-alignment)
+  | [2] Align ---------------------> bowtie2 (-q30 unique) (references/read-alignment--bowtie2-alignment.md)
   v     ^-- commitment: build + blacklist version + effective genome size
-  | [3] Complexity QC (PRE-dedup) -> NRF/PBC1/PBC2         (chip-seq/chipseq-qc)
+  | [3] Complexity QC (PRE-dedup) -> NRF/PBC1/PBC2         (references/chip-seq--chipseq-qc.md)
   v
-  | [4] Dedup + filter ------------> markdup -r; drop chrM; SUBTRACT ENCODE blacklist  (alignment-files/duplicate-handling)
+  | [4] Dedup + filter ------------> markdup -r; drop chrM; SUBTRACT ENCODE blacklist  (references/alignment-files--duplicate-handling.md)
   v
-  | [5] Peak calling (IP vs input)-> macs3 callpeak (narrow | --broad)  (chip-seq/peak-calling)
+  | [5] Peak calling (IP vs input)-> macs3 callpeak (narrow | --broad)  (references/chip-seq--peak-calling.md)
   v     ^-- keep PER-REPLICATE peaks for IDR
-  | [6] Reproducibility -----------> IDR (per-rep + pooled pseudo-reps)  (chip-seq/peak-calling)
+  | [6] Reproducibility -----------> IDR (per-rep + pooled pseudo-reps)  (references/chip-seq--peak-calling.md)
   v
-  | [7] Signal tracks -------------> bamCoverage (RPKM | spike-in scaleFactor)  (chip-seq/chipseq-visualization)
+  | [7] Signal tracks -------------> bamCoverage (RPKM | spike-in scaleFactor)  (references/chip-seq--chipseq-visualization.md)
   v
-  | [8] QC + Annotate -------------> FRiP/NSC/RSC/fingerprint; ChIPseeker  (chip-seq/chipseq-qc, peak-annotation)
+  | [8] QC + Annotate -------------> FRiP/NSC/RSC/fingerprint; ChIPseeker  (references/chip-seq--chipseq-qc.md, references/chip-seq--peak-annotation.md)
   v
 Blacklist-filtered, annotated, reproducible peaks
 ```
@@ -102,10 +119,10 @@ Pipeline-level selection only; mechanism lives in the component skills.
 
 | Fork | Lean toward | Hand off to |
 |------|-------------|-------------|
-| Caller | MACS3 (standard IP+input); SEACR (CUT&RUN/CUT&Tag, low background); Genrich (some ChIP/ATAC, built-in blacklist/replicate handling) | chip-seq/peak-calling, chip-seq/cut-and-run-tag |
-| Narrow vs broad | Narrow: TFs, H3K4me3, H3K27ac. Broad (`--broad --broad-cutoff 0.1`): H3K27me3, H3K36me3, H3K9me3 | chip-seq/peak-calling |
-| Reproducibility | ENCODE IDR (per-rep + pooled pseudo-reps) for TFs; naive overlap acceptable for exploratory histone | chip-seq/peak-calling |
-| Consensus set | Pool for a union/consensus set AFTER IDR selects the reproducible threshold | chip-seq/differential-binding |
+| Caller | MACS3 (standard IP+input); SEACR (CUT&RUN/CUT&Tag, low background); Genrich (some ChIP/ATAC, built-in blacklist/replicate handling) | references/chip-seq--peak-calling.md, chip-seq/cut-and-run-tag |
+| Narrow vs broad | Narrow: TFs, H3K4me3, H3K27ac. Broad (`--broad --broad-cutoff 0.1`): H3K27me3, H3K36me3, H3K9me3 | references/chip-seq--peak-calling.md |
+| Reproducibility | ENCODE IDR (per-rep + pooled pseudo-reps) for TFs; naive overlap acceptable for exploratory histone | references/chip-seq--peak-calling.md |
+| Consensus set | Pool for a union/consensus set AFTER IDR selects the reproducible threshold | references/chip-seq--differential-binding.md |
 
 ## Primary path: Bowtie2 + MACS3 + ChIPseeker
 
@@ -142,14 +159,14 @@ macs3 callpeak -t aligned/IP_rep1.final.bam aligned/IP_rep2.final.bam \
 # Broad marks: add  --broad --broad-cutoff 0.1  (do NOT call H3K27me3 with narrow settings)
 ```
 
-For IDR, call peaks PER REPLICATE (and on pooled pseudo-replicates) with a relaxed `-q`, then run `idr` across them (chip-seq/peak-calling). For higher confidence, intersect a second caller (HOMER `-style histone` for all histone marks).
+For IDR, call peaks PER REPLICATE (and on pooled pseudo-replicates) with a relaxed `-q`, then run `idr` across them (references/chip-seq--peak-calling.md). For higher confidence, intersect a second caller (HOMER `-style histone` for all histone marks).
 
 ## Signal tracks and annotation
 
 ```bash
 # Standard experiment: RPKM/CPM is fine. SPIKE-IN experiment: this would ERASE the global shift.
 bamCoverage -b aligned/IP_rep1.final.bam -o bigwig/IP_rep1.bw --normalizeUsing RPKM -p 8
-# Spike-in (ChIP-Rx): bamCoverage --scaleFactor <spike-in factor> --normalizeUsing None  (chip-seq/spike-in-normalization)
+# Spike-in (ChIP-Rx): bamCoverage --scaleFactor <spike-in factor> --normalizeUsing None  (references/chip-seq--spike-in-normalization.md)
 ```
 
 Annotation uses a project GTF via `makeTxDbFromGFF()` when provided, else a pre-built TxDb. `overlap='all'` couples gene assignment with feature overlap (host-gene convention); default `overlap='TSS'` assigns the nearest-TSS gene independently. Full code: `examples/peak_annotation.R`.
@@ -161,7 +178,7 @@ Annotation uses a project GTF via `makeTxDbFromGFF()` when provided, else a pre-
 | QC/trim | Q30 >85%, adapter <5% | DNA higher quality than RNA |
 | Alignment | Mapping >80%, unique >70% | Low unique = repeats/contamination/wrong build |
 | PRE-dedup | NRF >0.8, PBC1 >0.8 | Low complexity = over-amplification/low input; MUST be computed before dedup |
-| Peaks | FRiP >1% (TF) / >5% (sharp histone; broad marks run lower); NSC >1.05; RSC >0.8; fingerprint separates IP/input | Low FRiP/flat fingerprint = weak antibody or failed enrichment (chip-seq/chipseq-qc) |
+| Peaks | FRiP >1% (TF) / >5% (sharp histone; broad marks run lower); NSC >1.05; RSC >0.8; fingerprint separates IP/input | Low FRiP/flat fingerprint = weak antibody or failed enrichment (references/chip-seq--chipseq-qc.md) |
 | IDR | rescue ratio and self-consistency ratio both <=2 | Poor replicate consistency; run IDR on PER-replicate peaks |
 
 ## Common Errors
@@ -173,21 +190,21 @@ Annotation uses a project GTF via `makeTxDbFromGFF()` when provided, else a pre-
 | Peaks at open chromatin / CN-amplified loci | Called without a matched control | Pair each IP with its input/IgG in `callpeak -c` |
 | H3K27me3/H3K9me3 fragmented into many tiny peaks | Broad mark called with narrow settings | Add `--broad --broad-cutoff 0.1` |
 | `--shift/--extsize` had no effect | Used with `-f BAMPE` (ignored for PE) | Use `-f BAM` + `--nomodel` for SE; BAMPE derives fragments |
-| Spike-in global shift disappears in tracks | bamCoverage RPKM/CPM re-equalized depth | `--scaleFactor` + `--normalizeUsing None` (chip-seq/spike-in-normalization) |
+| Spike-in global shift disappears in tracks | bamCoverage RPKM/CPM re-equalized depth | `--scaleFactor` + `--normalizeUsing None` (references/chip-seq--spike-in-normalization.md) |
 | "IDR" numbers look too good | IDR run on a pooled peakset | Run IDR on per-replicate peaks + pooled pseudo-replicates |
 
 ## Pipeline map (hand-offs)
 
-- read-qc/fastp-workflow - adapter/quality trimming
-- read-alignment/bowtie2-alignment - the standard ChIP-seq aligner, build/index
-- alignment-files/duplicate-handling - collate/fixmate/sort/markdup order
-- chip-seq/chipseq-qc - NRF/PBC, FRiP, NSC/RSC, fingerprint, hyper-ChIPable detection
-- chip-seq/peak-calling - MACS3/SEACR/Genrich/HOMER, IDR vs naive overlap
-- chip-seq/peak-annotation - ChIPseeker/HOMER/GREAT
-- chip-seq/differential-binding - DiffBind/csaw and the normalization-problem framing
-- chip-seq/chipseq-visualization - deepTools tracks and normalization choices
-- chip-seq/spike-in-normalization - ChIP-Rx global-shift experiments
-- chip-seq/motif-analysis - HOMER/MEME-ChIP/monaLisa
+- references/read-qc--fastp-workflow.md - adapter/quality trimming
+- references/read-alignment--bowtie2-alignment.md - the standard ChIP-seq aligner, build/index
+- references/alignment-files--duplicate-handling.md - collate/fixmate/sort/markdup order
+- references/chip-seq--chipseq-qc.md - NRF/PBC, FRiP, NSC/RSC, fingerprint, hyper-ChIPable detection
+- references/chip-seq--peak-calling.md - MACS3/SEACR/Genrich/HOMER, IDR vs naive overlap
+- references/chip-seq--peak-annotation.md - ChIPseeker/HOMER/GREAT
+- references/chip-seq--differential-binding.md - DiffBind/csaw and the normalization-problem framing
+- references/chip-seq--chipseq-visualization.md - deepTools tracks and normalization choices
+- references/chip-seq--spike-in-normalization.md - ChIP-Rx global-shift experiments
+- references/chip-seq--motif-analysis.md - HOMER/MEME-ChIP/monaLisa
 
 The complete runnable scripts are in this skill's examples/ (`narrow_peak_workflow.sh`, `peak_annotation.R`).
 
@@ -195,18 +212,18 @@ The complete runnable scripts are in this skill's examples/ (`narrow_peak_workfl
 
 - database-access/sra-data - Pull ChIP-seq FASTQ from SRA / ENA for re-analysis
 - database-access/geo-data - Resolve ENCODE / Roadmap GSE accessions to SRA
-- read-qc/fastp-workflow - Upstream adapter trimming and quality filtering
-- read-alignment/bowtie2-alignment - Standard ChIP-seq aligner
-- alignment-files/duplicate-handling - MarkDuplicates pre-peak-calling
-- chip-seq/chipseq-qc - FRiP, NSC/RSC, library complexity, antibody validation
-- chip-seq/peak-calling - MACS3/MACS2/HOMER/SPP, IDR vs naive overlap, per-tool failure modes
-- chip-seq/peak-annotation - ChIPseeker, HOMER, ENCODE cCRE classification, GREAT regulatory domains
-- chip-seq/differential-binding - DiffBind, DESeq2, csaw with the three-normalization-problems framing
-- chip-seq/chipseq-visualization - deepTools, pyGenomeTracks, heatmaps with bigWig normalization choices
-- chip-seq/motif-analysis - HOMER, MEME-ChIP (STREME), monaLisa with background-selection theory
+- references/read-qc--fastp-workflow.md - Upstream adapter trimming and quality filtering
+- references/read-alignment--bowtie2-alignment.md - Standard ChIP-seq aligner
+- references/alignment-files--duplicate-handling.md - MarkDuplicates pre-peak-calling
+- references/chip-seq--chipseq-qc.md - FRiP, NSC/RSC, library complexity, antibody validation
+- references/chip-seq--peak-calling.md - MACS3/MACS2/HOMER/SPP, IDR vs naive overlap, per-tool failure modes
+- references/chip-seq--peak-annotation.md - ChIPseeker, HOMER, ENCODE cCRE classification, GREAT regulatory domains
+- references/chip-seq--differential-binding.md - DiffBind, DESeq2, csaw with the three-normalization-problems framing
+- references/chip-seq--chipseq-visualization.md - deepTools, pyGenomeTracks, heatmaps with bigWig normalization choices
+- references/chip-seq--motif-analysis.md - HOMER, MEME-ChIP (STREME), monaLisa with background-selection theory
 - chip-seq/super-enhancers - ROSE/ROSE2/LILY for SE calling (H3K27ac vs MED1 vs BRD4)
 - chip-seq/cut-and-run-tag - SEACR + MACS2 consensus for CUT&RUN/CUT&Tag (different protocol)
-- chip-seq/spike-in-normalization - ChIP-Rx Drosophila spike-in for global-shift experiments
+- references/chip-seq--spike-in-normalization.md - ChIP-Rx Drosophila spike-in for global-shift experiments
 - chip-seq/chromatin-state-segmentation - ChromHMM multi-mark integration into chromatin states
 - chip-seq/chip-deep-learning - BPNet/chromBPNet/Enformer for variant-effect prediction
 - chip-seq/allele-specific-binding - WASP/BaalChIP/RASQUAL for allele-specific TF binding

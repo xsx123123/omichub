@@ -96,10 +96,10 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- long-read-sequencing/basecalling - Dorado model choice and requesting methylation at basecall time
-- long-read-sequencing/long-read-alignment - minimap2 preset selection and -Y soft-clipping
-- long-read-sequencing/long-read-qc - read QC and chimera screening before alignment
-- long-read-sequencing/structural-variants - caller tuning, tandem-repeat BED, Truvari (the long-read SV mechanism)
+- references/long-read-sequencing--basecalling.md - Dorado model choice and requesting methylation at basecall time
+- references/long-read-sequencing--long-read-alignment.md - minimap2 preset selection and -Y soft-clipping
+- references/long-read-sequencing--long-read-qc.md - read QC and chimera screening before alignment
+- references/long-read-sequencing--structural-variants.md - caller tuning, tandem-repeat BED, Truvari (the long-read SV mechanism)
 - long-read-sequencing/haplotype-phasing - haplotag the BAM for phased/somatic SVs
-- variant-calling/structural-variant-calling - the SV signal model, VCF representation, force-genotyping, merging (also short-read SV)
+- references/variant-calling--structural-variant-calling.md - the SV signal model, VCF representation, force-genotyping, merging (also short-read SV)
 - variant-calling/consensus-sequences - why symbolic SV alleles are not directly consensus-able

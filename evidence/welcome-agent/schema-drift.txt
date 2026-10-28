@@ -1,0 +1,4 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+/home/zj/zj_code_libarary/OmicHub/scripts/check_schema_drift.py:49: SAWarning: Did not recognize type 'vector' of column 'embedding'
+  existing_columns = {c["name"] for c in insp.get_columns(table_name)}
+✅ Schema 无漂移：ORM metadata 与数据库一致。

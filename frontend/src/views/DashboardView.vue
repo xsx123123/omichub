@@ -646,11 +646,7 @@ const blastColumns: DataTableColumns<BlastTaskListItem> = [
   border-bottom: 1px solid var(--neutral-border);
 }
 
-.recent-tasks:is(.is-selected, .card--selected, .card--active, .selected, .active, [aria-selected='true'], [aria-checked='true'], [data-selected='true']) {
-  background-color: color-mix(in srgb, var(--arco-primary) 4%, var(--neutral-card));
-  border-color: color-mix(in srgb, var(--arco-primary) 40%, var(--neutral-border));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--arco-primary) 40%, transparent);
-}
+
 
 .recent-table-surface :deep(th) {
   background: var(--neutral-bg);

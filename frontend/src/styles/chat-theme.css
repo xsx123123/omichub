@@ -982,21 +982,8 @@
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.1s ease;
+  border: 1px solid transparent;
   position: relative;
-}
-.model-switcher-panel .model-item:hover {
-  background: var(--chat-surface-hover);
-}
-.model-switcher-panel .model-item.selected::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--chat-accent);
 }
 .model-switcher-panel .model-item .model-meta {
   flex: 1;

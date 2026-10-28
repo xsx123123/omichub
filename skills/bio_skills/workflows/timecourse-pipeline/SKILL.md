@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-timecourse-pipeline
 description: End-to-end bulk time-course analysis from an expression matrix to temporal gene modules and per-cluster pathway enrichment. Orchestrates temporal DE (limma splines or DESeq2 LRT), Mfuzz/tslearn soft clustering of expression-profile shapes, GAM trajectory fitting, per-cluster GO enrichment against a temporal-gene background, and an OPTIONAL circadian rhythm-detection branch (MetaCycle/CosinorPy) that runs only when the design covers >=2 full cycles with >=6-8 evenly spaced samples per cycle. Use when analyzing a bulk time-series expression experiment from any omics platform and deciding limma-splines vs DESeq2-LRT for temporal DE, soft vs hard clustering, whether the sampling design even licenses rhythm detection, and which background to use for enrichment. Not for single-cell pseudotime (see temporal-genomics/trajectory-modeling for the bulk-vs-pseudotime boundary) or unknown-period discovery (see temporal-genomics/periodicity-detection).
+version: 1.0.0
+display_name: 时间序列组学分析流程
+display_name_en: Time-Course Omics Pipeline
+description_zh: >-
+  从表达矩阵到时间基因模块与逐簇通路富集的体时间序列流程，编排 limma 样条或 DESeq2 LRT 时序差异、Mfuzz/tslearn 软聚类、GAM 轨迹拟合及可选节律检测分支。
+description_en: >-
+  End-to-end bulk time-course analysis from an expression matrix to temporal gene modules and per-cluster pathway enrichment. Orchestrates temporal DE (limma splines or DESeq2 LRT), Mfuzz/tslearn soft clustering of expression-profile shapes, GAM trajectory fitting, per-cluster GO enrichment against a temporal-gene background, and an OPTIONAL circadian rhythm-detection branch (MetaCycle/CosinorPy) that runs only when the design covers >=2 full cycles with >=6-8 evenly spaced samples per cycle. Use when analyzing a bulk time-series expression experiment from any omics platform and deciding limma-splines vs DESeq2-LRT for temporal DE, soft vs hard clustering, whether the sampling design even licenses rhythm detection, and which background to use for enrichment. Not for single-cell pseudotime (see temporal-genomics/trajectory-modeling for the bulk-vs-pseudotime boundary) or unknown-period discovery (see temporal-genomics/periodicity-detection).
+author: JZHANG
+examples_zh:
+  - "分析这批时间序列转录组并找出时序模块"
+  - "帮我判断 limma 样条还是 DESeq2 LRT"
+  - "用 Mfuzz 聚类并对每个模块做通路富集"
+examples_en:
+  - "Find temporal gene modules in my time-course transcriptome data"
+  - "Should I use limma splines or DESeq2 LRT for temporal DE?"
+  - "Cluster with Mfuzz and run pathway enrichment per module"
 tool_type: mixed
 primary_tool: Mfuzz
 goal_approach_exempt: true
@@ -285,7 +301,7 @@ rhythmic = results[(results['q'] < 0.05) & (results['rAMP'] > 0.1)]
 
 ## Step 4b: GAM Trajectory Fitting
 
-GAMs here summarize each cluster's temporal shape by fitting a penalized smooth to the STANDARDIZED cluster-mean profile. Because the input is a z-scored mean (not raw counts), a Gaussian family is appropriate; NB-family/offsets are needed only when fitting raw counts directly (see temporal-genomics/trajectory-modeling).
+GAMs here summarize each cluster's temporal shape by fitting a penalized smooth to the STANDARDIZED cluster-mean profile. Because the input is a z-scored mean (not raw counts), a Gaussian family is appropriate; NB-family/offsets are needed only when fitting raw counts directly (see references/temporal-genomics--trajectory-modeling.md).
 
 ### R (mgcv)
 
@@ -407,13 +423,13 @@ if (clusters_with_terms < 3) message('WARNING: Few clusters enriched. Check gene
 
 ## Related Skills
 
-- differential-expression/timeseries-de - Temporal DE methods (limma splines, DESeq2 LRT, maSigPro)
-- temporal-genomics/temporal-clustering - Soft/hard clustering, k selection, DTW details
-- temporal-genomics/circadian-rhythms - Single-condition rhythm detection, sampling design, phase/amplitude
+- references/differential-expression--timeseries-de.md - Temporal DE methods (limma splines, DESeq2 LRT, maSigPro)
+- references/temporal-genomics--temporal-clustering.md - Soft/hard clustering, k selection, DTW details
+- references/temporal-genomics--circadian-rhythms.md - Single-condition rhythm detection, sampling design, phase/amplitude
 - temporal-genomics/differential-rhythmicity - Comparing rhythms between conditions (gain/loss/phase/amplitude)
-- temporal-genomics/trajectory-modeling - GAM fitting, k-vs-edf, bulk-vs-pseudotime boundary
+- references/temporal-genomics--trajectory-modeling.md - GAM fitting, k-vs-edf, bulk-vs-pseudotime boundary
 - temporal-genomics/periodicity-detection - Unknown-period discovery (Lomb-Scargle, wavelets)
-- pathway-analysis/go-enrichment - Enrichment, background choice, GO term simplification
+- references/pathway-analysis--go-enrichment.md - Enrichment, background choice, GO term simplification
 
 ## References
 

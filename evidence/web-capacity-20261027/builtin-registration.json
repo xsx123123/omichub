@@ -1,0 +1,10 @@
+{
+  "celery@5ca8224e52b3": {
+    "queues": [
+      "analysis",
+      "blast_search",
+      "blast_db_build"
+    ],
+    "builtin_registered": false
+  }
+}

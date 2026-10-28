@@ -1,0 +1,246 @@
+{
+  "realApp": true,
+  "realLayout": true,
+  "hover": {
+    ".workbench-card": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "after": "none",
+      "arrows": [
+        "rgb(156, 163, 175)"
+      ]
+    },
+    ".entry-card": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "after": "none",
+      "arrows": [
+        "rgb(156, 163, 175)"
+      ]
+    },
+    ".mechanism-card": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "after": "none",
+      "arrows": [
+        "rgb(156, 163, 175)"
+      ]
+    },
+    ".evidence-note": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "after": "none",
+      "arrows": [
+        "rgb(156, 163, 175)"
+      ]
+    },
+    ".pillar-card": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "after": "none",
+      "arrows": [
+        "rgb(156, 163, 175)"
+      ]
+    },
+    ".ecosystem-card": {
+      "background": "none",
+      "color": "rgb(248, 250, 255)",
+      "border": "rgb(229, 230, 235)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "0",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "matrix(1, 0, 0, 1, 0, -1)",
+      "after": "none",
+      "arrows": [
+        "rgb(156, 163, 175)"
+      ]
+    }
+  },
+  "selected": {
+    ".workbench-card": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "none",
+      "after": "none",
+      "arrows": [
+        "rgb(79, 110, 247)"
+      ]
+    },
+    ".entry-card": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "none",
+      "after": "none",
+      "arrows": [
+        "rgb(79, 110, 247)"
+      ]
+    },
+    ".mechanism-card": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(255, 255, 255, 0)",
+      "border": "rgb(199, 210, 254)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "none",
+      "after": "none",
+      "arrows": [
+        "rgb(79, 110, 247)"
+      ]
+    },
+    ".evidence-note": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(255, 255, 255, 0)",
+      "border": "rgb(199, 210, 254)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "none",
+      "after": "none",
+      "arrows": [
+        "rgb(79, 110, 247)"
+      ]
+    },
+    ".pillar-card": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "none",
+      "after": "none",
+      "arrows": [
+        "rgb(79, 110, 247)"
+      ]
+    },
+    ".ecosystem-card": {
+      "background": "linear-gradient(135deg, rgb(245, 247, 255) 0%, rgb(238, 241, 255) 100%)",
+      "color": "rgba(0, 0, 0, 0)",
+      "border": "rgb(199, 210, 254)",
+      "shadow": "rgba(29, 33, 41, 0.04) 0px 1px 2px 0px, rgba(29, 33, 41, 0.06) 0px 4px 16px 0px",
+      "marker": {
+        "left": "6px",
+        "width": "4px",
+        "top": "12px",
+        "bottom": "12px",
+        "opacity": "1",
+        "color": "rgb(99, 102, 241)"
+      },
+      "transform": "none",
+      "after": "none",
+      "arrows": [
+        "rgb(79, 110, 247)"
+      ]
+    }
+  },
+  "homeOverflow": "visible",
+  "markerColumns": [
+    7,
+    8,
+    9,
+    10
+  ],
+  "mobileOverflow": false,
+  "reducedMotion": true,
+  "errors": []
+}

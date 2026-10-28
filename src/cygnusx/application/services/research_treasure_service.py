@@ -593,10 +593,14 @@ class ResearchTreasureService:
         sequence = 0
         terminal_event_saved = False
         next_cancel_check = 0.0
+        usage: dict[str, int] | None = None
+        llm_calls = 0
 
         def snapshot_metadata() -> dict[str, Any]:
             return {
                 **request_metadata,
+                **({"usage": usage} if usage is not None else {}),
+                "llm_calls": llm_calls,
                 "events": {
                     "cards": cards,
                     "tools": tools,
@@ -647,7 +651,12 @@ class ResearchTreasureService:
             return bool(isinstance(metadata, dict) and metadata.get("cancel_requested"))
 
         try:
-            platform_tools = None
+            # Even with the gateway disabled, tell the trusted runtime why it has
+            # no platform tools. Absence must not look like a standalone install.
+            platform_tools: dict[str, Any] = {
+                "catalog": [],
+                "project_selected": bool(session.project_id),
+            }
             if get_settings().tool_gateway_read_enabled:
                 from cygnusx.application.services.agent_tool_delegation import issue_delegation
                 from cygnusx.application.services.agent_tool_gateway import AgentToolGateway
@@ -655,8 +664,8 @@ class ResearchTreasureService:
                 gateway = AgentToolGateway(self._db)
                 context = await gateway.context(user_id, session_id,
                                                 expected_agent="research_treasure_mouse")
-                platform_tools = {"catalog": gateway.catalog(context),
-                                  "delegation": await issue_delegation(context)}
+                platform_tools.update({"catalog": gateway.catalog(context),
+                                       "delegation": await issue_delegation(context)})
             async for event in self._adapter.stream(
                 messages=messages,
                 model=provider.model,
@@ -675,6 +684,18 @@ class ResearchTreasureService:
                     event_name = str(event.get("type") or "")
                 if isinstance(event.get("delta"), str):
                     assistant_text += event["delta"]
+                if event_name == "usage":
+                    raw_usage = event.get("usage")
+                    if isinstance(raw_usage, dict):
+                        usage = {
+                            key: max(0, value) if isinstance(value, int)
+                            and not isinstance(value, bool) else 0
+                            for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+                            for value in [raw_usage.get(key)]
+                        }
+                    raw_calls = event.get("llm_calls")
+                    if isinstance(raw_calls, int) and not isinstance(raw_calls, bool):
+                        llm_calls = max(llm_calls, raw_calls)
                 if isinstance(event.get("cards"), list):
                     cards = merge_discovery_cards(cards, event["cards"])
                 if event_name == "end" and isinstance(event.get("tools"), list) and event["tools"]:

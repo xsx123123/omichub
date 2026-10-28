@@ -1,0 +1,21 @@
+gsm	group_code	group_label	birth_status	diabetic_status	sex	replicate	tissue	organism	strain	assay	platform	srx_run	layout	read_count	base_count	fastq_bytes
+GSM8605731	T-ND	Term non-diabetic	Term (20 dpc)	Non-diabetic	Male	1	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181731	PAIRED	24477398	7343219400	3575416366
+GSM8605732	T-ND	Term non-diabetic	Term (20 dpc)	Non-diabetic	Male	2	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181730	PAIRED	26148472	7844541600	3841398551
+GSM8605733	T-ND	Term non-diabetic	Term (20 dpc)	Non-diabetic	Male	3	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181729	PAIRED	21233078	6369923400	3088300950
+GSM8605734	T-ND	Term non-diabetic	Term (20 dpc)	Non-diabetic	Male	4	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181728	PAIRED	23689617	7106885100	3349707281
+GSM8605735	T-ND	Term non-diabetic	Term (20 dpc)	Non-diabetic	Male	5	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181727	PAIRED	24721827	7416548100	3643980847
+GSM8605736	T-D	Term diabetic (STZ)	Term (20 dpc)	Diabetic (STZ)	Male	1	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181726	PAIRED	24760844	7428253200	3565258434
+GSM8605737	T-D	Term diabetic (STZ)	Term (20 dpc)	Diabetic (STZ)	Male	2	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181725	PAIRED	23883386	7165015800	3482569815
+GSM8605738	T-D	Term diabetic (STZ)	Term (20 dpc)	Diabetic (STZ)	Male	3	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181724	PAIRED	21844018	6553205400	3129699757
+GSM8605739	T-D	Term diabetic (STZ)	Term (20 dpc)	Diabetic (STZ)	Male	4	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181723	PAIRED	27316165	8194849500	3962792339
+GSM8605740	T-D	Term diabetic (STZ)	Term (20 dpc)	Diabetic (STZ)	Male	5	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181722	PAIRED	24414814	7324444200	3481620086
+GSM8605741	PT-ND	Preterm non-diabetic	Preterm (19 dpc)	Non-diabetic	Male	1	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181721	PAIRED	20057924	6017377200	2910491822
+GSM8605742	PT-ND	Preterm non-diabetic	Preterm (19 dpc)	Non-diabetic	Male	2	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181720	PAIRED	29545957	8863787100	4317420508
+GSM8605743	PT-ND	Preterm non-diabetic	Preterm (19 dpc)	Non-diabetic	Male	3	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181719	PAIRED	32133524	9640057200	4746184467
+GSM8605744	PT-ND	Preterm non-diabetic	Preterm (19 dpc)	Non-diabetic	Male	4	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181718	PAIRED	33032997	9909899100	4821271798
+GSM8605745	PT-ND	Preterm non-diabetic	Preterm (19 dpc)	Non-diabetic	Male	5	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181717	PAIRED	28105542	8431662600	4108895726
+GSM8605746	PT-D	Preterm diabetic (STZ)	Preterm (19 dpc)	Diabetic (STZ)	Male	1	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181716	PAIRED	26918605	8075581500	3864985406
+GSM8605747	PT-D	Preterm diabetic (STZ)	Preterm (19 dpc)	Diabetic (STZ)	Male	2	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181715	PAIRED	24233937	7270181100	3491397454
+GSM8605748	PT-D	Preterm diabetic (STZ)	Preterm (19 dpc)	Diabetic (STZ)	Male	3	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181714	PAIRED	22429799	6728939700	3148514847
+GSM8605749	PT-D	Preterm diabetic (STZ)	Preterm (19 dpc)	Diabetic (STZ)	Male	4	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181713	PAIRED	26538637	7961591100	3801461856
+GSM8605750	PT-D	Preterm diabetic (STZ)	Preterm (19 dpc)	Diabetic (STZ)	Male	5	Kidney (whole)	Mus musculus	CD-1	Bulk RNA-seq	GPL24247 Illumina NovaSeq 6000	SRR31181712	PAIRED	20682477	6204743100	2844053797

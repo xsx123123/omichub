@@ -82,10 +82,10 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- pathway-analysis/go-enrichment - GO over-representation, background universe, redundancy reduction, length bias
-- pathway-analysis/gsea - Ranked-list GSEA, named decreasing vector, ranking metric, leading edge, NES
-- pathway-analysis/kegg-pathways - KEGG pathway/module enrichment, live DB, prokaryotes, multi-condition
-- pathway-analysis/reactome-pathways - Reactome curated-pathway ORA and GSEA, ENTREZ IDs, reproducible local DB
-- pathway-analysis/wikipathways - WikiPathways community-pathway enrichment, versioned GMT, broad species
-- pathway-analysis/enrichment-visualization - Dot/bar/cnet/emap/GSEA plots and required pre-steps
+- references/pathway-analysis--go-enrichment.md - GO over-representation, background universe, redundancy reduction, length bias
+- references/pathway-analysis--gsea.md - Ranked-list GSEA, named decreasing vector, ranking metric, leading edge, NES
+- references/pathway-analysis--kegg-pathways.md - KEGG pathway/module enrichment, live DB, prokaryotes, multi-condition
+- references/pathway-analysis--reactome-pathways.md - Reactome curated-pathway ORA and GSEA, ENTREZ IDs, reproducible local DB
+- references/pathway-analysis--wikipathways.md - WikiPathways community-pathway enrichment, versioned GMT, broad species
+- references/pathway-analysis--enrichment-visualization.md - Dot/bar/cnet/emap/GSEA plots and required pre-steps
 - differential-expression/de-results - Source of the gene list and the ranking statistic

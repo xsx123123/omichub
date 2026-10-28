@@ -133,6 +133,7 @@ class Settings(BaseSettings):
     treasure_agent_url: str = ""
     treasure_agent_internal_token: str = ""
     treasure_agent_timeout_seconds: float = Field(default=900.0, ge=30.0, le=3600.0)
+    treasure_stats_timezone: str = "Asia/Shanghai"
     agent_context_cache_ttl_seconds: int = 60
     # Use a factory so each Settings() construction re-reads the nested
     # CONTEXT_COMPACTION_* environment variables instead of freezing values at
@@ -163,6 +164,8 @@ class Settings(BaseSettings):
     celery_result_backend: str = ""
     # Audit-report collection has an independent bounded lifecycle; no analysis reruns.
     report_generation_timeout_seconds: int = Field(default=600, ge=30, le=1800)
+    report_preview_ttl_seconds: int = Field(default=300, ge=30, le=900)
+    report_preview_max_bytes: int = Field(default=32 * 1024**2, ge=1024, le=128 * 1024**2)
     report_capture_max_bytes: int = Field(default=16 * 1024**3, ge=1)
     report_generation_max_attempts: int = Field(default=3, ge=1, le=10)
     report_generation_reconcile_seconds: int = Field(default=60, ge=10, le=300)
@@ -898,6 +901,7 @@ class Settings(BaseSettings):
     def validate_welcome_settings(self) -> "Settings":
         from zoneinfo import ZoneInfo
         ZoneInfo(self.welcome_timezone)
+        ZoneInfo(self.treasure_stats_timezone)
         if self.welcome_min_valid_count > self.welcome_target_count:
             raise ValueError("welcome_min_valid_count must not exceed target count")
         return self

@@ -1,0 +1,11 @@
+{
+  "new_mypy_errors": [],
+  "removed_mypy_errors": [
+    "src/cygnusx/middleware/module_gate.py: error: Function is missing a type annotation for one or more parameters  [no-untyped-def]",
+    "src/cygnusx/middleware/module_gate.py: error: Returning Any from function declared to return \"Response\"  [no-any-return]"
+  ],
+  "new_test_failures": [],
+  "same_16_baseline_failures": true,
+  "final_suite_same_16_baseline_failures": true,
+  "final_suite_passed": 4205
+}

@@ -1,0 +1,11 @@
+{
+  "new_errors": [],
+  "removed_errors": [
+    "src/cygnusx/middleware/audit.py: error: Function is missing a type annotation for one or more parameters  [no-untyped-def]",
+    "src/cygnusx/middleware/audit.py: error: Returning Any from function declared to return \"Response\"  [no-any-return]",
+    "src/cygnusx/middleware/cookie.py: error: Function is missing a type annotation for one or more parameters  [no-untyped-def]",
+    "src/cygnusx/middleware/cookie.py: error: Returning Any from function declared to return \"Response\"  [no-any-return]"
+  ],
+  "current_summary": "Found 992 errors in 208 files (checked 787 source files)",
+  "baseline_summary": "Found 1001 errors in 210 files (checked 787 source files)"
+}

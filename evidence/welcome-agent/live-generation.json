@@ -1,0 +1,498 @@
+[
+  {
+    "batch_id": "d2663315-6d23-4759-a42f-27e2fb387ebd",
+    "audience": "admin",
+    "status": "scheduled",
+    "prompt_sha256": "0ee6efda77b76809ad395b73e524ce9bc851399ecd28690e49cd879cc5e2d33a",
+    "run_id": "000a9bdd-3aa3-4c6b-9528-6f7460ffa31f",
+    "qa": {
+      "valid": true,
+      "topics": [
+        "discovery",
+        "evidence",
+        "general",
+        "research",
+        "workflow"
+      ],
+      "rejections": {
+        "duplicate": 1,
+        "agent_unavailable": 1
+      },
+      "valid_count": 24,
+      "policy_version": "v1"
+    },
+    "calls": [
+      {
+        "attempt": 1,
+        "position": 0,
+        "error_code": "RuntimeError"
+      },
+      {
+        "usage": {
+          "total_tokens": 2755,
+          "cached_tokens": 256,
+          "prompt_tokens": 401,
+          "completion_tokens": 2354,
+          "prompt_tokens_details": {
+            "cached_tokens": 256
+          },
+          "prompt_cache_hit_tokens": 256,
+          "prompt_cache_miss_tokens": 145,
+          "completion_tokens_details": {
+            "reasoning_tokens": 2128
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 1,
+        "agent_run_id": "000a9bdd-3aa3-4c6b-9528-6f7460ffa31f",
+        "model_provider": "openai_compatible",
+        "request_sha256": "a6c7502ff40f771e58ceb5cd692073e77676ec752f5aef418fcd036802cd8383",
+        "model_config_id": "7f909e98-1d25-43b0-9797-1bf61ed7b8cf",
+        "estimated_cost_cny": 0.0019634
+      },
+      {
+        "usage": {
+          "total_tokens": 1717,
+          "cached_tokens": 384,
+          "prompt_tokens": 518,
+          "completion_tokens": 1199,
+          "prompt_tokens_details": {
+            "cached_tokens": 384
+          },
+          "prompt_cache_hit_tokens": 384,
+          "prompt_cache_miss_tokens": 134,
+          "completion_tokens_details": {
+            "reasoning_tokens": 976
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 2,
+        "agent_run_id": "000a9bdd-3aa3-4c6b-9528-6f7460ffa31f",
+        "model_provider": "openai_compatible",
+        "request_sha256": "1e00b78f7c17a8d22a39a590b10f8fc38404e7144d30ac9c9558be8674ede1e6",
+        "model_config_id": "7f909e98-1d25-43b0-9797-1bf61ed7b8cf",
+        "estimated_cost_cny": 0.0010628
+      },
+      {
+        "usage": {
+          "total_tokens": 2283,
+          "cached_tokens": 384,
+          "prompt_tokens": 632,
+          "completion_tokens": 1651,
+          "prompt_tokens_details": {
+            "cached_tokens": 384
+          },
+          "prompt_cache_hit_tokens": 384,
+          "prompt_cache_miss_tokens": 248,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1426
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 3,
+        "agent_run_id": "000a9bdd-3aa3-4c6b-9528-6f7460ffa31f",
+        "model_provider": "openai_compatible",
+        "request_sha256": "631091e9f7f029f3f46e92b0582ebe5573638a96c622c1760c30d5b549321cb0",
+        "model_config_id": "7f909e98-1d25-43b0-9797-1bf61ed7b8cf",
+        "estimated_cost_cny": 0.0014472000000000003
+      },
+      {
+        "usage": {
+          "total_tokens": 773,
+          "cached_tokens": 128,
+          "prompt_tokens": 732,
+          "completion_tokens": 41,
+          "prompt_tokens_details": {
+            "cached_tokens": 128
+          },
+          "prompt_cache_hit_tokens": 128,
+          "prompt_cache_miss_tokens": 604,
+          "completion_tokens_details": {
+            "reasoning_tokens": 0
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 4,
+        "agent_run_id": "000a9bdd-3aa3-4c6b-9528-6f7460ffa31f",
+        "model_provider": "openai_compatible",
+        "request_sha256": "13d2e58455367ee060f054d24540ed1aada370ca1b13c1debf5e9e823eed1cb4",
+        "model_config_id": "7f909e98-1d25-43b0-9797-1bf61ed7b8cf",
+        "estimated_cost_cny": 0.00017920000000000002
+      }
+    ],
+    "messages": [
+      {
+        "text": "欢迎回来，愿版本化流程守护每一次严谨分析。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "从容推进流程，让质量与证据同行。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，愿严谨维护让研究过程更可信。",
+        "topic": "research",
+        "tone": "professional"
+      },
+      {
+        "text": "愿每次分析都留下清晰足迹，便于复现与核对。",
+        "topic": "evidence",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，让流程有迹可循，让好奇心稳稳落地。",
+        "topic": "discovery",
+        "tone": "playful"
+      },
+      {
+        "text": "让版本化流程成为默契，让质量检查成为习惯。",
+        "topic": "general",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，愿可复现的结果让协作更安心。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "一起把证据链理清，把每一步维护得稳妥。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，愿每次维护都沉淀为清晰证据。",
+        "topic": "evidence",
+        "tone": "warm"
+      },
+      {
+        "text": "从流程到核对，让可复现成为日常默契。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "愿版本化流程守护探索，也守护研究质量。",
+        "topic": "research",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，让结果追溯与证据链保持完整。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "愿好奇心稳稳落地，也愿发现留下足迹。",
+        "topic": "discovery",
+        "tone": "playful"
+      },
+      {
+        "text": "先理清流程，再从容推进，质量自在其中。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，愿严谨维护让协作更安心。",
+        "topic": "general",
+        "tone": "professional"
+      },
+      {
+        "text": "让每个结论都有据可循，每个足迹都可复现。",
+        "topic": "evidence",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，愿严谨维护让质量与证据同行。",
+        "topic": "evidence",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，让版本化流程守护可复现分析。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "愿严谨核对为研究留下清晰足迹。",
+        "topic": "research",
+        "tone": "professional"
+      },
+      {
+        "text": "从容推进组学流程，让质量检查成为习惯。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "先理清结果追溯，再稳稳推进维护与核对。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "愿探索有迹可循，愿维护沉淀为可靠证据。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，让流程清晰，让复现成为默契。",
+        "topic": "workflow",
+        "tone": "playful"
+      },
+      {
+        "text": "欢迎回来，愿每次维护都留下可追溯的印记。",
+        "topic": "workflow",
+        "tone": "warm"
+      }
+    ]
+  },
+  {
+    "batch_id": "cf6971b2-31c7-4b4e-b6da-4622719df670",
+    "audience": "general",
+    "status": "scheduled",
+    "prompt_sha256": "0ee6efda77b76809ad395b73e524ce9bc851399ecd28690e49cd879cc5e2d33a",
+    "run_id": "9efdb787-e688-4a5e-a6ad-49b1e37af573",
+    "qa": {
+      "valid": true,
+      "topics": [
+        "discovery",
+        "evidence",
+        "general",
+        "research",
+        "workflow"
+      ],
+      "rejections": {
+        "duplicate": 1,
+        "agent_unavailable": 1
+      },
+      "valid_count": 24,
+      "policy_version": "v1"
+    },
+    "calls": [
+      {
+        "attempt": 1,
+        "position": 0,
+        "error_code": "RuntimeError"
+      },
+      {
+        "usage": {
+          "total_tokens": 2291,
+          "cached_tokens": 512,
+          "prompt_tokens": 747,
+          "completion_tokens": 1544,
+          "prompt_tokens_details": {
+            "cached_tokens": 512
+          },
+          "prompt_cache_hit_tokens": 512,
+          "prompt_cache_miss_tokens": 235,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1319
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 1,
+        "agent_run_id": "9efdb787-e688-4a5e-a6ad-49b1e37af573",
+        "model_provider": "openai_compatible",
+        "request_sha256": "575da012d45bbc1a24dd39e18b65240b2a771f2907ec7ea11d7f991c3b18bc3e",
+        "model_config_id": "7f909e98-1d25-43b0-9797-1bf61ed7b8cf",
+        "estimated_cost_cny": 0.0013846000000000002
+      },
+      {
+        "usage": {
+          "total_tokens": 2610,
+          "cached_tokens": 640,
+          "prompt_tokens": 863,
+          "completion_tokens": 1747,
+          "prompt_tokens_details": {
+            "cached_tokens": 640
+          },
+          "prompt_cache_hit_tokens": 640,
+          "prompt_cache_miss_tokens": 223,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1520
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 2,
+        "agent_run_id": "9efdb787-e688-4a5e-a6ad-49b1e37af573",
+        "model_provider": "openai_compatible",
+        "request_sha256": "4011acfd39453aa2e5853b39c166689753e6fb562476d8fffb6f2a42b4d095ba",
+        "model_config_id": "7f909e98-1d25-43b0-9797-1bf61ed7b8cf",
+        "estimated_cost_cny": 0.0015702000000000003
+      },
+      {
+        "usage": {
+          "total_tokens": 3203,
+          "cached_tokens": 768,
+          "prompt_tokens": 965,
+          "completion_tokens": 2238,
+          "prompt_tokens_details": {
+            "cached_tokens": 768
+          },
+          "prompt_cache_hit_tokens": 768,
+          "prompt_cache_miss_tokens": 197,
+          "completion_tokens_details": {
+            "reasoning_tokens": 2022
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 3,
+        "agent_run_id": "9efdb787-e688-4a5e-a6ad-49b1e37af573",
+        "model_provider": "openai_compatible",
+        "request_sha256": "02a903c0aa837b2307280fb887287c836b7438163759f21b0267fa79c34c7812",
+        "model_config_id": "7f909e98-1d25-43b0-9797-1bf61ed7b8cf",
+        "estimated_cost_cny": 0.0019834
+      },
+      {
+        "usage": {
+          "total_tokens": 1588,
+          "cached_tokens": 128,
+          "prompt_tokens": 1071,
+          "completion_tokens": 517,
+          "prompt_tokens_details": {
+            "cached_tokens": 128
+          },
+          "prompt_cache_hit_tokens": 128,
+          "prompt_cache_miss_tokens": 943,
+          "completion_tokens_details": {
+            "reasoning_tokens": 472
+          }
+        },
+        "attempt": 1,
+        "model_id": "deepseek-v4-flash",
+        "position": 4,
+        "agent_run_id": "9efdb787-e688-4a5e-a6ad-49b1e37af573",
+        "model_provider": "openai_compatible",
+        "request_sha256": "7a6f737a71bc3bd7a282b8c3eb5e6a39fac40d65324dd0956e84deaa49f8874f",
+        "model_config_id": "7f909e98-1d25-43b0-9797-1bf61ed7b8cf",
+        "estimated_cost_cny": 0.0006278000000000001
+      }
+    ],
+    "messages": [
+      {
+        "text": "欢迎回来，愿版本化流程陪伴每次探索。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "让结果追溯成为习惯，让复现更从容。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "从清晰流程出发，为探索留下可复现的足迹。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，让协作与核对都有迹可循。",
+        "topic": "general",
+        "tone": "professional"
+      },
+      {
+        "text": "愿好奇心得以前行，也愿结论有据可查。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，愿流程清晰，复现自然发生。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "让版本化流程守住质量，让追溯串起证据。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "带着好奇推进研究，也带着严谨回看足迹。",
+        "topic": "research",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，愿每次好奇都沿着清晰流程前行。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "让版本化流程陪你把步骤理清，再从容推进。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "欢迎回来，愿结果追溯让核对都有依据。",
+        "topic": "evidence",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，让清晰流程与可复现分析成为日常。",
+        "topic": "general",
+        "tone": "warm"
+      },
+      {
+        "text": "先理清追溯路径，再稳稳推进核对。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "愿版本化流程守住质量，也守住研究的从容。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，愿探索有迹可循，发现自然沉淀。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，愿探索沿着清晰流程稳步前行。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "让版本化流程陪伴每次分析，让结果可追溯。",
+        "topic": "workflow",
+        "tone": "professional"
+      },
+      {
+        "text": "每一步核对，都为复现留下清晰依据。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "带着好奇推进研究，让追溯成为日常默契。",
+        "topic": "research",
+        "tone": "playful"
+      },
+      {
+        "text": "从清晰流程出发，让复现自然发生。",
+        "topic": "workflow",
+        "tone": "warm"
+      },
+      {
+        "text": "愿每次探索都留下可追溯的印记。",
+        "topic": "discovery",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，让质量与证据在流程中同行。",
+        "topic": "evidence",
+        "tone": "professional"
+      },
+      {
+        "text": "从容推进组学分析，也让结果便于回看。",
+        "topic": "general",
+        "tone": "warm"
+      },
+      {
+        "text": "欢迎回来，愿好奇带着流程前行，也留下可复现的足迹。",
+        "topic": "discovery",
+        "tone": "warm"
+      }
+    ]
+  }
+]

@@ -1,0 +1,86 @@
+{
+  "started_at": "2026-10-27T01:36:02.473889+00:00",
+  "base_url": "http://192.168.64.7:18402",
+  "profile": "business",
+  "paths": [
+    "/api/v1/auth/me",
+    "/api/v1/projects",
+    "/api/v1/tasks?limit=20",
+    "/api/v1/chat/sessions",
+    "/api/v1/modules/registry"
+  ],
+  "think_time_s": 0.0,
+  "warmup_s": 3.0,
+  "timeout_s": 15,
+  "criteria": {
+    "max_error_rate": 0.01,
+    "max_p95_ms": 1000
+  },
+  "model": "closed-loop: one outstanding request per virtual user",
+  "stages": [
+    {
+      "users": 20,
+      "requested_duration_s": 30.0,
+      "elapsed_s": 30.058,
+      "requests": 7336,
+      "successful_requests": 7336,
+      "rps": 244.06,
+      "successful_rps": 244.06,
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 7336
+      },
+      "errors": {},
+      "latency_ms": {
+        "p50": 73.76,
+        "p95": 131.79,
+        "p99": 384.82,
+        "max": 464.18
+      },
+      "successful_latency_ms": {
+        "p50": 73.76,
+        "p95": 131.79,
+        "p99": 384.82
+      },
+      "generator_event_loop_lag_p99_ms": 1.56,
+      "endpoints": {
+        "/api/v1/modules/registry": {
+          "requests": 1466,
+          "p95_ms": 78.86,
+          "statuses": {
+            "200": 1466
+          }
+        },
+        "/api/v1/auth/me": {
+          "requests": 1468,
+          "p95_ms": 139.37,
+          "statuses": {
+            "200": 1468
+          }
+        },
+        "/api/v1/chat/sessions": {
+          "requests": 1467,
+          "p95_ms": 137.5,
+          "statuses": {
+            "200": 1467
+          }
+        },
+        "/api/v1/tasks?limit=20": {
+          "requests": 1468,
+          "p95_ms": 149.27,
+          "statuses": {
+            "200": 1468
+          }
+        },
+        "/api/v1/projects": {
+          "requests": 1467,
+          "p95_ms": 140.88,
+          "statuses": {
+            "200": 1467
+          }
+        }
+      },
+      "passed": true
+    }
+  ]
+}

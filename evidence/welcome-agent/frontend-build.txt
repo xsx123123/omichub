@@ -1,0 +1,175 @@
+
+> cygnusx-frontend@0.1.0 prebuild
+> node scripts/build-treasure-island.mjs
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 2318 modules transformed.
+rendering chunks...
+computing gzip size...
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-cyrillic-ext-400-normal-C_uLvvQ5.woff2      1.16 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-cyrillic-ext-500-normal-C9ShMxGR.woff2      1.17 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-cyrillic-ext-500-normal-CEVyPk4Y.woff       1.74 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-cyrillic-ext-400-normal-Bh0R7Dhr.woff       1.75 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-97-wght-normal-BsBHkXi3.woff2                 2.08 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-98-wght-normal-BZqSA1r_.woff2                 3.42 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-4-wght-normal-BRbPMj-C.woff2                  3.80 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-vietnamese-400-normal-ByoDsISC.woff2        3.92 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-vietnamese-500-normal-BvH7FW2L.woff2        4.04 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-greek-400-normal-C190GLew.woff2             4.23 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-greek-500-normal-JpySY46c.woff2             4.28 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-cyrillic-400-normal-BEIGL1Tu.woff2          5.33 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-cyrillic-500-normal-DmUKJPL_.woff2          5.36 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-vietnamese-400-normal-CqNFfHCs.woff         5.37 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-vietnamese-500-normal-DNRqzVM1.woff         5.48 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-greek-400-normal-B9oWc5Lo.woff              5.66 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-greek-500-normal-D7SFKleX.woff              5.72 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-vietnamese-400-normal-CvGt0Ybw.woff2              6.21 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-vietnamese-600-normal-BjlAJixd.woff2              6.28 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-cyrillic-400-normal-ugxPyKxw.woff           6.98 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-cyrillic-500-normal-DJqRU3vO.woff           7.02 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-88-wght-normal-ClNDOCGW.woff2                 7.34 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-latin-ext-400-normal-Bc8Ftmh3.woff2         7.34 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-latin-ext-500-normal-Cut-4mMH.woff2         7.53 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-vietnamese-600-normal-DlAl5EAR.woff               7.93 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-vietnamese-400-normal-B65MOf9T.woff               7.98 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-87-wght-normal-DYfJ-vGE.woff2                 8.01 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-latin-ext-wght-normal-CqPqLCfe.woff2          8.24 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-91-wght-normal-CGekvDdH.woff2                 8.70 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-vietnamese-wght-normal-y5SU35Rl.woff2         9.10 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-90-wght-normal-BWcrRNoG.woff2                 9.34 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-99-wght-normal-Q_IptJM5.woff2                 9.70 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-cyrillic-wght-normal-CRA5_Pf1.woff2          10.01 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-latin-ext-400-normal-fXTG6kC5.woff         10.13 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-latin-ext-500-normal-ckzbgY84.woff         10.34 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/chest-DiDfyeQg.webp                                       10.76 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-89-wght-normal-IQU_KQA8.woff2                10.98 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-21-wght-normal-DIu_1ZBI.woff2                11.36 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-6-wght-normal-ozUCEY9O.woff2                 11.46 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-peek-CXLMn0R7.webp                                  14.15 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-sad-CFq81YpJ.webp                                   15.34 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-base-wfeLgq3w.webp                                  16.41 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-wink-DHIJi7G8.webp                                  16.92 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-latin-ext-400-normal-D8gbi3Gu.woff2              17.29 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-latin-ext-600-normal-BtzmzP0X.woff2              17.34 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-latin-400-normal-6IfK1voy.woff2                  17.97 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-latin-600-normal-BFCDtZfi.woff2                  18.10 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-sleep-CJ7tLuJC.webp                                 18.51 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-sniff-DsiF3pHQ.webp                                 19.07 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-5-wght-normal-DI846rD9.woff2                 20.18 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-chest-open-DFgeOaM-.webp                            20.65 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-latin-400-normal-V6pRDFza.woff2            21.17 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-night-Cdqh4n95.webp                                 21.78 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-latin-500-normal-BWZEU5yA.woff2            21.83 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-shovel-Cwd9nYOy.webp                                21.84 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-latin-ext-600-normal-B0Dy4lqi.woff               22.36 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-latin-ext-400-normal-UihxqfOe.woff               22.37 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-latin-400-normal-NUPT2cO8.woff                   22.48 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/fraunces-latin-600-normal-DL5QCzvS.woff                   22.51 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-read-study-BowM0Yge.webp                            23.79 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-latin-wght-normal-DYAKOyvl.woff2             25.24 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-read-map-BQ9n005q.webp                              25.59 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-crown-DF_Qglq9.webp                                 25.84 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-spin-DtxHrF-q.webp                                  26.34 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-85-wght-normal-DBcDBu1n.woff2                26.90 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-sparkle-LzCxqGug.webp                               27.16 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-latin-400-normal-6-qcROiO.woff             27.50 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff             28.21 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/mouse-read-cart-BUkrhthd.webp                             28.87 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-84-wght-normal-C7NxT478.woff2                32.61 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-80-wght-normal-BEFypWOO.woff2                32.63 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-86-wght-normal-CLJIoPpl.woff2                33.58 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-41-wght-normal-CZqajZnl.woff2                36.42 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-77-wght-normal-Dkbi3pye.woff2                36.79 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-73-wght-normal-DwSJRYPJ.woff2                39.31 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-79-wght-normal-DoJG4UTB.woff2                41.23 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-60-wght-normal-C1lngC61.woff2                41.43 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-64-wght-normal-CbIuD2Eg.woff2                41.54 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-68-wght-normal-c0FjfUaj.woff2                41.57 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-65-wght-normal-BGqvKda2.woff2                41.61 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-51-wght-normal-C2bq6hC8.woff2                41.62 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-36-wght-normal-CtU9CyKw.woff2                41.83 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-70-wght-normal-ColEcmtJ.woff2                42.24 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-83-wght-normal-C9UjAcMM.woff2                43.50 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-53-wght-normal-Bgkuo2tF.woff2                43.53 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-75-wght-normal-B0qL41rF.woff2                43.94 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-61-wght-normal-BxWkGF5M.woff2                45.28 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-42-wght-normal-CQ4lY28u.woff2                45.54 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-50-wght-normal-C5KfAmFp.woff2                45.88 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-82-wght-normal-DcxfR5OJ.woff2                46.18 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-118-wght-normal-BPEb0gM9.woff2               46.19 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-43-wght-normal-psppu0d8.woff2                46.62 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-40-wght-normal-BVn4-kgX.woff2                46.63 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-34-wght-normal-BF1rqDSt.woff2                46.89 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-72-wght-normal-D1VyfEG3.woff2                47.03 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-31-wght-normal-DW0t445S.woff2                47.22 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-33-wght-normal-BOTZYTjM.woff2                47.45 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-27-wght-normal-BP2pEGQH.woff2                47.49 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-81-wght-normal-ed_TZlfo.woff2                47.55 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-59-wght-normal-Azv2Ku9_.woff2                47.68 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-71-wght-normal-ChZfXpdg.woff2                47.90 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-55-wght-normal-BV_Oy6IF.woff2                48.13 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-76-wght-normal-BPLMO_2x.woff2                48.42 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-78-wght-normal-BFUXeSw6.woff2                49.16 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-63-wght-normal-4La5uKvS.woff2                49.18 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-28-wght-normal-BWPKDbtH.woff2                50.20 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-35-wght-normal-Bosspiyr.woff2                50.69 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-48-wght-normal-DFMjDDY6.woff2                50.76 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-26-wght-normal-YNOygvr_.woff2                50.89 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-39-wght-normal-Ddtm1XVC.woff2                51.78 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-52-wght-normal-P18e_Y0j.woff2                51.84 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-54-wght-normal-DL5lmlUd.woff2                52.00 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-117-wght-normal-Dsz3vkzU.woff2               52.46 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-32-wght-normal-ShbWPcei.woff2                52.55 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-67-wght-normal-CC-WRBV-.woff2                52.58 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-49-wght-normal-B7l_3BZr.woff2                52.84 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-66-wght-normal-BvNozWOY.woff2                52.87 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-116-wght-normal-vdFVzbO2.woff2               52.98 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-56-wght-normal-B4L7Hj8f.woff2                53.50 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-37-wght-normal-ghDiyiuv.woff2                53.53 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-29-wght-normal-45aVmHn_.woff2                54.01 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-44-wght-normal-cbKJlTUe.woff2                54.24 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-38-wght-normal-4Nz8k_dt.woff2                54.59 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-30-wght-normal-B8_s30jZ.woff2                54.66 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-57-wght-normal-DU8YBsDj.woff2                55.50 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-69-wght-normal-D596Jjl2.woff2                55.60 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-47-wght-normal-C5Kgg1_m.woff2                56.16 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-74-wght-normal-Cte7o1QG.woff2                56.42 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-115-wght-normal-BN__2iBG.woff2               56.51 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-23-wght-normal-4HrHKhpL.woff2                56.79 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-58-wght-normal-CE0BKS9u.woff2                57.65 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-112-wght-normal-CiZxJMyY.woff2               57.65 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-46-wght-normal-CErGc6Mt.woff2                57.67 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-114-wght-normal-CRH9SDZu.woff2               57.96 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-101-wght-normal-c94LAl5p.woff2               58.20 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-25-wght-normal-C3Jm6l7O.woff2                58.32 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-113-wght-normal-OgQXOX6x.woff2               58.65 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-62-wght-normal-CXXMAq-5.woff2                59.11 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-109-wght-normal-CnjNbNmw.woff2               60.37 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-102-wght-normal-C1RtbCZr.woff2               60.71 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-107-wght-normal-kFQzJDLH.woff2               61.08 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-110-wght-normal-D2JBr045.woff2               61.47 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-104-wght-normal-CJT2ioDJ.woff2               61.59 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-105-wght-normal-BFoiJwz2.woff2               61.83 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-24-wght-normal-B58DWgHS.woff2                62.58 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-106-wght-normal-D6uUHw3w.woff2               62.64 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-111-wght-normal-ClFr5QXM.woff2               62.66 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-103-wght-normal-DGHo20nu.woff2               63.86 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-100-wght-normal-DrqXJETY.woff2               64.55 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-108-wght-normal-7aXvqIa2.woff2               64.55 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-22-wght-normal-VXjdYcT-.woff2                65.38 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-45-wght-normal-MKIEVRIC.woff2                67.62 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/noto-sans-sc-119-wght-normal-BfzSEbFz.woff2               76.80 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/module-inventory.json                                           411.61 kB │ gzip:  15.33 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/assets/intro-DAYKUuh7.png                                     1,943.43 kB
+../../home/zj/zj_code_libarary/OmicHub/frontend/public/treasure-island/treasure-island.js                                            1,120.96 kB │ gzip: 334.25 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.92s
+
+> cygnusx-frontend@0.1.0 build
+> vue-tsc -b && vite build
+

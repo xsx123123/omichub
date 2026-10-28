@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-scrnaseq-pipeline
 description: Orchestrates the end-to-end single-cell RNA-seq pipeline from 10x Cell Ranger output to annotated cell types, chaining ambient-RNA removal, doublet detection, MAD-adaptive QC, normalization, integration, clustering, marker annotation, and (separately) pseudobulk DE + differential abundance. Use when honoring the made-once counting commitments (reference build/Ensembl vintage, --include-introns, cell-calling, feature namespace), ordering correct-then-detect-then-normalize (ambient before doublet before normalize), running per-sample QC before merge, integrating-then-clustering (never testing on integrated values), aggregating to pseudobulk for condition DE instead of cells-as-replicates, or pairing DE with differential abundance. Hands mechanism to the single-cell component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 单细胞转录组分析流程
+display_name_en: Single-Cell RNA-seq Pipeline
+description_zh: >-
+  从 10x Cell Ranger 输出到细胞类型注释的单细胞 RNA-seq 全流程，涵盖环境 RNA 去除、双联体检测、MAD 自适应质控、归一化、整合、聚类、标记基因注释及 pseudobulk 差异分析。
+description_en: >-
+  Orchestrates the end-to-end single-cell RNA-seq pipeline from 10x Cell Ranger output to annotated cell types, chaining ambient-RNA removal, doublet detection, MAD-adaptive QC, normalization, integration, clustering, marker annotation, and (separately) pseudobulk DE + differential abundance. Use when honoring the made-once counting commitments (reference build/Ensembl vintage, --include-introns, cell-calling, feature namespace), ordering correct-then-detect-then-normalize (ambient before doublet before normalize), running per-sample QC before merge, integrating-then-clustering (never testing on integrated values), aggregating to pseudobulk for condition DE instead of cells-as-replicates, or pairing DE with differential abundance. Hands mechanism to the single-cell component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 10x 数据完成质控、整合、聚类和注释"
+  - "帮我按样本先做质控再合并"
+  - "生成 pseudobulk 差异表达和细胞丰度分析"
+examples_en:
+  - "Run QC, integration, clustering, and annotation on my 10x data"
+  - "Apply per-sample QC before merging the samples"
+  - "Generate pseudobulk differential expression and abundance results"
 tool_type: mixed
 primary_tool: Seurat
 goal_approach_exempt: true
@@ -49,12 +65,12 @@ This is a workflow skill: it owns the chaining decisions and hand-offs, not the 
 ## Pipeline orchestration: the ordering decisions that make or break the result
 
 Stage order is not arbitrary; getting it wrong silently corrupts every downstream step. The cross-cutting decisions this pipeline must get right:
-- Correct-then-detect-then-normalize, never reorder. Ambient-RNA removal (SoupX/CellBender) reads the RAW droplet matrix and MUST precede doublet detection and the final QC thresholds (ambient inflation distorts both doublet scores and per-cell QC); doublet detection precedes integration (doublets seed fake intermediate clusters). See single-cell/preprocessing.
+- Correct-then-detect-then-normalize, never reorder. Ambient-RNA removal (SoupX/CellBender) reads the RAW droplet matrix and MUST precede doublet detection and the final QC thresholds (ambient inflation distorts both doublet scores and per-cell QC); doublet detection precedes integration (doublets seed fake intermediate clusters). See references/single-cell--preprocessing.md.
 - Multiplexed (hashed) pools are demultiplexed FIRST. When samples are pooled with cell hashing (HTO/MULTI-seq) or genotype multiplexing, assign each cell to its sample of origin and remove cross-sample doublets before any per-sample step; the per-sample QC and doublet operations below assume the pool is already split by sample. See single-cell/hashing-demultiplexing.
-- Per-sample QC and doublet detection come BEFORE any merge or integration. Ambient-RNA cleanup (SoupX/CellBender), mito/gene-count filtering, and doublet calling (expected rate ~0.8% per 1,000 recovered cells) are per-capture operations; running them on a pooled object lets one lane's artifacts contaminate the shared null and lets surviving doublets form fake intermediate clusters. See single-cell/preprocessing and single-cell/doublet-detection.
-- Integrate, THEN cluster, THEN annotate - never reorder. For multi-sample designs, batch-correct on a shared embedding (Harmony/scVI/RPCA) and cluster on the corrected graph; clustering before correction makes clusters track samples or lanes instead of biology, and annotation has nothing to label until clusters exist. See single-cell/batch-integration, single-cell/clustering, single-cell/cell-annotation.
+- Per-sample QC and doublet detection come BEFORE any merge or integration. Ambient-RNA cleanup (SoupX/CellBender), mito/gene-count filtering, and doublet calling (expected rate ~0.8% per 1,000 recovered cells) are per-capture operations; running them on a pooled object lets one lane's artifacts contaminate the shared null and lets surviving doublets form fake intermediate clusters. See references/single-cell--preprocessing.md and references/single-cell--doublet-detection.md.
+- Integrate, THEN cluster, THEN annotate - never reorder. For multi-sample designs, batch-correct on a shared embedding (Harmony/scVI/RPCA) and cluster on the corrected graph; clustering before correction makes clusters track samples or lanes instead of biology, and annotation has nothing to label until clusters exist. See single-cell/batch-integration, references/single-cell--clustering.md, single-cell/cell-annotation.
 - Over-integration erases biology. Batch-mixing metrics (kBET, iLISI) are maximized by destroying structure, so a method that flattens real cell states scores perfectly; pair every batch metric with a bio-conservation metric and re-inspect rare populations after correction. Batch-corrected expression is for embedding and clustering only - never feed it to differential expression. See single-cell/batch-integration.
-- Condition-level DE must use pseudobulk, not cells-as-replicates. Testing thousands of cells per donor as independent replicates is pseudoreplication and inflates false positives by orders of magnitude (Squair 2021); aggregate RAW counts per sample x cell type and hand them to DESeq2/edgeR/limma-voom. Step 7 marker p-values are descriptive ranking for labeling, not condition inference. See single-cell/markers-annotation and differential-expression/deseq2-basics.
+- Condition-level DE must use pseudobulk, not cells-as-replicates. Testing thousands of cells per donor as independent replicates is pseudoreplication and inflates false positives by orders of magnitude (Squair 2021); aggregate RAW counts per sample x cell type and hand them to DESeq2/edgeR/limma-voom. Step 7 marker p-values are descriptive ranking for labeling, not condition inference. See references/single-cell--markers-annotation.md and differential-expression/deseq2-basics.
 - Composition shifts are tested separately and masquerade as DE. A cluster-level expression change between conditions can be a pure proportion shift (a mixed cluster's substates re-balance with no gene changing per cell), invisible if only DE is run; always pair condition DE with a differential-abundance test (Milo cluster-free, or scCODA/sccomp/propeller cluster-based). See single-cell/differential-abundance.
 
 The Seurat and Scanpy paths below are written single-sample for clarity. A multiplexed design demultiplexes the pool first (single-cell/hashing-demultiplexing); a multi-sample design then inserts per-sample QC and doublet removal, a merge, and an integration step between normalization (Step 4) and dimensionality reduction (Step 5); the rest of the order is unchanged.
@@ -65,7 +81,7 @@ The Seurat and Scanpy paths below are written single-sample for clarity. A multi
 10X data (RAW + filtered_feature_bc_matrix)
     |
     v
-[0. Ambient removal] ---> SoupX/CellBender on RAW (per sample)   (single-cell/preprocessing)
+[0. Ambient removal] ---> SoupX/CellBender on RAW (per sample)   (references/single-cell--preprocessing.md)
     |
     v
 [1. Load Data] ---------> Read10X / read_10x_h5
@@ -97,7 +113,7 @@ Annotated Seurat/AnnData object
 
 ## Primary Path: Seurat (R)
 
-The Seurat/Scanpy paths below start from the filtered matrix for clarity. In practice, run ambient-RNA removal FIRST on the RAW droplet matrix per sample (SoupX needs raw+filtered+clusters; CellBender folds calling+denoise and is best for snRNA/high-ambient) — pick ONE (double-correction over-strips). See single-cell/preprocessing.
+The Seurat/Scanpy paths below start from the filtered matrix for clarity. In practice, run ambient-RNA removal FIRST on the RAW droplet matrix per sample (SoupX needs raw+filtered+clusters; CellBender folds calling+denoise and is best for snRNA/high-ambient) — pick ONE (double-correction over-strips). See references/single-cell--preprocessing.md.
 
 ### Step 1: Load 10X Data
 
@@ -171,7 +187,7 @@ seurat_obj <- FindVariableFeatures(seurat_obj, selection.method = 'vst', nfeatur
 seurat_obj <- ScaleData(seurat_obj)
 ```
 
-Regressing out `percent.mt` (or `nCount`/cell-cycle) is NOT reflexive: those covariates are confounded with real cell state and regressing them can erase biology, so only pass `vars.to.regress` for a covariate verified not confounded with the signal of interest. See single-cell/preprocessing.
+Regressing out `percent.mt` (or `nCount`/cell-cycle) is NOT reflexive: those covariates are confounded with real cell state and regressing them can erase biology, so only pass `vars.to.regress` for a covariate verified not confounded with the signal of interest. See references/single-cell--preprocessing.md.
 
 ### Step 5: Dimensionality Reduction
 
@@ -260,13 +276,13 @@ adata.var_names_make_unique()
 adata.var['mt'] = adata.var_names.str.startswith('MT-')
 sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
 
-# Filter (flat cutoffs are illustrative; prefer MAD-adaptive, tissue-aware thresholds, see single-cell/preprocessing)
+# Filter (flat cutoffs are illustrative; prefer MAD-adaptive, tissue-aware thresholds, see references/single-cell--preprocessing.md)
 sc.pp.filter_cells(adata, min_genes=200)
 sc.pp.filter_genes(adata, min_cells=3)
 adata = adata[adata.obs.n_genes_by_counts < 5000, :]
 adata = adata[adata.obs.pct_counts_mt < 20, :]
 
-# Doublet detection (rate from recovered cells, not the 0.05 placeholder, see single-cell/doublet-detection)
+# Doublet detection (rate from recovered cells, not the 0.05 placeholder, see references/single-cell--doublet-detection.md)
 expected_rate = 0.008 * adata.n_obs / 1000
 sc.pp.scrublet(adata, expected_doublet_rate=expected_rate)
 adata = adata[~adata.obs['predicted_doublet'], :]
@@ -308,7 +324,7 @@ adata.write('scanpy_annotated.h5ad')
 | UMAP | dims | 15-30 (check elbow plot) |
 | Clustering | resolution | 0.4-0.8 (start with 0.5) |
 
-QC cutoffs above are illustrative starting points, not universal thresholds: set min/max features and mito % per dataset from the data (MAD-adaptive, tissue-aware) rather than porting flat values, since healthy mito fraction varies by tissue. See single-cell/preprocessing.
+QC cutoffs above are illustrative starting points, not universal thresholds: set min/max features and mito % per dataset from the data (MAD-adaptive, tissue-aware) rather than porting flat values, since healthy mito fraction varies by tissue. See references/single-cell--preprocessing.md.
 
 ## Troubleshooting
 
@@ -397,13 +413,13 @@ cat('Pipeline complete. Object saved to:', output_dir, '\n')
 
 - database-access/geo-data - Resolve GSE to SRA; detect SuperSeries before processing
 - database-access/sra-data - Download 10x records with --include-technical for barcodes/UMIs
-- single-cell/data-io - Loading 10X, h5ad, RDS, and h5mu formats
-- single-cell/preprocessing - QC thresholds, ambient-RNA removal, normalization choice
-- single-cell/doublet-detection - Per-sample doublet calling before integration
+- references/single-cell--data-io.md - Loading 10X, h5ad, RDS, and h5mu formats
+- references/single-cell--preprocessing.md - QC thresholds, ambient-RNA removal, normalization choice
+- references/single-cell--doublet-detection.md - Per-sample doublet calling before integration
 - single-cell/hashing-demultiplexing - Assign multiplexed pools to samples and call cross-sample doublets before QC
 - single-cell/batch-integration - Multi-sample integration and over-correction diagnosis
-- single-cell/clustering - Resolution sweep and cluster validation
-- single-cell/markers-annotation - Marker discovery, manual labeling, and pseudobulk condition DE
+- references/single-cell--clustering.md - Resolution sweep and cluster validation
+- references/single-cell--markers-annotation.md - Marker discovery, manual labeling, and pseudobulk condition DE
 - single-cell/cell-annotation - Automated reference-based label transfer
 - single-cell/differential-abundance - Test whether cell-type proportions shifted between conditions
 - single-cell/trajectory-inference - Pseudotime and lineage reconstruction for continuous processes

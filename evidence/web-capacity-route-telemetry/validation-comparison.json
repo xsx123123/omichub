@@ -1,0 +1,29 @@
+{
+  "full_suite": {
+    "passed": 4213,
+    "failed": 16,
+    "skipped": 22,
+    "deselected": 63,
+    "same_failure_set_as_prior_phase": true,
+    "new_failures": []
+  },
+  "ruff": {
+    "current_error_count": 265,
+    "prior_phase_error_count": 265,
+    "new_files_check": "pass",
+    "existing_modified_file_error": "core/telemetry.py:181 existing I001 import order"
+  },
+  "mypy": {
+    "current_error_count": 988,
+    "prior_phase_error_count": 986,
+    "new_messages_since_prior_run": [
+      "src/cygnusx/application/services/chat/runtimes/langgraph_runtime.py: error: Argument 1 to \"ReportCopilotService\" has incompatible type \"AsyncSession | None\"; expected \"AsyncSession\"  [arg-type]",
+      "src/cygnusx/application/services/chat_service.py: error: Argument 1 to \"ReportCopilotService\" has incompatible type \"AsyncSession | None\"; expected \"AsyncSession\"  [arg-type]"
+    ],
+    "new_messages_in_this_phase_changed_files": [],
+    "note": "Two errors are in untouched ReportCopilot call sites from other workspace work; not corrected here."
+  },
+  "migrations": "pass",
+  "production_released": false,
+  "combined_scoped_tests_log": "combined-scoped-tests.txt"
+}

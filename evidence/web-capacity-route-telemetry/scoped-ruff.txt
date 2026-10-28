@@ -1,0 +1,21 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+I001 [*] Import block is un-sorted or un-formatted
+   --> src/cygnusx/core/telemetry.py:181:17
+    |
+179 |         if settings.span_store_enabled:
+180 |             try:
+181 |                 from cygnusx.core.span_store import JsonlSpanExporter, CygnusXSpanProcessor
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+182 |
+183 |                 tracer_provider.add_span_processor(CygnusXSpanProcessor())
+    |
+help: Organize imports
+    |
+180 |             try:
+    -                 from cygnusx.core.span_store import JsonlSpanExporter, CygnusXSpanProcessor
+181 +                 from cygnusx.core.span_store import CygnusXSpanProcessor, JsonlSpanExporter
+182 |
+    |
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.

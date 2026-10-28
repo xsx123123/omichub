@@ -1,0 +1,36 @@
+{
+  "checks": [
+    "1440×900: zh/en, light/dark, welcome/chat, columns, overflow, images",
+    "1280×800: zh/en, light/dark, welcome/chat, columns, overflow, images",
+    "1024×768: zh/en, light/dark, welcome/chat, columns, overflow, images",
+    "390×844: zh/en, light/dark, welcome/chat, columns, overflow, images",
+    "Example → draft; input/Enter → owner; model; collapse/expand; history/new/search; locale/theme; stop/disabled/error; pet recall/quiet; scoped Easter egg/Escape; mobile drawer; reduced motion"
+  ],
+  "screenshots": [
+    "welcome-1440-zh-light.png",
+    "chat-1440-light.png",
+    "welcome-1440-zh-dark.png",
+    "chat-1440-dark.png",
+    "welcome-1440-en-light.png",
+    "welcome-1440-en-dark.png",
+    "welcome-1280-zh-light.png",
+    "chat-1280-light.png",
+    "welcome-1280-zh-dark.png",
+    "chat-1280-dark.png",
+    "welcome-1280-en-light.png",
+    "welcome-1280-en-dark.png",
+    "welcome-1024-zh-light.png",
+    "chat-1024-light.png",
+    "welcome-1024-zh-dark.png",
+    "chat-1024-dark.png",
+    "welcome-1024-en-light.png",
+    "welcome-1024-en-dark.png",
+    "welcome-390-zh-light.png",
+    "chat-390-light.png",
+    "welcome-390-zh-dark.png",
+    "chat-390-dark.png",
+    "welcome-390-en-light.png",
+    "welcome-390-en-dark.png"
+  ],
+  "errors": []
+}

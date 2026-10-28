@@ -1,0 +1,29 @@
+{
+  "entry-card": {
+    "columns": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "width": 4
+  },
+  "pillar-card": {
+    "columns": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "width": 4
+  },
+  "ecosystem-card": {
+    "columns": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "width": 4
+  }
+}

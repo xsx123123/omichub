@@ -1,0 +1,6 @@
+{
+  "all_passed": true,
+  "gate_and_jwt_one_select_each_request": true,
+  "different_factories_read_independently": true,
+  "users_selects": 4
+}

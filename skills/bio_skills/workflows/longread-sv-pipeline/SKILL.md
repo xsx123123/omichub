@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-longread-sv-pipeline
 description: Orchestrates an end-to-end long-read structural-variant pipeline - basecalling to minimap2 alignment (platform-matched preset) to Sniffles2/cuteSV/pbsv calling to optional assembly-based calling (dipcall/PAV) to two-step .snf cohort merging to Truvari benchmarking - chaining ONT and PacBio HiFi runs while handing the SV signal mechanism off to the component skills. Use when running a long-read SV workflow from reads to a benchmarked callset, choosing the minimap2 preset and SV caller by platform and goal, deciding when long reads are worth it for the insertions and repeat-mediated SVs short reads physically miss, building a joint-genotyped cohort with the two-step .snf design, or parameterizing a Truvari benchmark against GIAB HG002 Tier 1 plus CMRG. Not for the SV signal mechanism itself (see variant-calling/structural-variant-calling) or short-read SV.
+version: 1.0.0
+display_name: 长读长结构变异流程
+display_name_en: Long-Read Structural Variant Pipeline
+description_zh: >-
+  从碱基识别到基准评测的长读长结构变异全流程，涵盖平台匹配的 minimap2 比对、Sniffles2/cuteSV/pbsv 调用、可选组装法调用、两步队列合并与 Truvari 评测。
+description_en: >-
+  Orchestrates an end-to-end long-read structural-variant pipeline - basecalling to minimap2 alignment (platform-matched preset) to Sniffles2/cuteSV/pbsv calling to optional assembly-based calling (dipcall/PAV) to two-step .snf cohort merging to Truvari benchmarking - chaining ONT and PacBio HiFi runs while handing the SV signal mechanism off to the component skills. Use when running a long-read SV workflow from reads to a benchmarked callset, choosing the minimap2 preset and SV caller by platform and goal, deciding when long reads are worth it for the insertions and repeat-mediated SVs short reads physically miss, building a joint-genotyped cohort with the two-step .snf design, or parameterizing a Truvari benchmark against GIAB HG002 Tier 1 plus CMRG. Not for the SV signal mechanism itself (see variant-calling/structural-variant-calling) or short-read SV.
+author: JZHANG
+examples_zh:
+  - "用 ONT 数据检测结构变异并做 Truvari 评测"
+  - "帮我选择适合 PacBio HiFi 的比对预设"
+  - "把多个样本的 SV 结果合并成队列 callset"
+examples_en:
+  - "Detect structural variants from ONT reads and benchmark the callset with Truvari"
+  - "Which minimap2 preset fits my PacBio HiFi data?"
+  - "Merge SV calls from multiple samples into a cohort callset"
 tool_type: cli
 primary_tool: Sniffles
 workflow: true
@@ -9,6 +25,7 @@ depends_on:
   - long-read-sequencing/long-read-alignment
   - long-read-sequencing/long-read-qc
   - long-read-sequencing/structural-variants
+  - variant-calling/structural-variant-calling
 qc_checkpoints:
   - after_qc: "Read N50 >10kb, mean quality >Q10 (ONT R10) / HiFi rq>0.99"
   - after_alignment: "Mapping rate >90%, coverage >=15x for confident SV calling"
@@ -31,7 +48,7 @@ If code throws an error, introspect the installed tool and adapt the example to 
 
 **"Detect structural variants from my long-read sequencing data"** -> Chain basecalling, platform-matched minimap2 alignment, an SV caller selected by platform and goal, an optional assembly-based branch, cohort merging, and a parameterized Truvari benchmark - with the SV mechanism delegated to the component skills.
 
-This is a workflow (orchestration) skill: it makes the stage-to-stage decisions and quality gates that connect the component skills. It does NOT re-teach how a caller sees an SV or the VCF representation minefield - that lives in variant-calling/structural-variant-calling and long-read-sequencing/structural-variants.
+This is a workflow (orchestration) skill: it makes the stage-to-stage decisions and quality gates that connect the component skills. It does NOT re-teach how a caller sees an SV or the VCF representation minefield - that lives in references/variant-calling--structural-variant-calling.md and references/long-read-sequencing--structural-variants.md.
 
 ## Why long reads for SV: the physics that justifies this pipeline
 
@@ -46,17 +63,17 @@ The governing pipeline principle: an SV call is a *representation artifact* of c
 
 ```
 POD5/FAST5 (ONT only)
-    |  [Step 0] Dorado basecall  -> long-read-sequencing/basecalling
+    |  [Step 0] Dorado basecall  -> references/long-read-sequencing--basecalling.md
     v            (model + methylation are IRREVERSIBLE choices; sup model for SV)
 FASTQ (ONT / PacBio HiFi)
-    |  [QC]     NanoPlot / NanoComp -> long-read-sequencing/long-read-qc
+    |  [QC]     NanoPlot / NanoComp -> references/long-read-sequencing--long-read-qc.md
     v            gate: read N50 >10 kb, sane quality, chimera screen
-[Step 1] minimap2 alignment       -> long-read-sequencing/long-read-alignment
+[Step 1] minimap2 alignment       -> references/long-read-sequencing--long-read-alignment.md
     |            preset by platform/chemistry; -Y keeps breakpoint seq on split reads
     v            gate: mapping rate >90%, coverage >=15x
-[Step 2] SV calling               -> long-read-sequencing/structural-variants
+[Step 2] SV calling               -> references/long-read-sequencing--structural-variants.md
     |            Sniffles2 / cuteSV / pbsv, caller by platform + goal
-    |            + tandem-repeat BED (biggest FP lever)      variant-calling/structural-variant-calling
+    |            + tandem-repeat BED (biggest FP lever)      references/variant-calling--structural-variant-calling.md
     v
 [Step 3, optional] assembly-based SV (dipcall / PAV against a phased diploid assembly)
     |            highest-quality callset; the way truth sets are built
@@ -96,7 +113,7 @@ Do not re-derive the caller mechanism here; pick by goal and hand tuning to the 
 | Highest-quality callset / truth set | dipcall or PAV | assembly-vs-reference from a phased diploid assembly (Li 2018; Ebert 2021) |
 | Somatic (tumor-normal) | Severus / nanomonsv | matched-normal subtraction; do NOT use Sniffles `--mosaic` for somatic (Keskus 2025) |
 
-Methods evolve; verify current best practice against each tool's docs before committing. Deeper caller tuning (cuteSV per-platform params, the tandem-repeat BED, aligner effects) lives in long-read-sequencing/structural-variants.
+Methods evolve; verify current best practice against each tool's docs before committing. Deeper caller tuning (cuteSV per-platform params, the tandem-repeat BED, aligner effects) lives in references/long-read-sequencing--structural-variants.md.
 
 ## Step 0: Basecalling (ONT only)
 
@@ -106,7 +123,7 @@ Methods evolve; verify current best practice against each tool's docs before com
 
 ```bash
 # sup model maximizes accuracy for SV; 5mCG_5hmCG requested now (irreversible if omitted).
-# See long-read-sequencing/basecalling for model selection and duplex.
+# See references/long-read-sequencing--basecalling.md for model selection and duplex.
 dorado basecaller sup pod5_dir/ --modified-bases 5mCG_5hmCG > reads.bam
 samtools fastq -T MM,ML reads.bam | gzip > reads.fastq.gz   # -T carries methylation tags through
 ```
@@ -183,7 +200,7 @@ done
 sniffles --input sample1.snf sample2.snf sample3.snf --vcf cohort.vcf.gz
 ```
 
-For sequence-aware AF work across callsets, prefer Truvari `collapse` over position-only merging (position-only mergers inflate allele frequency by up to 2.2x; English 2022) - see variant-calling/structural-variant-calling for the merger decision table.
+For sequence-aware AF work across callsets, prefer Truvari `collapse` over position-only merging (position-only mergers inflate allele frequency by up to 2.2x; English 2022) - see references/variant-calling--structural-variant-calling.md for the merger decision table.
 
 ## Step 5: Benchmarking - an SV F1 is meaningless without its parameters
 
@@ -252,12 +269,12 @@ Heterozygous variants on the same long read are physically phased, so SVs can be
 
 ## Related Skills
 
-- long-read-sequencing/basecalling - Dorado model choice and requesting methylation at basecall time (Step 0)
-- long-read-sequencing/long-read-alignment - minimap2 preset selection, `-Y` soft-clipping, MM/ML tag passthrough
-- long-read-sequencing/long-read-qc - read-length/quality QC and chimera screening before alignment
-- long-read-sequencing/structural-variants - caller tuning (cuteSV per-platform params, tandem-repeat BED, Truvari) - the SV mechanism for long reads
+- references/long-read-sequencing--basecalling.md - Dorado model choice and requesting methylation at basecall time (Step 0)
+- references/long-read-sequencing--long-read-alignment.md - minimap2 preset selection, `-Y` soft-clipping, MM/ML tag passthrough
+- references/long-read-sequencing--long-read-qc.md - read-length/quality QC and chimera screening before alignment
+- references/long-read-sequencing--structural-variants.md - caller tuning (cuteSV per-platform params, tandem-repeat BED, Truvari) - the SV mechanism for long reads
 - long-read-sequencing/haplotype-phasing - haplotag the BAM for phased/somatic SVs
-- variant-calling/structural-variant-calling - the SV signal model, SVLEN-sign / symbolic-vs-BND / CIPOS representation, force-genotyping, sequence-aware merging (also short-read SV)
+- references/variant-calling--structural-variant-calling.md - the SV signal model, SVLEN-sign / symbolic-vs-BND / CIPOS representation, force-genotyping, sequence-aware merging (also short-read SV)
 - variant-calling/consensus-sequences - why symbolic `<DEL>`/`<INS>` alleles are not directly consensus-able
 
 ## References

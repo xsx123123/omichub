@@ -1,0 +1,1095 @@
+diff --git a/ARCHITECTURE_DESIGN/CygnusX_frontend.md b/ARCHITECTURE_DESIGN/CygnusX_frontend.md
+index 0448659d..1e38886f 100644
+--- a/ARCHITECTURE_DESIGN/CygnusX_frontend.md
++++ b/ARCHITECTURE_DESIGN/CygnusX_frontend.md
+@@ -765,10 +765,14 @@ Arco 项目可遵守 Vue 3 `<script setup lang="ts">`、kebab-case 模板属性
+ | --- | --- | --- |
+ | 图片（PNG、JPG、SVG、WebP 等） | 可点击缩略图（`cursor: zoom-in`，hover 显示"点击放大"提示） | 大图 + 缩放工具（缩小 / 百分比 / 放大 / 重置，25%–500%，支持滚轮）+ 下载、打印 |
+ | PDF | **禁止内嵌 `<iframe>`**；使用"图标 + 点击放大预览"占位按钮 | 弹窗内嵌查看器 + 自定义工具条（下载、打印） |
+-| 文本/代码（FASTA、CSV、日志、脚本等） | 列表 + "预览"按钮 | 前 100 行或前 200K 字符 + 高亮 + 截断提示 |
+-| 表格（XLSX、XLS） | 列表 + "预览"按钮 | 前 100 行 / 前 3 个 sheet + 截断提示 |
++| 文本/代码（FASTA、日志、脚本等） | 列表 + "预览"按钮 | 前 100 行或前 200K 字符 + 高亮 + 截断提示 |
++| 表格（CSV、TSV、XLSX、XLS） | 列表 + "预览"按钮 | 消息画廊与 Studio 使用结构化表格：前 100 行数据、总行数、全部工作表 tab；首个 sheet 默认展示 |
+ | 不支持的格式 | 文件图标 + 元信息（大小、修改时间）+ 下载按钮 | — |
+ 
++消息产物画廊和 Studio 产物面板共用 `components/ai-chat/ArtifactTablePreview.vue`。`utils/artifactTablePreview.ts` 使用 PapaParse 按 CSV/TSV 扩展名解析、仅保留前 100 行并扫描总行数；Excel 通过 SheetJS `sheetRows: 101` 限制每张工作表的解析范围，通过 `!fullref` 读取原始总行数。Naive UI 表格固定表头，横纵滚动，列宽按内容推断并封顶 240px，单元格省略与悬浮全文、数值列右对齐、斑马纹和 hover 使用组件库状态。
++
++超过 5 MiB 的表格须确认加载：清单已提供大小时在请求前确认；缺少或低报大小时，专用 `api/artifactPreview.ts` 流式传输先检查 Content-Length，未知长度则在累计超过 5 MiB 时停止读取并提示确认，确认后重新请求。预览沿用统一 API 客户端的认证；下载函数与媒体预览不变。文本编码支持 UTF-8（含 BOM）、UTF-16 BOM 和 GB18030/GBK；空表显示“该产物为空表格”，损坏表格静默回退至最多 200K 字符的纯文本。文件管理的 `FilePreviewModal` 保持原有能力，不在此表格入口范围内。
++
+ #### 17.3.2 图片与 PDF 预览规则（强制）
+ 
+ - **PDF 不得以前台 `<iframe>` 直接内嵌**：浏览器原生 PDF 查看器自带深色工具栏（保存到网盘/下载/打印），与卡片浅色设计冲突且造成视觉错位。内联位置一律使用占位按钮，点击查看进入弹窗。
+diff --git a/frontend/src/api/artifactPreview.ts b/frontend/src/api/artifactPreview.ts
+new file mode 100644
+index 00000000..19d857ea
+--- /dev/null
++++ b/frontend/src/api/artifactPreview.ts
+@@ -0,0 +1,45 @@
++import apiClient from './client'
++import { TABLE_CONFIRM_BYTES } from '@/utils/artifactTablePreview'
++
++export class TablePreviewSizeError extends Error {
++  constructor(public readonly size: number, public readonly exact = true) {
++    super('Table preview requires confirmation')
++  }
++}
++
++/** Preview-only streaming transport. The existing download transport stays separate. */
++export async function fetchTablePreviewBlob(
++  url: string,
++  confirmed: boolean,
++  params?: Record<string, string>,
++): Promise<Blob> {
++  const response = await apiClient.get<ReadableStream<Uint8Array>>(url, {
++    ...(params ? { params } : {}),
++    adapter: 'fetch',
++    responseType: 'stream',
++  })
++  const length = Number(response.headers['content-length'])
++  const reader = response.data.getReader()
++  const chunks: BlobPart[] = []
++  let received = 0
++  try {
++    // Inspect response headers before buffering the body, even without manifest metadata.
++    if (!confirmed && length > TABLE_CONFIRM_BYTES) {
++      await reader.cancel()
++      throw new TablePreviewSizeError(length)
++    }
++    while (true) {
++      const { done, value } = await reader.read()
++      if (done) break
++      received += value.byteLength
++      if (!confirmed && received > TABLE_CONFIRM_BYTES) {
++        await reader.cancel()
++        throw new TablePreviewSizeError(received, false)
++      }
++      chunks.push(value.slice().buffer)
++    }
++  } finally {
++    reader.releaseLock()
++  }
++  return new Blob(chunks, { type: String(response.headers['content-type'] || '') })
++}
+diff --git a/frontend/src/components/ai-chat/ArtifactTablePreview.vue b/frontend/src/components/ai-chat/ArtifactTablePreview.vue
+new file mode 100644
+index 00000000..293b85c5
+--- /dev/null
++++ b/frontend/src/components/ai-chat/ArtifactTablePreview.vue
+@@ -0,0 +1,150 @@
++<script setup lang="ts">
++import { computed, onBeforeUnmount, ref, watch } from 'vue'
++import { NAlert, NButton, NDataTable, NEmpty, NSpin, NTabPane, NTabs } from 'naive-ui'
++import type { DataTableColumns } from 'naive-ui'
++import { TablePreviewSizeError } from '@/api/artifactPreview'
++import {
++  decodeTableText, isNumericColumn, parseArtifactTable,
++  TABLE_CONFIRM_BYTES, TABLE_PREVIEW_ROWS,
++  type ArtifactSheetPreview,
++} from '@/utils/artifactTablePreview'
++
++const props = defineProps<{
++  fileName: string
++  size?: number
++  loadBlob: (confirmed: boolean) => Promise<Blob>
++}>()
++const loading = ref(false)
++const error = ref('')
++const sheets = ref<ArtifactSheetPreview[]>([])
++const activeSheet = ref(0)
++const fallback = ref<string | null>(null)
++const needsConfirmation = ref(false)
++const fileSize = ref(0)
++const exactSize = ref(true)
++let pendingBlob: Blob | undefined
++let generation = 0
++
++const currentSheet = computed(() => sheets.value[activeSheet.value])
++type TableRow = Record<string, string | number>
++const columns = computed<DataTableColumns<TableRow>>(() => {
++  const data = currentSheet.value
++  if (!data) return []
++  return data.header.map((label, index) => {
++    const longest = Math.max(label.length, ...data.rows.map((row) => row[index]?.length || 0))
++    return {
++      title: label,
++      key: `c${index}`,
++      width: Math.min(240, Math.max(100, longest * 9 + 28)),
++      align: isNumericColumn(data.rows, index) ? 'right' : 'left',
++      ellipsis: { tooltip: true },
++    }
++  })
++})
++const rows = computed<TableRow[]>(() => currentSheet.value?.rows.map((row, index) =>
++  Object.fromEntries([['__index', index], ...row.map((cell, i) => [`c${i}`, cell])])) || [])
++const scrollWidth = computed(() => columns.value.reduce((sum, column) => sum + Number(column.width), 0))
++
++async function load(confirmed = false) {
++  const run = ++generation
++  loading.value = false
++  error.value = ''
++  sheets.value = []
++  fallback.value = null
++  activeSheet.value = 0
++  fileSize.value = pendingBlob?.size ?? props.size ?? 0
++  exactSize.value = true
++  needsConfirmation.value = !confirmed && fileSize.value > TABLE_CONFIRM_BYTES
++  if (needsConfirmation.value) return
++  loading.value = true
++  try {
++    const blob = pendingBlob ?? await props.loadBlob(confirmed)
++    if (run !== generation) return
++    fileSize.value = blob.size
++    // Also protect artifacts whose manifest has no size (or a stale size).
++    if (!confirmed && blob.size > TABLE_CONFIRM_BYTES) {
++      pendingBlob = blob
++      needsConfirmation.value = true
++      return
++    }
++    pendingBlob = undefined
++    const buffer = await blob.arrayBuffer()
++    const ext = props.fileName.split('.').pop()?.toLowerCase() || ''
++    try {
++      const parsed = await parseArtifactTable(buffer, ext)
++      if (run === generation) sheets.value = parsed
++    } catch {
++      // A broken table must still be readable through the existing text fallback.
++      let text: string
++      try { text = decodeTableText(buffer) } catch { text = new TextDecoder().decode(buffer) }
++      if (run === generation) fallback.value = text.slice(0, 200_000)
++    }
++  } catch (cause) {
++    if (run !== generation) return
++    if (cause instanceof TablePreviewSizeError) {
++      fileSize.value = cause.size
++      exactSize.value = cause.exact
++      needsConfirmation.value = true
++    } else error.value = '预览加载失败，请尝试下载后查看'
++  } finally {
++    if (run === generation) loading.value = false
++  }
++}
++
++watch(() => props.fileName, () => {
++  pendingBlob = undefined
++  void load()
++}, { immediate: true })
++onBeforeUnmount(() => { generation++; pendingBlob = undefined })
++</script>
++
++<template>
++  <section class="artifact-table-preview" aria-label="表格预览" aria-live="polite">
++    <NAlert v-if="needsConfirmation" type="info" :show-icon="false">
++      {{ exactSize ? `该产物大小为 ${(fileSize / 1024 / 1024).toFixed(2)} MB，超过 5 MB` : '该产物超过 5 MB（服务器未提供总大小）' }}，加载可能需要一些时间。
++      <div class="artifact-table-preview__confirm">
++        <NButton size="small" type="primary" @click="load(true)">确认加载</NButton>
++        <span>也可关闭预览，下载查看完整数据</span>
++      </div>
++    </NAlert>
++    <div v-else-if="loading" class="artifact-table-preview__status"><NSpin size="small" />正在加载预览…</div>
++    <div v-else-if="error" class="artifact-table-preview__status">{{ error }}</div>
++    <pre v-else-if="fallback !== null" class="artifact-code-preview">{{ fallback }}</pre>
++    <template v-else-if="currentSheet">
++      <NTabs v-if="sheets.length > 1" v-model:value="activeSheet" type="line" size="small" class="artifact-table-preview__tabs">
++        <NTabPane v-for="(item, index) in sheets" :key="index" :name="index" :tab="item.name" />
++      </NTabs>
++      <div class="artifact-table-preview__meta">
++        <strong>{{ currentSheet.name }}</strong>
++        <span>{{ currentSheet.header.length }} 列 · {{ currentSheet.totalRows }} 行</span>
++      </div>
++      <NEmpty v-if="!currentSheet.totalRows" description="该产物为空表格" class="artifact-table-preview__empty" />
++      <NDataTable
++        v-else
++        :columns="columns" :data="rows" :row-key="(row: TableRow) => row.__index"
++        :max-height="480" :scroll-x="scrollWidth" :single-line="false"
++        size="small" striped
++      />
++      <p class="artifact-table-preview__hint">
++        共 {{ currentSheet.totalRows }} 行，{{ currentSheet.totalRows > TABLE_PREVIEW_ROWS ? `预览前 ${TABLE_PREVIEW_ROWS} 行，` : '' }}下载查看完整数据
++      </p>
++    </template>
++  </section>
++</template>
++
++<style scoped>
++.artifact-table-preview { width: 100%; min-width: 0; }
++.artifact-table-preview__status { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 160px; color: var(--text-secondary); }
++.artifact-table-preview__confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; }
++.artifact-table-preview__tabs { margin-bottom: 12px; }
++.artifact-table-preview__meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 12px; color: var(--text-secondary); font-size: 12px; }
++.artifact-table-preview__meta strong { color: var(--text-primary); }
++.artifact-table-preview__empty { padding: 48px 0; }
++.artifact-table-preview__hint { margin: 12px 0 0; color: var(--text-secondary); font-size: 12px; }
++/* Keep the component library's table states inside the platform's card styles. */
++.artifact-table-preview :deep(.n-data-table .n-data-table-th) { font-weight: 600; color: var(--n-th-text-color); background-color: var(--n-merged-th-color); }
++.artifact-table-preview :deep(.n-data-table .n-data-table-td) { color: var(--n-td-text-color); background-color: var(--n-merged-td-color); }
++.artifact-table-preview :deep(.n-data-table .n-data-table-tr--striped .n-data-table-td) { background-color: var(--n-merged-td-color-striped); }
++.artifact-table-preview :deep(.n-data-table .n-data-table-tr:hover .n-data-table-td) { background-color: var(--n-merged-td-color-hover); }
++.artifact-code-preview { max-height: 55vh; overflow: auto; padding: 12px; border: 1px solid var(--stardust-border-soft); border-radius: var(--radius-md, 8px); background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono, monospace); font-size: 12px; white-space: pre; }
++</style>
+diff --git a/frontend/src/components/ai-chat/MessageArtifactGallery.vue b/frontend/src/components/ai-chat/MessageArtifactGallery.vue
+index 210e1b37..2b394738 100644
+--- a/frontend/src/components/ai-chat/MessageArtifactGallery.vue
++++ b/frontend/src/components/ai-chat/MessageArtifactGallery.vue
+@@ -11,8 +11,11 @@ import {
+ } from '@vicons/ionicons5'
+ import hljs from 'highlight.js'
+ import apiClient from '@/api/client'
++import { fetchTablePreviewBlob } from '@/api/artifactPreview'
+ import { studioApi } from '@/api/studio'
+ import { printBlobUrl } from '@/utils/blobPrint'
++import { TABLE_EXTENSIONS } from '@/utils/artifactTablePreview'
++import ArtifactTablePreview from './ArtifactTablePreview.vue'
+ import { VChart } from './setup'
+ import type { ChartData, ToolCall } from './types'
+ 
+@@ -53,16 +56,6 @@ const HLJS_LANGUAGE_ALIASES: Record<string, string> = {
+   md: 'markdown', jsonl: 'json', txt: 'plaintext', log: 'plaintext', csv: 'plaintext', tsv: 'plaintext',
+ }
+ const TEXT_PREVIEW_MAX_CHARS = 200_000
+-const SHEET_PREVIEW_MAX_ROWS = 100
+-const SHEET_PREVIEW_MAX_SHEETS = 3
+-
+-interface SheetPreview {
+-  name: string
+-  header: string[]
+-  rows: string[][]
+-  truncated: boolean
+-}
+-
+ const previewUrls = ref<Record<string, string>>({})
+ /** 每个预览 blob 对应的加载来源('' = studio 会话接口,其余 = 直连下载地址),来源变化时需重拉 */
+ const loadedUrlByPath = ref<Record<string, string>>({})
+@@ -78,7 +71,7 @@ const previewError = ref('')
+ const previewTitle = ref('')
+ const previewCodeHtml = ref('')
+ const previewCodeTruncated = ref(false)
+-const previewSheets = ref<SheetPreview[]>([])
++const previewTableArtifact = ref<ArtifactItem | null>(null)
+ 
+ // 图片/PDF 放大预览弹窗
+ const mediaPreviewVisible = ref(false)
+@@ -420,6 +413,15 @@ async function fetchPreviewBlobData(artifact: ArtifactItem): Promise<Blob> {
+   return res.data as Blob
+ }
+ 
++async function fetchTableBlobData(artifact: ArtifactItem, confirmed: boolean): Promise<Blob> {
++  if (artifact.url?.startsWith('data:')) return (await fetch(artifact.url)).blob()
++  return artifact.url
++    ? fetchTablePreviewBlob(artifact.url.replace(/^\/api\/v1/, ''), confirmed)
++    : fetchTablePreviewBlob(`/studio/sessions/${props.sessionId}/artifacts/download`, confirmed, {
++        path: artifact.path,
++      })
++}
++
+ async function fetchArtifactObjectUrl(artifact: ArtifactItem): Promise<string> {
+   return URL.createObjectURL(await fetchArtifactBlobData(artifact))
+ }
+@@ -428,50 +430,31 @@ function escapeHtml(text: string): string {
+   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+ }
+ 
+-async function buildSheetPreviews(buffer: ArrayBuffer): Promise<SheetPreview[]> {
+-  const XLSX = await import('xlsx')
+-  const workbook = XLSX.read(buffer, { type: 'array' })
+-  return workbook.SheetNames.slice(0, SHEET_PREVIEW_MAX_SHEETS).map((name) => {
+-    const rawRows = XLSX.utils.sheet_to_json<unknown[]>(workbook.Sheets[name], {
+-      header: 1,
+-      raw: false,
+-      defval: '',
+-    })
+-    const normalized = rawRows.map((row) => (Array.isArray(row) ? row.map((cell) => String(cell)) : []))
+-    const [header = [], ...body] = normalized
+-    return {
+-      name,
+-      header,
+-      rows: body.slice(0, SHEET_PREVIEW_MAX_ROWS),
+-      truncated: body.length > SHEET_PREVIEW_MAX_ROWS,
+-    }
+-  })
+-}
+-
+ async function openPreview(artifact: ArtifactItem) {
+   previewTitle.value = fileName(artifact.path)
+   previewError.value = ''
+   previewCodeHtml.value = ''
+   previewCodeTruncated.value = false
+-  previewSheets.value = []
++  previewTableArtifact.value = null
+   previewModalVisible.value = true
++  if (TABLE_EXTENSIONS.has(extensionOf(artifact.path))) {
++    previewLoading.value = false
++    previewTableArtifact.value = artifact
++    return
++  }
+   previewLoading.value = true
+   try {
+     const blob = await fetchArtifactBlobData(artifact)
+     const ext = extensionOf(artifact.path)
+-    if (SHEET_PREVIEW_EXTENSIONS.has(ext)) {
+-      previewSheets.value = await buildSheetPreviews(await blob.arrayBuffer())
+-    } else {
+-      let text = await blob.text()
+-      if (text.length > TEXT_PREVIEW_MAX_CHARS) {
+-        text = text.slice(0, TEXT_PREVIEW_MAX_CHARS)
+-        previewCodeTruncated.value = true
+-      }
+-      const language = HLJS_LANGUAGE_ALIASES[ext] || ext
+-      previewCodeHtml.value = hljs.getLanguage(language)
+-        ? hljs.highlight(text, { language }).value
+-        : escapeHtml(text)
++    let text = await blob.text()
++    if (text.length > TEXT_PREVIEW_MAX_CHARS) {
++      text = text.slice(0, TEXT_PREVIEW_MAX_CHARS)
++      previewCodeTruncated.value = true
+     }
++    const language = HLJS_LANGUAGE_ALIASES[ext] || ext
++    previewCodeHtml.value = hljs.getLanguage(language)
++      ? hljs.highlight(text, { language }).value
++      : escapeHtml(text)
+   } catch {
+     previewError.value = '预览加载失败，请尝试下载后查看'
+   } finally {
+@@ -770,24 +753,13 @@ onBeforeUnmount(clearPreviews)
+     >
+       <div v-if="previewLoading" class="artifact-preview__status">正在加载预览…</div>
+       <div v-else-if="previewError" class="artifact-preview__status">{{ previewError }}</div>
+-      <template v-else-if="previewSheets.length">
+-        <div v-for="sheet in previewSheets" :key="sheet.name" class="artifact-sheet-preview">
+-          <h4 class="artifact-sheet-preview__name">{{ sheet.name }}</h4>
+-          <div class="artifact-sheet-preview__scroll">
+-            <table>
+-              <thead>
+-                <tr><th v-for="(cell, i) in sheet.header" :key="i">{{ cell }}</th></tr>
+-              </thead>
+-              <tbody>
+-                <tr v-for="(row, ri) in sheet.rows" :key="ri">
+-                  <td v-for="(cell, ci) in row" :key="ci">{{ cell }}</td>
+-                </tr>
+-              </tbody>
+-            </table>
+-          </div>
+-          <p v-if="sheet.truncated" class="artifact-preview__hint">仅展示前 {{ SHEET_PREVIEW_MAX_ROWS }} 行，完整数据请下载查看</p>
+-        </div>
+-      </template>
++      <ArtifactTablePreview
++        v-else-if="previewModalVisible && previewTableArtifact"
++        :key="previewTableArtifact.path"
++        :file-name="previewTableArtifact.path"
++        :size="previewTableArtifact.size"
++        :load-blob="(confirmed) => fetchTableBlobData(previewTableArtifact!, confirmed)"
++      />
+       <template v-else>
+         <pre class="artifact-code-preview hljs"><code v-html="previewCodeHtml"></code></pre>
+         <p v-if="previewCodeTruncated" class="artifact-preview__hint">内容过长，仅展示前面部分，完整内容请下载查看</p>
+@@ -1372,43 +1344,6 @@ p.message-artifacts__hint {
+   color: #7ee787;
+ }
+ 
+-.artifact-sheet-preview + .artifact-sheet-preview {
+-  margin-top: var(--space-lg, 16px);
+-}
+-
+-.artifact-sheet-preview__name {
+-  margin: 0 0 var(--space-sm, 8px);
+-  font-size: 13px;
+-}
+-
+-.artifact-sheet-preview__scroll {
+-  max-height: 55vh;
+-  overflow: auto;
+-  border: 1px solid var(--stardust-border-soft);
+-  border-radius: 8px;
+-}
+-
+-.artifact-sheet-preview__scroll table {
+-  width: 100%;
+-  border-collapse: collapse;
+-  font-size: 12px;
+-}
+-
+-.artifact-sheet-preview__scroll th,
+-.artifact-sheet-preview__scroll td {
+-  padding: 4px 10px;
+-  border-bottom: 1px solid var(--stardust-border-soft);
+-  text-align: left;
+-  white-space: nowrap;
+-}
+-
+-.artifact-sheet-preview__scroll th {
+-  position: sticky;
+-  top: 0;
+-  /* --bg-secondary 未在全局令牌中定义，兜底到卡片底色（亮色同为白，暗色为深色卡片面） */
+-  background: var(--bg-secondary, var(--bg-card));
+-}
+-
+ .message-artifacts__download:hover {
+   background: color-mix(in srgb, var(--brand-primary-light) 72%, var(--brand-primary));
+ }
+diff --git a/frontend/src/components/ai-chat/__tests__/artifact-preview-transport.test.ts b/frontend/src/components/ai-chat/__tests__/artifact-preview-transport.test.ts
+new file mode 100644
+index 00000000..7298e8b6
+--- /dev/null
++++ b/frontend/src/components/ai-chat/__tests__/artifact-preview-transport.test.ts
+@@ -0,0 +1,48 @@
++import { describe, expect, it, vi } from 'vitest'
++import { fetchTablePreviewBlob, TablePreviewSizeError } from '@/api/artifactPreview'
++import { TABLE_CONFIRM_BYTES } from '@/utils/artifactTablePreview'
++
++const { get } = vi.hoisted(() => ({ get: vi.fn() }))
++vi.mock('@/api/client', () => ({ default: { get } }))
++
++function response(length?: number, chunks = [new Uint8Array([1, 2, 3])]) {
++  let index = 0
++  const reader = {
++    read: vi.fn(async () => index < chunks.length
++      ? { value: chunks[index++], done: false }
++      : { value: undefined, done: true }),
++    cancel: vi.fn(async () => {}),
++    releaseLock: vi.fn(),
++  }
++  get.mockResolvedValue({
++    headers: { 'content-length': length, 'content-type': 'text/csv' },
++    data: { getReader: () => reader },
++  })
++  return reader
++}
++
++describe('preview-only streaming size guard', () => {
++  it('cancels before reading the body when Content-Length exceeds 5 MB', async () => {
++    const reader = response(TABLE_CONFIRM_BYTES + 100)
++    await expect(fetchTablePreviewBlob('/sample.csv', false)).rejects.toBeInstanceOf(TablePreviewSizeError)
++    expect(reader.read).not.toHaveBeenCalled()
++    expect(reader.cancel).toHaveBeenCalledOnce()
++    expect(reader.releaseLock).toHaveBeenCalledOnce()
++  })
++
++  it('also cancels chunked responses that exceed the limit without a length header', async () => {
++    const reader = response(undefined, [new Uint8Array(TABLE_CONFIRM_BYTES), new Uint8Array(10)])
++    await expect(fetchTablePreviewBlob('/sample.csv', false)).rejects.toBeInstanceOf(TablePreviewSizeError)
++    expect(reader.cancel).toHaveBeenCalledOnce()
++  })
++
++  it('loads complete data after confirmation through the authenticated API client', async () => {
++    const reader = response(TABLE_CONFIRM_BYTES + 100)
++    const blob = await fetchTablePreviewBlob('/sample.csv', true, { path: 'sample.csv' })
++    expect([...new Uint8Array(await blob.arrayBuffer())]).toEqual([1, 2, 3])
++    expect(reader.cancel).not.toHaveBeenCalled()
++    expect(get).toHaveBeenLastCalledWith('/sample.csv', {
++      adapter: 'fetch', responseType: 'stream', params: { path: 'sample.csv' },
++    })
++  })
++})
+diff --git a/frontend/src/components/ai-chat/__tests__/artifact-table-preview.test.ts b/frontend/src/components/ai-chat/__tests__/artifact-table-preview.test.ts
+new file mode 100644
+index 00000000..fd8073b0
+--- /dev/null
++++ b/frontend/src/components/ai-chat/__tests__/artifact-table-preview.test.ts
+@@ -0,0 +1,120 @@
++// @vitest-environment jsdom
++import { createApp, h, nextTick } from 'vue'
++import { NConfigProvider } from 'naive-ui'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import * as XLSX from 'xlsx'
++import ArtifactTablePreview from '../ArtifactTablePreview.vue'
++import { decodeTableText, parseArtifactTable, TABLE_CONFIRM_BYTES } from '@/utils/artifactTablePreview'
++
++vi.setConfig({ testTimeout: 15_000 })
++const apps: ReturnType<typeof createApp>[] = []
++afterEach(() => {
++  apps.forEach((app) => app.unmount())
++  apps.length = 0
++  document.body.innerHTML = ''
++})
++const bytes = (text: string) => new TextEncoder().encode(text).buffer
++async function settle() {
++  await new Promise((resolve) => setTimeout(resolve, 30))
++  await nextTick()
++}
++async function mount(fileName: string, blob: Blob, size?: number) {
++  const loadBlob = vi.fn(async () => blob)
++  const host = document.createElement('div')
++  document.body.appendChild(host)
++  const app = createApp({ render: () => h(NConfigProvider, null, {
++    default: () => h(ArtifactTablePreview, { fileName, loadBlob, size }),
++  }) })
++  apps.push(app)
++  app.mount(host)
++  await vi.waitFor(() => expect(host.querySelector('.n-spin')).toBeNull(), { timeout: 10_000 })
++  await nextTick()
++  return { host, loadBlob }
++}
++
++describe('structured artifact tables', () => {
++  it('keeps quoted delimiters/newlines, counts all records, retains only 100 rows', async () => {
++    const content = 'gene,description,value\r\n' + Array.from({ length: 125 }, (_, i) =>
++      `TP${i},"Chinese, platform\nsecond line",${i / 10}`).join('\r\n')
++    const [sheet] = await parseArtifactTable(bytes(content), 'csv')
++    expect(sheet.totalRows).toBe(125)
++    expect(sheet.rows).toHaveLength(100)
++    expect(sheet.rows[0]).toEqual(['TP0', 'Chinese, platform\nsecond line', '0'])
++  })
++
++  it('decodes BOM, UTF-16 and GBK Chinese without replacement characters', () => {
++    expect(decodeTableText(bytes('\uFEFF样本,数值'))).toBe('样本,数值')
++    expect(decodeTableText(new Uint8Array([0xff, 0xfe, 0x37, 0x68, 0x2c, 0x00]).buffer)).toBe('样,')
++    expect(decodeTableText(new Uint8Array([0xd1, 0xf9, 0xb1, 0xbe]).buffer)).toBe('样本')
++  })
++
++  it('renders a wide uppercase TSV as aligned columns with capped widths and numeric alignment', async () => {
++    const header = Array.from({ length: 16 }, (_, i) => `column${i}`)
++    const data = Array.from({ length: 130 }, (_, i) =>
++      [String(i), '长平台名'.repeat(40), ...Array(14).fill('sample')].join('\t'))
++    const { host } = await mount('GSE280781_sample_manifest.TSV', new Blob([[header.join('\t'), ...data].join('\n')]))
++    expect(host.querySelectorAll('th')).toHaveLength(16)
++    expect(host.querySelectorAll('tbody tr')).toHaveLength(100)
++    expect(host.textContent).toContain('共 130 行，预览前 100 行，下载查看完整数据')
++    expect(host.querySelector('td')?.style.textAlign).toBe('right')
++    expect(host.querySelectorAll('col')[1]?.getAttribute('style')).toContain('240px')
++  })
++
++  it.each(['xlsx', 'xls'] as const)('previews %s, limits parsed worksheet rows and switches all sheets', async (bookType) => {
++    const workbook = XLSX.utils.book_new()
++    for (let index = 0; index < 4; index++) {
++      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
++        ['gene', 'score'], ...Array.from({ length: 120 }, (_, i) => [`sheet${index}-gene${i}`, i]),
++      ]), `Sheet${index + 1}`)
++    }
++    const buffer = XLSX.write(workbook, { type: 'array', bookType })
++    const parsed = await parseArtifactTable(buffer, bookType)
++    expect(parsed).toHaveLength(4)
++    expect(parsed[0].rows).toHaveLength(100)
++    expect(parsed[0].totalRows).toBe(120)
++    const { host } = await mount(`results.${bookType}`, new Blob([buffer]))
++    expect(host.textContent).toContain('sheet0-gene0')
++    const tabs = host.querySelectorAll<HTMLElement>('.n-tabs-tab')
++    expect(tabs).toHaveLength(4)
++    tabs[3].click()
++    await settle()
++    expect(host.textContent).toContain('sheet3-gene0')
++    expect(host.textContent).not.toContain('sheet0-gene0')
++  })
++
++  it.each(['', 'gene,score\n'])('shows the empty placeholder for zero data rows', async (content) => {
++    const { host } = await mount('empty.csv', new Blob([content]))
++    expect(host.textContent).toContain('该产物为空表格')
++    expect(host.querySelector('table')).toBeNull()
++  })
++
++  it.each([
++    ['broken.csv', 'gene,value\n"unterminated'],
++    ['broken.xlsx', '<script>alert("bad")</script>'],
++  ])('silently falls back to safe plain text for %s', async (name, content) => {
++    const { host } = await mount(name, new Blob([content]))
++    expect(host.querySelector('pre')?.textContent).toBe(content)
++    expect(host.querySelector('script')).toBeNull()
++    expect(host.textContent).not.toContain('预览加载失败')
++  })
++
++  it('requires confirmation before fetching a known large file', async () => {
++    const { host, loadBlob } = await mount('large.csv', new Blob(['gene,value\nTP53,2']), TABLE_CONFIRM_BYTES + 1)
++    expect(loadBlob).not.toHaveBeenCalled()
++    expect(host.textContent).toContain('超过 5 MB')
++    host.querySelector<HTMLButtonElement>('button')!.click()
++    await settle()
++    expect(loadBlob).toHaveBeenCalledTimes(1)
++    expect(host.textContent).toContain('TP53')
++  })
++
++  it('also requires confirmation before parsing an unreported large blob', async () => {
++    const { host, loadBlob } = await mount('large.csv', new Blob(['gene,value\nTP53,2\n', ' '.repeat(TABLE_CONFIRM_BYTES)]))
++    expect(host.querySelector('table')).toBeNull()
++    expect(host.textContent).toContain('超过 5 MB')
++    host.querySelector<HTMLButtonElement>('button')!.click()
++    await settle()
++    expect(loadBlob).toHaveBeenCalledTimes(1)
++    expect(host.textContent).toContain('TP53')
++  })
++})
+diff --git a/frontend/src/components/ai-chat/__tests__/message-artifact-gallery.test.ts b/frontend/src/components/ai-chat/__tests__/message-artifact-gallery.test.ts
+index df40715f..46b69d3d 100644
+--- a/frontend/src/components/ai-chat/__tests__/message-artifact-gallery.test.ts
++++ b/frontend/src/components/ai-chat/__tests__/message-artifact-gallery.test.ts
+@@ -90,7 +90,10 @@ describe('MessageArtifactGallery', () => {
+       'results',
+     )
+     const bytes = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' })
+-    apiGet.mockResolvedValue({ data: new Blob([bytes]) })
++    apiGet.mockResolvedValue({
++      data: new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(bytes)); controller.close() } }),
++      headers: { 'content-length': bytes.byteLength },
++    })
+     const host = document.createElement('div')
+     document.body.appendChild(host)
+     const app = createApp(MessageArtifactGallery, {
+@@ -127,7 +130,7 @@ describe('MessageArtifactGallery', () => {
+ 
+     expect(apiGet).toHaveBeenCalledWith(
+       '/chat/sandbox-sessions/sandbox-1/artifacts/download?path=carcinogenic_pathways.xlsx',
+-      { responseType: 'blob' },
++      { adapter: 'fetch', responseType: 'stream' },
+     )
+     expect(studioFetch).not.toHaveBeenCalled()
+     expect(document.body.textContent).toContain('results')
+diff --git a/frontend/src/components/studio/StudioArtifactsPanel.vue b/frontend/src/components/studio/StudioArtifactsPanel.vue
+index cb9346bb..e7eecd63 100644
+--- a/frontend/src/components/studio/StudioArtifactsPanel.vue
++++ b/frontend/src/components/studio/StudioArtifactsPanel.vue
+@@ -2,14 +2,13 @@
+ /**
+  * StudioArtifactsPanel — 产物列表面板（右栏）
+  *
+- * GET /studio/sessions/{id}/artifacts：图片 lightbox、CSV/TSV 前 50 行表格、
++ * GET /studio/sessions/{id}/artifacts：图片 lightbox、CSV/TSV/Excel 前 100 行表格、
+  * Markdown 渲染；同时支持下载、插入对话引用和保存为报告版本。
+  */
+ import { computed, ref, watch, onBeforeUnmount } from 'vue'
+ import DOMPurify from 'dompurify'
+ import {
+   NButton,
+-  NDataTable,
+   NIcon,
+   NInput,
+   NModal,
+@@ -17,7 +16,6 @@ import {
+   NTooltip,
+   useMessage,
+ } from 'naive-ui'
+-import type { DataTableColumns } from 'naive-ui'
+ import {
+   AddOutline,
+   ChatboxOutline,
+@@ -32,8 +30,10 @@ import {
+   SaveOutline,
+ } from '@vicons/ionicons5'
+ import MarkdownIt from 'markdown-it'
+-import Papa from 'papaparse'
++import ArtifactTablePreview from '@/components/ai-chat/ArtifactTablePreview.vue'
++import { TABLE_EXTENSIONS } from '@/utils/artifactTablePreview'
+ import { studioApi, type StudioArtifact } from '@/api/studio'
++import { fetchTablePreviewBlob } from '@/api/artifactPreview'
+ import { printBlobUrl } from '@/utils/blobPrint'
+ 
+ const props = defineProps<{
+@@ -51,14 +51,13 @@ const message = useMessage()
+ 
+ const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp'])
+ const PDF_EXTS = new Set(['pdf'])
+-const TABLE_EXTS = new Set(['csv', 'tsv'])
++const TABLE_EXTS = TABLE_EXTENSIONS
+ const MARKDOWN_EXTS = new Set(['md', 'markdown'])
+ // HTML 报告（如 plotly 交互图表）：与左侧工作区预览一致，sandbox 隔离渲染
+ const HTML_EXTS = new Set(['html', 'htm'])
+ const markdown = new MarkdownIt({ html: false, linkify: true, typographer: true })
+ 
+ type PreviewKind = 'image' | 'pdf' | 'html' | 'table' | 'markdown' | 'unsupported'
+-type PreviewRow = Record<string, string | number>
+ 
+ const artifacts = ref<StudioArtifact[]>([])
+ const artifactsInitialized = ref(false)
+@@ -76,8 +75,6 @@ const previewLoading = ref(false)
+ const previewError = ref('')
+ const previewTruncated = ref(false)
+ const previewMarkdown = ref('')
+-const previewColumns = ref<DataTableColumns<PreviewRow>>([])
+-const previewRows = ref<PreviewRow[]>([])
+ const showPreview = ref(false)
+ const previewZoom = ref(1)
+ const ZOOM_MIN = 0.25
+@@ -124,8 +121,6 @@ function clearPreview() {
+   previewError.value = ''
+   previewTruncated.value = false
+   previewMarkdown.value = ''
+-  previewColumns.value = []
+-  previewRows.value = []
+   previewZoom.value = 1
+ }
+ 
+@@ -177,33 +172,10 @@ onBeforeUnmount(() => {
+   clearPreview()
+ })
+ 
+-function buildTablePreview(content: string, delimiter: string) {
+-  const parsed = Papa.parse<string[]>(content.replace(/^\uFEFF/, ''), {
+-    delimiter,
+-    skipEmptyLines: 'greedy',
++async function loadTableBlob(confirmed: boolean): Promise<Blob> {
++  return fetchTablePreviewBlob(`/studio/sessions/${props.sessionId}/artifacts/download`, confirmed, {
++    path: previewArtifact.value!.path,
+   })
+-  const records = parsed.data.filter((row) => row.some((cell) => String(cell).trim()))
+-  if (!records.length) {
+-    previewError.value = '文件中没有可预览的数据'
+-    return
+-  }
+-
+-  const header = records[0]
+-  const dataRows = records.slice(1)
+-  previewColumns.value = header.map((label, index) => ({
+-    title: String(label || `列 ${index + 1}`),
+-    key: `column_${index}`,
+-    minWidth: 120,
+-    ellipsis: { tooltip: true },
+-  }))
+-  previewRows.value = dataRows.slice(0, 50).map((row, rowIndex) => {
+-    const item: PreviewRow = { __rowKey: rowIndex }
+-    header.forEach((_, columnIndex) => {
+-      item[`column_${columnIndex}`] = row[columnIndex] ?? ''
+-    })
+-    return item
+-  })
+-  previewTruncated.value = previewTruncated.value || dataRows.length > 50
+ }
+ 
+ async function openPreview(artifact: StudioArtifact) {
+@@ -235,9 +207,6 @@ async function openPreview(artifact: StudioArtifact) {
+ 
+     if (TABLE_EXTS.has(ext)) {
+       previewKind.value = 'table'
+-      const result = await studioApi.readArtifactText(props.sessionId, artifact.path, 500)
+-      previewTruncated.value = result.truncated
+-      buildTablePreview(result.content, ext === 'tsv' ? '\t' : ',')
+       return
+     }
+ 
+@@ -470,19 +439,13 @@ function formatTime(mtime: number): string {
+           />
+           <small class="html-preview-hint">沙盒内渲染，页面脚本可用但无法访问登录态；引用的外部本地资源可能无法加载</small>
+         </div>
+-        <div v-else-if="previewKind === 'table'" class="table-preview">
+-          <n-data-table
+-            v-if="previewRows.length"
+-            :columns="previewColumns"
+-            :data="previewRows"
+-            :row-key="(row: PreviewRow) => row.__rowKey"
+-            :max-height="560"
+-            :scroll-x="Math.max(720, previewColumns.length * 140)"
+-            size="small"
+-            striped
+-          />
+-          <div v-else class="preview-message">文件中没有可预览的数据</div>
+-        </div>
++        <ArtifactTablePreview
++          v-else-if="previewKind === 'table' && showPreview && previewArtifact"
++          :key="previewArtifact.path"
++          :file-name="previewArtifact.path"
++          :size="previewArtifact.size"
++          :load-blob="loadTableBlob"
++        />
+         <article
+           v-else-if="previewKind === 'markdown'"
+           class="markdown-preview"
+@@ -492,7 +455,7 @@ function formatTime(mtime: number): string {
+           此文件类型暂不支持在线预览，请下载后查看。
+         </div>
+         <div v-if="previewTruncated" class="truncated-tip">
+-          预览内容已截断，仅展示 CSV/TSV 前 50 行或 Markdown 前 2000 行
++          预览内容已截断，仅展示 Markdown 前 2000 行
+         </div>
+         <n-button
+           v-if="previewArtifact && previewKind === 'unsupported'"
+diff --git a/frontend/src/utils/artifactTablePreview.ts b/frontend/src/utils/artifactTablePreview.ts
+new file mode 100644
+index 00000000..78ca9df6
+--- /dev/null
++++ b/frontend/src/utils/artifactTablePreview.ts
+@@ -0,0 +1,89 @@
++import Papa from 'papaparse'
++
++export const TABLE_PREVIEW_ROWS = 100
++export const TABLE_CONFIRM_BYTES = 5 * 1024 * 1024
++export const TABLE_EXTENSIONS = new Set(['csv', 'tsv', 'xlsx', 'xls'])
++
++export interface ArtifactSheetPreview {
++  name: string
++  header: string[]
++  rows: string[][]
++  totalRows: number
++}
++
++/** Strict decoding avoids silently treating legacy Chinese text as broken UTF-8. */
++export function decodeTableText(buffer: ArrayBuffer): string {
++  const bytes = new Uint8Array(buffer)
++  let encoding = 'utf-8'
++  if (bytes[0] === 0xff && bytes[1] === 0xfe) encoding = 'utf-16le'
++  else if (bytes[0] === 0xfe && bytes[1] === 0xff) encoding = 'utf-16be'
++  try {
++    return new TextDecoder(encoding, { fatal: true }).decode(bytes).replace(/^\uFEFF/, '')
++  } catch {
++    return new TextDecoder('gb18030', { fatal: true }).decode(bytes)
++  }
++}
++
++function sheet(name: string, records: string[][], totalRows: number): ArtifactSheetPreview {
++  const width = Math.max(0, ...records.map((row) => row.length))
++  return {
++    name,
++    header: Array.from({ length: width }, (_, index) => records[0]?.[index] || `列 ${index + 1}`),
++    rows: records.slice(1, TABLE_PREVIEW_ROWS + 1).map((row) =>
++      Array.from({ length: width }, (_, index) => row[index] ?? '')),
++    totalRows,
++  }
++}
++
++export async function parseArtifactTable(
++  buffer: ArrayBuffer,
++  extension: string,
++): Promise<ArtifactSheetPreview[]> {
++  if (extension === 'csv' || extension === 'tsv') {
++    const content = decodeTableText(buffer)
++    if (content.includes('\u0000')) throw new Error('Binary table')
++    const records: string[][] = []
++    let count = 0
++    let invalid = false
++    // Scan for the total count, but retain only the header and first 100 records.
++    Papa.parse<string[]>(content, {
++      delimiter: extension === 'tsv' ? '\t' : ',',
++      skipEmptyLines: 'greedy',
++      step: (result) => {
++        invalid ||= result.errors.length > 0
++        if (count <= TABLE_PREVIEW_ROWS) records.push(result.data)
++        count++
++      },
++    })
++    if (invalid) throw new Error('Malformed delimited table')
++    return [sheet('数据表', records, Math.max(0, count - 1))]
++  }
++
++  if (!buffer.byteLength) return [sheet('数据表', [], 0)]
++  const bytes = new Uint8Array(buffer)
++  // SheetJS also accepts arbitrary text; require an actual Excel container.
++  const zip = bytes[0] === 0x50 && bytes[1] === 0x4b
++  const ole = bytes[0] === 0xd0 && bytes[1] === 0xcf
++  const biff = bytes[0] === 0x09 && [0x00, 0x02, 0x04, 0x08].includes(bytes[1])
++  if (!zip && !ole && !biff) throw new Error('Invalid workbook')
++  const XLSX = await import('xlsx')
++  const workbook = XLSX.read(buffer, {
++    type: 'array', sheetRows: TABLE_PREVIEW_ROWS + 1, dense: false,
++  })
++  if (!workbook.SheetNames.length) throw new Error('Missing worksheets')
++  return workbook.SheetNames.map((name) => {
++    const worksheet = workbook.Sheets[name]
++    const range = worksheet['!fullref'] || worksheet['!ref']
++    const totalRows = range ? XLSX.utils.decode_range(range).e.r : 0
++    const records = XLSX.utils.sheet_to_json<string[]>(worksheet, {
++      header: 1, raw: false, defval: '', blankrows: true, range: 0,
++    })
++    return sheet(name, records, totalRows)
++  })
++}
++
++export function isNumericColumn(rows: string[][], index: number): boolean {
++  const samples = rows.slice(0, 30).map((row) => row[index]?.trim()).filter(Boolean)
++  return samples.length > 0 && samples.every((value) =>
++    /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?%?$/i.test(value!))
++}
+diff --git a/scripts/poc/artifact-table-browser.mjs b/scripts/poc/artifact-table-browser.mjs
+new file mode 100644
+index 00000000..34771e98
+--- /dev/null
++++ b/scripts/poc/artifact-table-browser.mjs
+@@ -0,0 +1,205 @@
++/** Browser acceptance of the real artifact gallery, using local scientific files.
++ * ARTIFACT_TSV=/path/to/GSE280781_sample_manifest.tsv
++ * PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node scripts/poc/artifact-table-browser.mjs
++ * No account or live API required; download responses are served from local files.
++ */
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
++import { resolve, basename } from 'node:path';
++import { pathToFileURL } from 'node:url';
++import { createServer } from '../../frontend/node_modules/vite/dist/node/index.js';
++import XLSX from '../../frontend/node_modules/xlsx/xlsx.js';
++import Papa from '../../frontend/node_modules/papaparse/papaparse.js';
++
++const frontend = resolve('frontend');
++const fixture = await mkdtemp(resolve(frontend, '.artifact-table-'));
++const output = resolve('evidence/artifact-table-preview');
++await mkdir(output, { recursive: true });
++const tsvPath = process.env.ARTIFACT_TSV;
++assert.ok(tsvPath, 'Set ARTIFACT_TSV to the real GSE280781 sample manifest');
++const tsv = await readFile(tsvPath);
++const records = Papa.parse(tsv.toString('utf8'), { delimiter: '\t', skipEmptyLines: 'greedy' }).data;
++assert.ok(records[0].length >= 16, 'Wide real manifest');
++const derivedRecords = [records[0], ...Array.from({ length: 125 }, (_, i) => [...records[1 + i % (records.length - 1)]])];
++const platformColumn = records[0].indexOf('platform');
++derivedRecords[1][platformColumn] += ' / long platform description'.repeat(5);
++const workbook = XLSX.utils.book_new();
++XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(records), '真实样本');
++XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([['gene', 'score'], ['TP53', 1.5]]), '基因汇总');
++const samples = new Map([
++  ['GSE280781_sample_manifest.tsv', tsv],
++  ['manifest-125.tsv', Buffer.from(Papa.unparse(derivedRecords, { delimiter: '\t' }))],
++  ['enrichment.csv', await readFile('tool_configs/enrichments/examples/tomato_enrichment_result.csv')],
++  ['ScTypeDB_full.xlsx', await readFile('pipelines/scrna/Celldex/ScTypeDB_full.xlsx')],
++  ['multiple.xlsx', XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })],
++  ['legacy.XLS', XLSX.write(workbook, { type: 'buffer', bookType: 'xls' })],
++  ['empty.csv', Buffer.from('')],
++  ['broken.xlsx', Buffer.from('broken workbook: 原始内容')],
++  ['notes.txt', Buffer.from('original plain text\nsecond line')],
++  ['notes.md', Buffer.from('# Original markdown\nunchanged code preview')],
++  ['large.csv', Buffer.from('gene,score\nTP53,1\n' + ' '.repeat(5 * 1024 * 1024))],
++]);
++samples.set('large-unknown.csv', samples.get('large.csv'));
++const items = [...samples].map(([path, data]) => ({ path, size: path === 'large-unknown.csv' ? undefined : data.length, url: `/api/v1/table-fixture/${path}` }));
++await writeFile(resolve(fixture, 'index.html'), '<div id="app"></div><script type="module" src="./main.ts"></script>');
++await writeFile(resolve(fixture, 'main.ts'), `
++import { createApp } from 'vue';
++import App from './App.vue';
++import '@/styles/tokens.css';
++import '@/styles/global.css';
++import '@/styles/chat-theme.css';
++createApp(App).mount('#app');
++`);
++await writeFile(resolve(fixture, 'App.vue'), `
++<script setup>
++import { ref } from 'vue';
++import { NConfigProvider, NMessageProvider, darkTheme } from 'naive-ui';
++import StudioArtifactsPanel from '@/components/studio/StudioArtifactsPanel.vue';
++const studio = ref(false);
++window.setStudio = () => { studio.value = true; };
++import MessageArtifactGallery from '@/components/ai-chat/MessageArtifactGallery.vue';
++const dark = ref(false);
++const artifacts = ${JSON.stringify(items)};
++window.setTheme = value => { dark.value = value; document.documentElement.dataset.theme = value ? 'dark' : 'light'; };
++</script>
++<template><NConfigProvider :theme="dark ? darkTheme : null"><NMessageProvider><main style="max-width:1000px;margin:40px auto;padding:16px"><StudioArtifactsPanel v-if="studio" session-id="fixture" /><MessageArtifactGallery v-else :artifacts="artifacts" /></main></NMessageProvider></NConfigProvider></template>
++`);
++const report = { checks: [], errors: [], sampleRows: records.length - 1 };
++let server, browser;
++try {
++  server = await createServer({ configFile: resolve(frontend, 'vite.config.ts'), root: frontend,
++    optimizeDeps: { entries: [resolve(fixture, 'index.html')] },
++    server: { host: '127.0.0.1', port: 0, open: false }, logLevel: 'error' });
++  await server.listen();
++  const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
++  browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH });
++  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
++  page.on('pageerror', error => report.errors.push(error.message));
++  const requests = [];
++  await page.route('**/api/v1/table-fixture/**', route => {
++    const name = decodeURIComponent(new URL(route.request().url()).pathname.split('/').pop());
++    requests.push(name);
++    return route.fulfill({ body: samples.get(name), contentType: 'application/octet-stream' });
++  });
++  await page.route('**/api/v1/studio/sessions/fixture/**', route => {
++    const url = new URL(route.request().url());
++    if (url.pathname.endsWith('/download')) return route.fulfill({ body: samples.get(url.searchParams.get('path')) });
++    return route.fulfill({ json: { artifacts: items.map(item => ({ ...item, mtime: Date.now() / 1000 })) } });
++  });
++  await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/${basename(fixture)}/index.html`);
++  await page.getByRole('button', { name: '打开产物窗口' }).click();
++  async function preview(name) {
++    await page.locator('.message-artifacts__files li').filter({ hasText: name }).getByRole('button', { name: '预览', exact: true }).click();
++    await page.waitForTimeout(200);
++  }
++  const table = page.locator('.artifact-table-preview');
++  await preview('GSE280781_sample_manifest.tsv');
++  await table.locator('tbody tr').first().waitFor();
++  assert.equal(await table.locator('th').count(), records[0].length);
++  assert.equal(await table.locator('tbody tr').count(), Math.min(100, records.length - 1));
++  assert.match(await table.innerText(), new RegExp(`共 ${records.length - 1} 行`));
++  await page.waitForTimeout(600);
++  const geometry = await table.evaluate(element => {
++    const headers = [...element.querySelectorAll('th')];
++    const cells = [...element.querySelectorAll('tbody tr:first-child td')];
++    const aligned = headers.every((th, i) => Math.abs(th.getBoundingClientRect().width - cells[i].getBoundingClientRect().width) < 2);
++    const scroller = [...element.querySelectorAll('*')].find(el => el.scrollHeight > el.clientHeight + 100 && ['auto', 'scroll'].includes(getComputedStyle(el).overflowY));
++    const horizontal = [...element.querySelectorAll('*')].find(el => el.scrollWidth > el.clientWidth + 100 && ['auto', 'scroll'].includes(getComputedStyle(el).overflowX));
++    const before = headers[0].getBoundingClientRect().top;
++    if (scroller) scroller.scrollTop = 300;
++    if (horizontal) horizontal.scrollLeft = 400;
++    return { aligned, vertical: !!scroller, horizontal: !!horizontal, before };
++  });
++  assert.ok(geometry.aligned, 'Header/body column widths align');
++  assert.ok(geometry.horizontal, 'Wide TSV can scroll horizontally');
++  if (records.length > 15) assert.ok(geometry.vertical, 'TSV can scroll vertically');
++  await page.waitForTimeout(100);
++  const headerAfter = await table.locator('th').first().evaluate(el => el.getBoundingClientRect().top);
++  report.geometry = { ...geometry, headerAfter };
++  assert.ok(Math.abs(headerAfter - geometry.before) < 2, 'Header stays fixed');
++  await table.evaluate(element => [...element.querySelectorAll('*')].forEach(el => { el.scrollLeft = 0; el.scrollTop = 0; }));
++  await page.waitForTimeout(100);
++  await page.screenshot({ path: resolve(output, 'manifest-light.png') });
++  report.checks.push(`Real ${records[0].length}-column manifest: aligned columns, horizontal/vertical scroll, fixed header, correct row count`);
++  await page.keyboard.press('Escape');
++  for (const name of ['manifest-125.tsv', 'enrichment.csv', 'ScTypeDB_full.xlsx', 'multiple.xlsx', 'legacy.XLS']) {
++    await preview(name);
++    await table.locator('tbody tr').first().waitFor();
++    if (name === 'manifest-125.tsv') {
++      assert.equal(await table.locator('tbody tr').count(), 100);
++      assert.match(await table.innerText(), /共 125 行，预览前 100 行，下载查看完整数据/);
++  const longest = platformColumn;
++  await table.locator('tbody tr').first().locator('td').nth(longest).locator('.n-ellipsis').hover();
++  await page.waitForTimeout(600);
++  assert.ok((await page.locator('.n-popover').allTextContents()).some(text => text.includes(derivedRecords[1][longest])), 'Long cell tooltip shows full content');
++  report.checks.push('Long platform field tooltip shows full text');
++  await page.screenshot({ path: resolve(output, 'manifest-tooltip.png') });
++
++    }
++    if (name === 'multiple.xlsx' || name === 'legacy.XLS') {
++      await table.locator('.n-tabs-tab').filter({ hasText: '基因汇总' }).click();
++      await page.waitForTimeout(100);
++      assert.match(await table.innerText(), /TP53/);
++    }
++    report.checks.push(`${name}: scientific sample rendered${name.includes('multiple') || name.includes('legacy') ? ', sheet switching verified' : ''}`);
++    await page.keyboard.press('Escape');
++  }
++  for (const [name, expected] of [['empty.csv', '该产物为空表格'], ['broken.xlsx', 'broken workbook: 原始内容'], ['notes.txt', 'original plain text'], ['notes.md', '# Original markdown']]) {
++    await preview(name);
++    assert.match(await page.locator('.n-modal').last().innerText(), new RegExp(expected));
++    report.checks.push(`${name}: expected placeholder/fallback/original preview`);
++    await page.keyboard.press('Escape');
++  }
++  await preview('large.csv');
++  assert.ok(!requests.includes('large.csv'), 'Large file not fetched before confirmation');
++  await table.getByRole('button', { name: '确认加载' }).click();
++  await table.locator('tbody tr').first().waitFor();
++  assert.ok(requests.includes('large.csv'));
++  report.checks.push('5 MB protection: confirmation before download/parse');
++  await page.keyboard.press('Escape');
++  await preview('large-unknown.csv');
++  await table.getByRole('button', { name: '确认加载' }).waitFor();
++  assert.equal(await table.locator('table').count(), 0);
++  await table.getByRole('button', { name: '确认加载' }).click();
++  await table.locator('tbody tr').first().waitFor();
++  assert.equal(requests.filter(name => name === 'large-unknown.csv').length, 2);
++  report.checks.push('Missing manifest size: stream stopped at response headers and reloaded only after confirmation');
++  await page.keyboard.press('Escape');
++  const downloadEvent = page.waitForEvent('download');
++  await page.locator('.message-artifacts__files li').filter({ hasText: 'GSE280781_sample_manifest.tsv' }).getByRole('button', { name: '下载', exact: true }).click();
++  const download = await downloadEvent;
++  assert.equal(download.suggestedFilename(), 'GSE280781_sample_manifest.tsv');
++  await download.saveAs(resolve(output, 'downloaded-manifest.tsv'));
++  assert.deepEqual(await readFile(resolve(output, 'downloaded-manifest.tsv')), tsv);
++  report.checks.push('Download retains original filename and identical bytes');
++  await page.evaluate(() => window.setTheme(true));
++  await preview('GSE280781_sample_manifest.tsv');
++  await table.locator('tbody tr').first().waitFor();
++  const colors = await table.locator('tbody td').first().evaluate(el => ({ text: getComputedStyle(el).color, background: getComputedStyle(el).backgroundColor }));
++  assert.notEqual(colors.text, 'rgb(0, 0, 0)', 'Dark table text remains readable');
++  report.darkColors = colors;
++  await page.screenshot({ path: resolve(output, 'manifest-dark.png') });
++  await page.setViewportSize({ width: 390, height: 844 });
++  await page.screenshot({ path: resolve(output, 'manifest-mobile.png') });
++  assert.ok(await table.locator('table').count());
++  report.checks.push('Light/dark desktop and mobile screenshots captured');
++  await page.keyboard.press('Escape');
++  await page.setViewportSize({ width: 1440, height: 1000 });
++  await page.evaluate(() => window.setStudio());
++  const studioItem = page.locator('.artifact-item').filter({ hasText: 'multiple.xlsx' });
++  await studioItem.hover();
++  await studioItem.locator('.artifact-actions button').first().click();
++  await table.locator('tbody tr').first().waitFor();
++  await table.locator('.n-tabs-tab').filter({ hasText: '基因汇总' }).click();
++  await page.waitForTimeout(100);
++  assert.match(await table.innerText(), /TP53/);
++  report.checks.push('Studio panel loads the same table renderer and switches Excel sheets');
++  await page.screenshot({ path: resolve(output, 'studio-excel.png') });
++  assert.deepEqual(report.errors, []);
++  console.log(JSON.stringify(report, null, 2));
++} finally {
++  await writeFile(resolve(output, 'browser-results.json'), JSON.stringify(report, null, 2));
++  await browser?.close();
++  await server?.close();
++  await rm(fixture, { recursive: true, force: true });
++}

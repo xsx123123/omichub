@@ -140,17 +140,17 @@ Tell your AI agent what you want to do:
 - For mediation, run Imai sensitivity (rho_crit > 0.3 robust) or mediational E-value > 2; molecular mediators are best tested via two-step MR with cis-instruments
 
 ## Related Skills
-- causal-genomics/mendelian-randomization - IVW, Egger, MR-RAPS, MVMR
-- causal-genomics/colocalization-analysis - coloc.abf, coloc.susie, HyPrColoc, SMR-HEIDI
-- causal-genomics/fine-mapping - SuSiE rss, FINEMAP-inf, PolyFun, SuSiEx
-- causal-genomics/pleiotropy-detection - MR-PRESSO, CAUSE, LHC-MR, contamination-mixture
-- causal-genomics/mediation-analysis - Two-step MR, MVMR, CMAverse 4-way, HIMA
-- causal-genomics/transcriptome-wide-association - FUSION, S-PrediXcan, FOCUS, UTMOST
-- causal-genomics/heritability-partitioning - LDSC, S-LDSC, LDAK, HDL, HESS
-- causal-genomics/proteome-mr-drug-target - UKB-PPP, deCODE, cis-pQTL MR, pheWAS
-- causal-genomics/effector-gene-prioritization - L2G, PoPS, cS2G, MAGMA, FLAMES
-- causal-genomics/genetic-correlation - Cross-trait LDSC, HDL, LAVA, Popcorn
-- causal-genomics/genomic-sem - Common-factor GWAS, Q_SNP, MTAG reconciliation
+- references/causal-genomics--mendelian-randomization.md - IVW, Egger, MR-RAPS, MVMR
+- references/causal-genomics--colocalization-analysis.md - coloc.abf, coloc.susie, HyPrColoc, SMR-HEIDI
+- references/causal-genomics--fine-mapping.md - SuSiE rss, FINEMAP-inf, PolyFun, SuSiEx
+- references/causal-genomics--pleiotropy-detection.md - MR-PRESSO, CAUSE, LHC-MR, contamination-mixture
+- references/causal-genomics--mediation-analysis.md - Two-step MR, MVMR, CMAverse 4-way, HIMA
+- references/causal-genomics--transcriptome-wide-association.md - FUSION, S-PrediXcan, FOCUS, UTMOST
+- references/causal-genomics--heritability-partitioning.md - LDSC, S-LDSC, LDAK, HDL, HESS
+- references/causal-genomics--proteome-mr-drug-target.md - UKB-PPP, deCODE, cis-pQTL MR, pheWAS
+- references/causal-genomics--effector-gene-prioritization.md - L2G, PoPS, cS2G, MAGMA, FLAMES
+- references/causal-genomics--genetic-correlation.md - Cross-trait LDSC, HDL, LAVA, Popcorn
+- references/causal-genomics--genomic-sem.md - Common-factor GWAS, Q_SNP, MTAG reconciliation
 - population-genetics/association-testing - Upstream GWAS methods
 - atac-seq/enhancer-gene-linking - ABC / ENCODE-rE2G priors for effector-gene step
 - single-cell/preprocessing - scRNA / scATAC tissue priors for stratified LDSC

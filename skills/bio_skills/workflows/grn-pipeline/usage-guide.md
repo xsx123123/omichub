@@ -71,8 +71,8 @@ Tell your AI agent what you want to do:
 - CellOracle perturbation results are predictions; validate experimentally
 
 ## Related Skills
-- gene-regulatory-networks/scenic-regulons - pySCENIC implementation details
-- gene-regulatory-networks/multiomics-grn - SCENIC+ enhancer-driven GRNs
-- gene-regulatory-networks/perturbation-simulation - CellOracle details
-- single-cell/clustering - Upstream cell type annotation
+- references/gene-regulatory-networks--scenic-regulons.md - pySCENIC implementation details
+- references/gene-regulatory-networks--multiomics-grn.md - SCENIC+ enhancer-driven GRNs
+- references/gene-regulatory-networks--perturbation-simulation.md - CellOracle details
+- references/single-cell--clustering.md - Upstream cell type annotation
 - single-cell/preprocessing - QC and normalization before GRN inference

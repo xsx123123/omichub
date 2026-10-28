@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-cytometry-pipeline
 description: End-to-end flow, spectral, and mass cytometry (CyTOF) pipeline from raw FCS files to differentially abundant/expressed cell populations. Orchestrates the read -> compensate/unmix -> transform -> QC -> doublet-removal -> cluster-or-gate -> annotate -> diffcyt DA/DS chain with flowCore/CATALYST/diffcyt, branching on instrument type and on clustering-vs-gating. Use when processing a cytometry experiment end-to-end, deciding the pipeline path for an instrument, or wiring the flow-cytometry component skills into one analysis with valid sample-level statistics.
+version: 1.0.0
+display_name: 流式与质谱细胞术流程
+display_name_en: Cytometry Pipeline
+description_zh: >-
+  从原始 FCS 到差异丰度与差异表达细胞群的流式、光谱与质谱细胞术全流程，串联补偿或解混、变换、质控、去双联、聚类或门控、细胞注释与 diffcyt 差异分析。
+description_en: >-
+  End-to-end flow, spectral, and mass cytometry (CyTOF) pipeline from raw FCS files to differentially abundant/expressed cell populations. Orchestrates the read -> compensate/unmix -> transform -> QC -> doublet-removal -> cluster-or-gate -> annotate -> diffcyt DA/DS chain with flowCore/CATALYST/diffcyt, branching on instrument type and on clustering-vs-gating. Use when processing a cytometry experiment end-to-end, deciding the pipeline path for an instrument, or wiring the flow-cytometry component skills into one analysis with valid sample-level statistics.
+author: JZHANG
+examples_zh:
+  - "处理这批 CyTOF 数据并找出组间差异细胞群"
+  - "帮我决定用聚类还是门控策略"
+  - "对 FCS 文件做补偿、变换和双联体去除"
+examples_en:
+  - "Process this CyTOF dataset and find differentially abundant cell populations"
+  - "Should I use clustering or manual gating for this panel?"
+  - "Compensate, transform, and remove doublets from these FCS files"
 tool_type: r
 primary_tool: CATALYST
 workflow: true
@@ -63,7 +79,7 @@ EQ-bead drift normalization (CyTOF) runs on raw counts BEFORE everything; CytoNo
 
 **Goal:** Define the type/state panel and sample metadata, then load FCS.
 
-**Approach:** Panel `marker_class` drives everything downstream (type clusters, state is tested); metadata keys samples to condition/subject. See flow-cytometry/fcs-handling.
+**Approach:** Panel `marker_class` drives everything downstream (type clusters, state is tested); metadata keys samples to condition/subject. See references/flow-cytometry--fcs-handling.md.
 
 ```r
 library(CATALYST); library(diffcyt); library(flowCore); library(ggplot2)
@@ -83,7 +99,7 @@ fs <- read.flowSet(file.path('data', md$file_name), transformation = FALSE, trun
 
 **Goal:** Remove spillover on linear data, then variance-stabilize.
 
-**Approach:** Conventional flow compensates (matrix before transform); CyTOF skips fluorescence compensation and uses cofactor 5; spectral unmixes then uses ~150. See flow-cytometry/compensation-transformation.
+**Approach:** Conventional flow compensates (matrix before transform); CyTOF skips fluorescence compensation and uses cofactor 5; spectral unmixes then uses ~150. See references/flow-cytometry--compensation-transformation.md.
 
 ```r
 spill <- spillover(fs[[1]]); spill <- spill[[which(!vapply(spill, is.null, logical(1)))[1]]]  # first POPULATED matrix; FACS stores it under SPILL/$SPILLOVER, not always [[1]]
@@ -96,7 +112,7 @@ sce <- prepData(fs_comp, panel, md, transform = TRUE, cofactor = COFACTOR, FACS 
 
 **Goal:** Remove margin/boundary events and time anomalies before any density step.
 
-**Approach:** Margins first, then time-based cleaning; on CyTOF, EQ-bead drift correction happens upstream on raw counts. See flow-cytometry/cytometry-qc and flow-cytometry/bead-normalization.
+**Approach:** Margins first, then time-based cleaning; on CyTOF, EQ-bead drift correction happens upstream on raw counts. See references/flow-cytometry--cytometry-qc.md and references/flow-cytometry--bead-normalization.md.
 
 ```r
 # per-sample sanity + sample-similarity MDS (flag outlier samples)
@@ -108,7 +124,7 @@ plotExprs(sce, color_by = 'condition'); pbMDS(sce, color_by = 'condition')
 
 **Goal:** Drop aggregates before clustering so they don't form phantom double-positives.
 
-**Approach:** Flow uses the FSC-A vs FSC-H diagonal; CyTOF uses DNA intercalator + Gaussian/Event_length. See flow-cytometry/doublet-detection.
+**Approach:** Flow uses the FSC-A vs FSC-H diagonal; CyTOF uses DNA intercalator + Gaussian/Event_length. See references/flow-cytometry--doublet-detection.md.
 
 ```r
 # CyTOF (FACS=TRUE retained Event_length on the arcsinh scale):
@@ -124,7 +140,7 @@ if (all(c('DNA1','Event_length') %in% rownames(sce))) {
 
 **Goal:** Define populations by unsupervised clustering on TYPE markers (discovery) or hierarchical gating (defined/rare).
 
-**Approach:** `cluster()` wraps FlowSOM+ConsensusClusterPlus; over-provision the grid, set a seed. See flow-cytometry/clustering-phenotyping (clustering) and flow-cytometry/gating-analysis (gating).
+**Approach:** `cluster()` wraps FlowSOM+ConsensusClusterPlus; over-provision the grid, set a seed. See references/flow-cytometry--clustering-phenotyping.md (clustering) and references/flow-cytometry--gating-analysis.md (gating).
 
 ```r
 sce <- cluster(sce, features = 'type', xdim = 10, ydim = 10, maxK = 20, seed = 42)
@@ -146,7 +162,7 @@ plotDR(sce, dr = 'UMAP', color_by = 'meta20')
 
 **Goal:** Test which populations change in frequency (DA) or state-marker expression (DS) between conditions.
 
-**Approach:** The `diffcyt()` wrapper aggregates to the sample level; results live in `res$res`. See flow-cytometry/differential-analysis.
+**Approach:** The `diffcyt()` wrapper aggregates to the sample level; results live in `res$res`. See references/flow-cytometry--differential-analysis.md.
 
 ```r
 design   <- createDesignMatrix(ei(sce), cols_design = 'condition')
@@ -186,7 +202,7 @@ res_DA <- diffcyt(sce, clustering_to_use = 'meta20', analysis_type = 'DA',
 
 **Goal:** Define populations by a reproducible hierarchy when they are well-defined or rare.
 
-**Approach:** Build a GatingSet on transformed data; recompute after adding gates. See flow-cytometry/gating-analysis.
+**Approach:** Build a GatingSet on transformed data; recompute after adding gates. See references/flow-cytometry--gating-analysis.md.
 
 ```r
 library(flowWorkspace)
@@ -252,12 +268,12 @@ df = sample.as_dataframe(source='comp')
 
 ## Related Skills
 
-- flow-cytometry/fcs-handling - Read FCS and map channels
-- flow-cytometry/compensation-transformation - Compensate/unmix and transform
-- flow-cytometry/cytometry-qc - Time/margin/dead-cell QC
-- flow-cytometry/doublet-detection - Singlet discrimination
-- flow-cytometry/bead-normalization - EQ-bead drift and CytoNorm batch correction
-- flow-cytometry/gating-analysis - Hierarchical/automated gating path
-- flow-cytometry/clustering-phenotyping - FlowSOM clustering and annotation
-- flow-cytometry/differential-analysis - diffcyt DA/DS testing
+- references/flow-cytometry--fcs-handling.md - Read FCS and map channels
+- references/flow-cytometry--compensation-transformation.md - Compensate/unmix and transform
+- references/flow-cytometry--cytometry-qc.md - Time/margin/dead-cell QC
+- references/flow-cytometry--doublet-detection.md - Singlet discrimination
+- references/flow-cytometry--bead-normalization.md - EQ-bead drift and CytoNorm batch correction
+- references/flow-cytometry--gating-analysis.md - Hierarchical/automated gating path
+- references/flow-cytometry--clustering-phenotyping.md - FlowSOM clustering and annotation
+- references/flow-cytometry--differential-analysis.md - diffcyt DA/DS testing
 - single-cell/clustering - Related graph-clustering for scRNA-seq

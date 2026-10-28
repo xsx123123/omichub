@@ -1,0 +1,9 @@
+{
+  "interactive_tabs": true,
+  "parent_access_blocked": true,
+  "outbound_requests": 0,
+  "anonymous_url_status": 403,
+  "tampered_id_status": 403,
+  "logged_out_url_status": 403,
+  "page_errors": []
+}

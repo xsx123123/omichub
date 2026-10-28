@@ -25,6 +25,7 @@ from cygnusx.application.services.reproducible_report_service import (
     ReproducibleReportService,
     run_reproducible_report,
 )
+from cygnusx.core.config import get_settings
 from cygnusx.core.exceptions import ConflictError, CygnusXError, NotFoundError
 from cygnusx.infrastructure.celery_app.tasks.reports import record_failure
 from cygnusx.infrastructure.database.models.file import DirectoryModel, FileRecordModel
@@ -99,6 +100,9 @@ class AwaitableSession:
 def isolated_db(
     synthetic_rna: SyntheticRNA, monkeypatch: pytest.MonkeyPatch
 ) -> Iterator[AwaitableSession]:
+    # This fixture covers the legacy Task report contract, without Dataset/user
+    # tables. Do not inherit optional research-delivery enablement from a local .env.
+    monkeypatch.setattr(get_settings(), "research_delivery_read_enabled", False)
     engine = create_engine("sqlite://")
     selected = (
         TaskModel,

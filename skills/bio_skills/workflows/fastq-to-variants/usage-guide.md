@@ -73,7 +73,7 @@ Tell your AI agent what you want to do:
 
 ## Choosing an Engine and Cohort Mode
 
-Engine selection is a pipeline-level decision handed to variant-calling/variant-calling: bcftools for exploratory/non-model/resource-limited work, GATK HaplotypeCaller for auditable open-source cohorts, DeepVariant for best indel/difficult-region accuracy, DRAGEN for maximum throughput. Single-sample vs cohort is a separate chaining decision: for a cohort, emit per-sample gVCFs and joint-genotype them (variant-calling/joint-calling) rather than merging single-sample VCFs.
+Engine selection is a pipeline-level decision handed to references/variant-calling--variant-calling.md: bcftools for exploratory/non-model/resource-limited work, GATK HaplotypeCaller for auditable open-source cohorts, DeepVariant for best indel/difficult-region accuracy, DRAGEN for maximum throughput. Single-sample vs cohort is a separate chaining decision: for a cohort, emit per-sample gVCFs and joint-genotype them (references/variant-calling--joint-calling.md) rather than merging single-sample VCFs.
 
 ## Tips
 
@@ -89,15 +89,15 @@ Engine selection is a pipeline-level decision handed to variant-calling/variant-
 
 - database-access/sra-data - Pull public WGS FASTQ for reanalysis
 - database-access/ncbi-datasets-cli - Pull reference genome assembly via Datasets v2 CLI
-- variant-calling/variant-calling - Engine selection and bcftools calling details
-- variant-calling/gatk-variant-calling - GATK HaplotypeCaller and DRAGEN mode
-- variant-calling/deepvariant - Deep-learning calling and GLnexus cohorts
-- variant-calling/joint-calling - Cohort joint genotyping and scaling
-- variant-calling/variant-normalization - Normalize before annotate/compare
-- variant-calling/filtering-best-practices - VQSR and hard filtering
-- variant-calling/variant-annotation - Annotate on the normalized representation
-- variant-calling/vcf-statistics - Ti/Tv, het/hom, and identity QC
-- read-qc/fastp-workflow - Read QC details
+- references/variant-calling--variant-calling.md - Engine selection and bcftools calling details
+- references/variant-calling--gatk-variant-calling.md - GATK HaplotypeCaller and DRAGEN mode
+- references/variant-calling--deepvariant.md - Deep-learning calling and GLnexus cohorts
+- references/variant-calling--joint-calling.md - Cohort joint genotyping and scaling
+- references/variant-calling--variant-normalization.md - Normalize before annotate/compare
+- references/variant-calling--filtering-best-practices.md - VQSR and hard filtering
+- references/variant-calling--variant-annotation.md - Annotate on the normalized representation
+- references/variant-calling--vcf-statistics.md - Ti/Tv, het/hom, and identity QC
+- references/read-qc--fastp-workflow.md - Read QC details
 - sequence-io/fastq-quality - Confirm the FASTQ quality encoding before trimming public or legacy data
 - sequence-io/paired-end-fastq - Keep R1/R2 mates synchronized so filtering does not corrupt mapping
-- read-alignment/bwa-alignment - Alignment details, read groups, ALT/decoy analysis set, the dedup ordering
+- references/read-alignment--bwa-alignment.md - Alignment details, read groups, ALT/decoy analysis set, the dedup ordering

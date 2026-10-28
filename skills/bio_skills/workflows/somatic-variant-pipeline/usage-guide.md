@@ -62,9 +62,9 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- variant-calling/gatk-variant-calling - Mutect2 mechanism and germline context
-- variant-calling/filtering-best-practices - FilterMutectCalls internals and normalization
-- variant-calling/variant-annotation - VEP/Funcotator/SnpEff, transcript choice, COSMIC
-- variant-calling/clinical-interpretation - AMP/ASCO/CAP tiers and oncogenicity
-- variant-calling/structural-variant-calling - Somatic SV detection with Manta/GRIDSS
-- copy-number/cnvkit-analysis - Somatic CNV and purity/ploidy
+- references/variant-calling--gatk-variant-calling.md - Mutect2 mechanism and germline context
+- references/variant-calling--filtering-best-practices.md - FilterMutectCalls internals and normalization
+- references/variant-calling--variant-annotation.md - VEP/Funcotator/SnpEff, transcript choice, COSMIC
+- references/variant-calling--clinical-interpretation.md - AMP/ASCO/CAP tiers and oncogenicity
+- references/variant-calling--structural-variant-calling.md - Somatic SV detection with Manta/GRIDSS
+- references/copy-number--cnvkit-analysis.md - Somatic CNV and purity/ploidy

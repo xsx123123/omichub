@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-atacseq-pipeline
 description: Orchestrates the end-to-end bulk ATAC-seq pipeline from FASTQ to differential accessibility and TF footprints, chaining Nextera-aware fastp QC, Bowtie2 alignment, chrM removal, dedup, a single Tn5 +4/-5 shift, MACS3 peak calling, Corces fixed-width consensus, DiffBind/csaw differential accessibility, and TOBIAS footprinting. Use when committing the reference build + blacklist once, recognizing ATAC has NO input control (the shift-extend model IS the background), applying the Tn5 shift exactly once (never combining -f BAMPE with --shift/--extsize), removing chrM before calling, building a fixed-width consensus so per-sample counts are comparable, or choosing MACS3 vs Genrich vs HMMRATAC. Hands mechanism to the atac-seq component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: ATAC-seq 全流程分析
+display_name_en: Bulk ATAC-seq Pipeline
+description_zh: >-
+  从 FASTQ 到差异可及性与转录因子足迹的体 ATAC-seq 全流程，串联 fastp 质控、Bowtie2 比对、去线粒体、去重、Tn5 位移、MACS3 峰调用、Corces 定宽共识峰、DiffBind 差异分析与 TOBIAS 足迹分析。
+description_en: >-
+  Orchestrates the end-to-end bulk ATAC-seq pipeline from FASTQ to differential accessibility and TF footprints, chaining Nextera-aware fastp QC, Bowtie2 alignment, chrM removal, dedup, a single Tn5 +4/-5 shift, MACS3 peak calling, Corces fixed-width consensus, DiffBind/csaw differential accessibility, and TOBIAS footprinting. Use when committing the reference build + blacklist once, recognizing ATAC has NO input control (the shift-extend model IS the background), applying the Tn5 shift exactly once (never combining -f BAMPE with --shift/--extsize), removing chrM before calling, building a fixed-width consensus so per-sample counts are comparable, or choosing MACS3 vs Genrich vs HMMRATAC. Hands mechanism to the atac-seq component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用我的 ATAC-seq 双端 FASTQ 跑完整分析，得到差异可及性区域和 TF 足迹"
+  - "帮我确认 Tn5 位移只应用一次，并构建定宽共识峰"
+  - "处理公共 ATAC-seq 数据并生成 FRiP、TSS 富集等质控指标"
+examples_en:
+  - "Run the full ATAC-seq pipeline on my paired-end FASTQ files and report differential accessibility and TF footprints"
+  - "Check that the Tn5 shift is applied exactly once and build a fixed-width consensus peak set"
+  - "Process public ATAC-seq data and generate FRiP and TSS enrichment QC metrics"
 tool_type: mixed
 primary_tool: MACS3
 workflow: true
@@ -58,21 +74,21 @@ Reporting corollary: ENCODE ATAC v3 and v4 define TSS-enrichment/FRiP thresholds
 
 ```
 FASTQ (paired, Nextera)
-  | [1] QC & trim -----------------> fastp (Nextera adapters)   (read-qc/fastp-workflow)
+  | [1] QC & trim -----------------> fastp (Nextera adapters)   (references/read-qc--fastp-workflow.md)
   v
-  | [2] Align ---------------------> bowtie2 --very-sensitive -X 2000   (read-alignment/bowtie2-alignment)
+  | [2] Align ---------------------> bowtie2 --very-sensitive -X 2000   (references/read-alignment--bowtie2-alignment.md)
   v     ^-- commitment: build + ENCODE blacklist (NO input control)
   | [3] Drop chrM (BEFORE dedup/peaks) -> mito can be 20-50% of reads
   v
-  | [4] Dedup --------------------> markdup -r   (alignment-files/duplicate-handling)
+  | [4] Dedup --------------------> markdup -r   (references/alignment-files--duplicate-handling.md)
   v
   | [5] Tn5 shift ONCE ------------> alignmentSieve --ATACshift (+4/-5)
   v     ^-- pick ONE calling mode; never BAMPE + --shift
-  | [6] Peak calling -------------> macs3 (cut-site -f BAM --shift/--extsize | -f BAMPE)  (atac-seq/atac-peak-calling)
+  | [6] Peak calling -------------> macs3 (cut-site -f BAM --shift/--extsize | -f BAMPE)  (references/atac-seq--atac-peak-calling.md)
   v
-  | [7] Fixed-width consensus -----> Corces 501 bp iterative overlap   (atac-seq/consensus-peakset)
+  | [7] Fixed-width consensus -----> Corces 501 bp iterative overlap   (references/atac-seq--consensus-peakset.md)
   v
-  | [8] QC + differential + footprints -> TSS/FRiP/fragment; DiffBind/csaw; TOBIAS  (atac-seq/atac-qc, differential-accessibility, footprinting)
+  | [8] QC + differential + footprints -> TSS/FRiP/fragment; DiffBind/csaw; TOBIAS  (references/atac-seq--atac-qc.md, references/atac-seq--differential-accessibility.md, references/atac-seq--footprinting.md)
   v
 Accessibility peaks + differential regions + TF activity
 ```
@@ -103,10 +119,10 @@ Pipeline-level selection only; mechanism lives in the component skills.
 
 | Fork | Lean toward | Hand off to |
 |------|-------------|-------------|
-| Caller | MACS3 (standard); Genrich (`-j` ATAC mode: handles replicates + chrM + blacklist in one pass); HMMRATAC (nucleosome-aware HMM) | atac-seq/atac-peak-calling |
-| Calling mode | Cut-site `-f BAM`/`-f BED` + `--nomodel --shift -75 --extsize 150` (ENCODE smoothing window on shifted reads) vs fragment `-f BAMPE` on shifted reads (no `--shift`) | atac-seq/atac-peak-calling |
-| Consensus | Corces 2018 iterative-overlap fixed-width 501 bp | atac-seq/consensus-peakset |
-| Differential | DiffBind / csaw / DESeq2 on the fixed-width count matrix; spike-in for global shifts | atac-seq/differential-accessibility |
+| Caller | MACS3 (standard); Genrich (`-j` ATAC mode: handles replicates + chrM + blacklist in one pass); HMMRATAC (nucleosome-aware HMM) | references/atac-seq--atac-peak-calling.md |
+| Calling mode | Cut-site `-f BAM`/`-f BED` + `--nomodel --shift -75 --extsize 150` (ENCODE smoothing window on shifted reads) vs fragment `-f BAMPE` on shifted reads (no `--shift`) | references/atac-seq--atac-peak-calling.md |
+| Consensus | Corces 2018 iterative-overlap fixed-width 501 bp | references/atac-seq--consensus-peakset.md |
+| Differential | DiffBind / csaw / DESeq2 on the fixed-width count matrix; spike-in for global shifts | references/atac-seq--differential-accessibility.md |
 
 ## Primary path: Bowtie2 + Tn5 shift + MACS3
 
@@ -143,7 +159,7 @@ macs3 callpeak -t aligned/${s}.filt.bam -f BAM -g hs -n ${s} --outdir peaks \
     --nomodel --shift -75 --extsize 150 --keep-dup all -q 0.01
 ```
 
-For the ENCODE 4 IDR + pseudoreplicate pipeline and the Corces 501 bp iterative-overlap consensus, see atac-seq/atac-peak-calling and atac-seq/consensus-peakset.
+For the ENCODE 4 IDR + pseudoreplicate pipeline and the Corces 501 bp iterative-overlap consensus, see references/atac-seq--atac-peak-calling.md and references/atac-seq--consensus-peakset.md.
 
 ## Differential accessibility and footprinting
 
@@ -160,7 +176,7 @@ dba <- dba.analyze(dba); report <- dba.report(dba)
 ```
 
 ```bash
-# peaks/consensus.bed is the Corces 501 bp FIXED-WIDTH consensus from atac-seq/consensus-peakset (step 7).
+# peaks/consensus.bed is the Corces 501 bp FIXED-WIDTH consensus from references/atac-seq--consensus-peakset.md (step 7).
 # It is NOT peaks/consensus_peaks.narrowPeak, which is the variable-width pooled MACS3 call; build the
 # fixed-width set first or these three commands have no input.
 # TOBIAS three-step: bias-correct -> score -> detect bound motifs (differential across two conditions).
@@ -178,7 +194,7 @@ TOBIAS BINDetect --motifs motifs.jaspar --signals foot/ctrl.bw foot/treat.bw --g
 |-------|------|----------------|
 | Alignment | Mapping >80%, mito <20% (Omni-ATAC lower) | High mito = suboptimal lysis; drop before calling |
 | PRE-dedup | NRF >0.8, PBC1 >0.8 | Low complexity = over-amplification/low input; compute before dedup |
-| Peaks | FRiP >0.2, TSS enrichment >5 (v3) | Low TSS/FRiP = over/under-digestion or degraded chromatin (atac-seq/atac-qc) |
+| Peaks | FRiP >0.2, TSS enrichment >5 (v3) | Low TSS/FRiP = over/under-digestion or degraded chromatin (references/atac-seq--atac-qc.md) |
 | Fragment size | NFR <100 bp, mono ~200 bp, di ~400 bp periodicity | Loss of nucleosome periodicity = over-digestion (Tn5:DNA too high) |
 | Consensus | Fixed-width (501 bp) built before counting | Variable-width peaks make counts non-comparable |
 
@@ -194,15 +210,15 @@ TOBIAS BINDetect --motifs motifs.jaspar --signals foot/ctrl.bw foot/treat.bw --g
 
 ## Pipeline map (hand-offs)
 
-- read-qc/fastp-workflow - Nextera adapter trimming
-- read-alignment/bowtie2-alignment - the aligner, wide insert window
-- alignment-files/duplicate-handling - collate/fixmate/sort/markdup order
-- atac-seq/atac-peak-calling - MACS3/Genrich/HMMRATAC, ENCODE 4 IDR, calling modes
-- atac-seq/atac-qc - TSS enrichment, FRiP, NRF/PBC, fragment periodicity
-- atac-seq/consensus-peakset - Corces 2018 iterative-overlap fixed-width consensus
-- atac-seq/differential-accessibility - DiffBind/csaw/DESeq2 on the consensus
-- atac-seq/footprinting - TOBIAS three-step and per-TF failure modes
-- atac-seq/nucleosome-positioning - V-plot, NucleoATAC, +1 nucleosome
+- references/read-qc--fastp-workflow.md - Nextera adapter trimming
+- references/read-alignment--bowtie2-alignment.md - the aligner, wide insert window
+- references/alignment-files--duplicate-handling.md - collate/fixmate/sort/markdup order
+- references/atac-seq--atac-peak-calling.md - MACS3/Genrich/HMMRATAC, ENCODE 4 IDR, calling modes
+- references/atac-seq--atac-qc.md - TSS enrichment, FRiP, NRF/PBC, fragment periodicity
+- references/atac-seq--consensus-peakset.md - Corces 2018 iterative-overlap fixed-width consensus
+- references/atac-seq--differential-accessibility.md - DiffBind/csaw/DESeq2 on the consensus
+- references/atac-seq--footprinting.md - TOBIAS three-step and per-TF failure modes
+- references/atac-seq--nucleosome-positioning.md - V-plot, NucleoATAC, +1 nucleosome
 
 The complete runnable scripts are in this skill's examples/ (`atacseq_workflow.sh`, `differential_atac.R`).
 
@@ -210,16 +226,16 @@ The complete runnable scripts are in this skill's examples/ (`atacseq_workflow.s
 
 - database-access/sra-data - Pull ATAC-seq FASTQ from SRA / ENA
 - database-access/geo-data - Resolve GEO accessions for ATAC datasets
-- read-qc/fastp-workflow - Nextera adapter trimming and quality filtering
-- read-alignment/bowtie2-alignment - Standard ATAC-seq aligner
-- alignment-files/duplicate-handling - MarkDuplicates pre-peak-calling
-- atac-seq/atac-peak-calling - MACS3 / Genrich / HMMRATAC details, ENCODE 4 IDR
-- atac-seq/atac-qc - TSS enrichment, FRiP, NRF/PBC1/PBC2 details
-- atac-seq/consensus-peakset - Corces 2018 iterative-overlap fixed-width consensus
-- atac-seq/differential-accessibility - DiffBind / csaw / DESeq2; spike-in normalization
-- atac-seq/footprinting - TOBIAS three-step; per-TF failure modes
-- atac-seq/motif-deviation - chromVAR for motif accessibility variability
-- atac-seq/nucleosome-positioning - V-plot, NucleoATAC, +1 nucleosome
+- references/read-qc--fastp-workflow.md - Nextera adapter trimming and quality filtering
+- references/read-alignment--bowtie2-alignment.md - Standard ATAC-seq aligner
+- references/alignment-files--duplicate-handling.md - MarkDuplicates pre-peak-calling
+- references/atac-seq--atac-peak-calling.md - MACS3 / Genrich / HMMRATAC details, ENCODE 4 IDR
+- references/atac-seq--atac-qc.md - TSS enrichment, FRiP, NRF/PBC1/PBC2 details
+- references/atac-seq--consensus-peakset.md - Corces 2018 iterative-overlap fixed-width consensus
+- references/atac-seq--differential-accessibility.md - DiffBind / csaw / DESeq2; spike-in normalization
+- references/atac-seq--footprinting.md - TOBIAS three-step; per-TF failure modes
+- references/atac-seq--motif-deviation.md - chromVAR for motif accessibility variability
+- references/atac-seq--nucleosome-positioning.md - V-plot, NucleoATAC, +1 nucleosome
 - atac-seq/single-cell-atac - For scATAC instead of bulk
 - atac-seq/co-accessibility - Cicero cis-regulatory inference
 - atac-seq/enhancer-gene-linking - ABC, ENCODE-rE2G enhancer-gene mapping

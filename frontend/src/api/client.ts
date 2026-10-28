@@ -2,6 +2,7 @@ import axios from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { createDiscreteApi } from 'naive-ui'
 import { createTokenRefreshCoordinator } from '@/utils/authRefresh'
+import { clearReportPreviewContext } from '@/utils/reportPreviewSession'
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: '/api/v1',
@@ -70,6 +71,7 @@ const tokenRefreshCoordinator = createTokenRefreshCoordinator({
 })
 
 function clearAuthAndRedirectToLogin() {
+  clearReportPreviewContext()
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
   if (window.location.pathname !== '/login') {

@@ -15,7 +15,6 @@ import {
 } from '@vicons/ionicons5'
 import ReportCardMinimal from '@/components/report/ReportCardMinimal.vue'
 import ReportStatCard from '@/components/report/ReportStatCard.vue'
-import ReportPreviewModal from '@/components/report/ReportPreviewModal.vue'
 import ReportEmptyState from '@/components/report/ReportEmptyState.vue'
 import PageHeader from '@/components/PageHeader.vue'
 
@@ -23,7 +22,6 @@ const route = useRoute()
 const router = useRouter()
 const message = useMessage()
 
-const previewReport = ref<Report | null>(null)
 const taskIdFromQuery = computed(() => route.query.taskId as string | undefined)
 
 const filter = ref<ReportFilter>({
@@ -92,10 +90,15 @@ function onFilterChange() {
 }
 
 function handlePreview(report: Report) {
-  previewReport.value = report
-  if (!report.is_read) {
-    reportApi.markAsRead(report.id).catch(() => {})
+  if (report.status === 'expired') {
+    message.warning('报告已过期，请重新生成后查看。')
+    return
   }
+  if (report.status !== 'completed') {
+    message.info('报告尚未完成，暂时无法预览。')
+    return
+  }
+  router.push({ name: 'report-viewer', params: { reportId: report.id } })
 }
 
 async function handleDownload(report: Report, fileId: string) {
@@ -160,13 +163,16 @@ watch(
   { immediate: true },
 )
 
-watch(() => route.query.reportId, async (id) => {
+watch(() => route.query.reportId, async (id, _previous, onCleanup) => {
+  let active = true
+  onCleanup(() => { active = false })
   if (typeof id !== 'string') return
   try {
     const response = await reportApi.getReportDetail(id)
+    if (!active) return
     highlightedReportId.value = id
     handlePreview(response.data)
-  } catch { message.error('报告不存在或无权查看。') }
+  } catch { if (active) message.error('报告不存在或无权查看。') }
 }, { immediate: true })
 
 onMounted(() => {
@@ -298,10 +304,6 @@ onMounted(() => {
       />
     </div>
 
-    <ReportPreviewModal
-      :report="previewReport"
-      @close="previewReport = null"
-    />
   </div>
 </template>
 

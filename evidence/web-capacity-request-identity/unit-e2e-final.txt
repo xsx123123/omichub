@@ -1,0 +1,722 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/zj/zj_code_libarary/OmicHub
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, langsmith-0.10.16
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 4306 items / 63 deselected / 4243 selected
+
+tests/unit/chat/test_agent_runtime_gateway.py ........                   [  0%]
+tests/unit/chat/test_chat_message_events.py ............                 [  0%]
+tests/unit/chat/test_chat_messages_preserve_compaction.py .              [  0%]
+tests/unit/chat/test_chat_router_service.py ........                     [  0%]
+tests/unit/chat/test_chat_stream_api_events.py ..........                [  0%]
+tests/unit/chat/test_context_compaction.py ............................. [  1%]
+......                                                                   [  1%]
+tests/unit/chat/test_context_estimate.py ......                          [  1%]
+tests/unit/chat/test_direct_chat_entrypoint.py .                         [  1%]
+tests/unit/chat/test_direct_chat_runtime.py ...                          [  1%]
+tests/unit/chat/test_dual_run.py ......                                  [  2%]
+tests/unit/chat/test_event_sequence.py .................                 [  2%]
+tests/unit/chat/test_fanout_admission.py .....                           [  2%]
+tests/unit/chat/test_golden_records.py ........                          [  2%]
+tests/unit/chat/test_langgraph_chat_runtime.py ............              [  3%]
+tests/unit/chat/test_langgraph_context_view.py ...                       [  3%]
+tests/unit/chat/test_notebook_export.py ......                           [  3%]
+tests/unit/chat/test_payload_truncation.py .....                         [  3%]
+tests/unit/chat/test_request_preparation.py ......                       [  3%]
+tests/unit/chat/test_runtime_event_builders.py .                         [  3%]
+tests/unit/chat/test_runtime_feature_gates.py ...                        [  3%]
+tests/unit/chat/test_runtime_golden_baselines.py ..........              [  3%]
+tests/unit/chat/test_skill_execution.py ..                               [  3%]
+tests/unit/chat/test_studio_handoff.py ....                              [  4%]
+tests/unit/core/test_logging.py ........                                 [  4%]
+tests/unit/core/test_telemetry_propagation.py ......                     [  4%]
+tests/unit/domain/mas/test_agent_capabilities.py .                       [  4%]
+tests/unit/domain/mas/test_apptainer.py ......                           [  4%]
+tests/unit/domain/mas/test_artifact_service.py .                         [  4%]
+tests/unit/domain/mas/test_errors.py .                                   [  4%]
+tests/unit/domain/mas/test_models.py .....                               [  4%]
+tests/unit/domain/mas/test_plan_adapter.py ..                            [  4%]
+tests/unit/domain/mas/test_plan_validator.py ....                        [  4%]
+tests/unit/domain/mas/test_quality_gate.py ...                           [  4%]
+tests/unit/domain/mas/test_scanpy_qc.py ..                               [  4%]
+tests/unit/domain/mas/test_scheduler.py .....                            [  5%]
+tests/unit/domain/mas/test_task_projection.py .                          [  5%]
+tests/unit/domain/mas/test_tool_policy_loader.py .                       [  5%]
+tests/unit/domain/mas/test_workspace_and_policy.py ..                    [  5%]
+tests/unit/domain/test_festival.py ...........                           [  5%]
+tests/unit/domain/test_flow_submission_validator.py ..........           [  5%]
+tests/unit/mcp/test_builder_docs_and_generator.py ........               [  5%]
+tests/unit/mcp/test_builder_safety.py .............................      [  6%]
+tests/unit/mcp/test_builder_versioning.py ....................           [  7%]
+tests/unit/mcp/test_client_session_pool.py ......                        [  7%]
+tests/unit/mcp/test_health_audit.py .                                    [  7%]
+tests/unit/mcp/test_preset_integrity.py ..                               [  7%]
+tests/unit/mcp/test_reliability.py ...........                           [  7%]
+tests/unit/mcp/test_workspace_file_refs.py ..                            [  7%]
+tests/unit/test_admin_memory_api.py ...                                  [  7%]
+tests/unit/test_admin_session_logs.py .....                              [  7%]
+tests/unit/test_admin_user_modules.py ......                             [  7%]
+tests/unit/test_agent_ability_catalog.py .                               [  7%]
+tests/unit/test_agent_binding_reconcile.py .                             [  7%]
+tests/unit/test_agent_config_consistency.py ..........                   [  8%]
+tests/unit/test_agent_consultation_service.py ......................     [  8%]
+tests/unit/test_agent_context_builder.py .....                           [  8%]
+tests/unit/test_agent_handoff_service.py ....................            [  9%]
+tests/unit/test_agent_loader_studio.py ................................. [ 10%]
+........                                                                 [ 10%]
+tests/unit/test_agent_memory_service.py ................................ [ 10%]
+..                                                                       [ 11%]
+tests/unit/test_agent_memory_tasks.py .................................. [ 11%]
+.                                                                        [ 11%]
+tests/unit/test_agent_multistep_e2e.py ..                                [ 11%]
+tests/unit/test_agent_router.py ...................                      [ 12%]
+tests/unit/test_agent_router_dispatch.py ............................... [ 13%]
+.........................                                                [ 13%]
+tests/unit/test_agent_tool_snapshot.py .                                 [ 13%]
+tests/unit/test_agent_tools_phase2.py .................................. [ 14%]
+.........                                                                [ 14%]
+tests/unit/test_agentteams_artifact_lineage.py ..........                [ 14%]
+tests/unit/test_agentteams_audit_chain.py ................               [ 15%]
+tests/unit/test_agentteams_bridge_admin.py .                             [ 15%]
+tests/unit/test_agentteams_bridge_settings_service.py ......             [ 15%]
+tests/unit/test_agentteams_capability_registry.py ..........             [ 15%]
+tests/unit/test_agentteams_case_event_consumer_service.py ...            [ 15%]
+tests/unit/test_agentteams_case_tool_service.py .....................    [ 16%]
+tests/unit/test_agentteams_case_watch_service.py .........               [ 16%]
+tests/unit/test_agentteams_case_watch_task.py ........                   [ 16%]
+tests/unit/test_agentteams_chat_binding.py ..                            [ 16%]
+tests/unit/test_agentteams_consultation_endpoint.py .......              [ 16%]
+tests/unit/test_agentteams_context_refs.py ....                          [ 16%]
+tests/unit/test_agentteams_data_tools.py ..........                      [ 17%]
+tests/unit/test_agentteams_evidence_gc_service.py .                      [ 17%]
+tests/unit/test_agentteams_execution_intent.py ......................... [ 17%]
+...                                                                      [ 17%]
+tests/unit/test_agentteams_flow_report_api.py .                          [ 17%]
+tests/unit/test_agentteams_flow_report_service.py .                      [ 17%]
+tests/unit/test_agentteams_intent_router.py ...........                  [ 18%]
+tests/unit/test_agentteams_introspection_service.py .................... [ 18%]
+.......................                                                  [ 19%]
+tests/unit/test_agentteams_mention_resolver.py .......                   [ 19%]
+tests/unit/test_agentteams_qc_verification.py ..................         [ 19%]
+tests/unit/test_agentteams_quality_gate_service.py .....                 [ 19%]
+tests/unit/test_agentteams_room_gateway_service.py ...                   [ 20%]
+tests/unit/test_agentteams_room_members.py ..                            [ 20%]
+tests/unit/test_agentteams_room_messages.py .................            [ 20%]
+tests/unit/test_agentteams_room_namespace_task.py ..                     [ 20%]
+tests/unit/test_agentteams_room_response_service.py .................... [ 20%]
+........................................................                 [ 22%]
+tests/unit/test_agentteams_room_sync_service.py ...............          [ 22%]
+tests/unit/test_agentteams_rooms.py .................................... [ 23%]
+.................                                                        [ 23%]
+tests/unit/test_agentteams_route_decision.py ..........                  [ 24%]
+tests/unit/test_agentteams_service.py .................................. [ 24%]
+..............                                                           [ 25%]
+tests/unit/test_agentteams_stale_task_service.py ....                    [ 25%]
+tests/unit/test_agentteams_title.py ...                                  [ 25%]
+tests/unit/test_agentteams_turn_recorder.py ..                           [ 25%]
+tests/unit/test_agentteams_upgrade_advisor.py .....................      [ 25%]
+tests/unit/test_agentteams_usage_service.py ......                       [ 26%]
+tests/unit/test_agentteams_worker_token_admin.py ...                     [ 26%]
+tests/unit/test_ai_metrics_alerts.py ..                                  [ 26%]
+tests/unit/test_ai_provider_default_switch.py .                          [ 26%]
+tests/unit/test_ai_provider_runtime_reload.py .                          [ 26%]
+tests/unit/test_ai_provider_yaml_loader_prune.py ........                [ 26%]
+tests/unit/test_ai_provider_yaml_writer.py .                             [ 26%]
+tests/unit/test_analysis_task.py .                                       [ 26%]
+tests/unit/test_analyze_skill_invocations.py ......                      [ 26%]
+tests/unit/test_annotation_skill_packages.py ...                         [ 26%]
+tests/unit/test_api_deps.py .                                            [ 26%]
+tests/unit/test_api_key_scopes.py ...                                    [ 26%]
+tests/unit/test_artifact_manifest.py ..........                          [ 27%]
+tests/unit/test_biomedical_literature_service.py .                       [ 27%]
+tests/unit/test_biothings_preset.py .......                              [ 27%]
+tests/unit/test_capability_progressive_disclosure.py .....               [ 27%]
+tests/unit/test_case_room_projector.py ...............                   [ 27%]
+tests/unit/test_chat_attachment_reading.py ...................           [ 28%]
+tests/unit/test_chat_attachment_schema.py ..                             [ 28%]
+tests/unit/test_chat_case_pubsub.py ..                                   [ 28%]
+tests/unit/test_chat_custom_agent_registry_warning.py ....               [ 28%]
+tests/unit/test_chat_message_metadata.py ..                              [ 28%]
+tests/unit/test_chat_message_ordering.py ..                              [ 28%]
+tests/unit/test_chat_sandbox_artifacts.py ..................             [ 28%]
+tests/unit/test_chat_session_archive.py .........                        [ 29%]
+tests/unit/test_chat_session_titles.py .......                           [ 29%]
+tests/unit/test_chat_stream_anchors.py ...                               [ 29%]
+tests/unit/test_chat_upload_policy.py .................................. [ 30%]
+.....................                                                    [ 30%]
+tests/unit/test_check_custom_agents.py ..                                [ 30%]
+tests/unit/test_claim_provenance_ri10.py ...........                     [ 30%]
+tests/unit/test_compaction_audit_defer.py ...                            [ 30%]
+tests/unit/test_config.py .                                              [ 31%]
+tests/unit/test_cookie_ai_billing.py ........                            [ 31%]
+tests/unit/test_counts_deg_phase3.py ...........                         [ 31%]
+tests/unit/test_database_module_contracts.py ......                      [ 31%]
+tests/unit/test_database_session_pool.py ...                             [ 31%]
+tests/unit/test_dataset_gateway_phase3.py ......                         [ 31%]
+tests/unit/test_dataset_geo_validation.py .............................. [ 32%]
+.......                                                                  [ 32%]
+tests/unit/test_dataset_import_handoff.py ........                       [ 32%]
+tests/unit/test_dataset_phase3.py .....                                  [ 32%]
+tests/unit/test_dataset_phase3_review.py ........                        [ 33%]
+tests/unit/test_delegation_conflict_code.py ....                         [ 33%]
+tests/unit/test_deterministic_test_provider.py ......                    [ 33%]
+tests/unit/test_docs_service_knowledge_visibility.py ..                  [ 33%]
+tests/unit/test_domain_pack_loader.py ...........                        [ 33%]
+tests/unit/test_domain_pack_regression.py ............................   [ 34%]
+tests/unit/test_domain_routing_derivation.py .......                     [ 34%]
+tests/unit/test_download_execution_admission.py ........................ [ 35%]
+..........                                                               [ 35%]
+tests/unit/test_download_execution_boundary_probe.py .....               [ 35%]
+tests/unit/test_download_execution_receipt.py ................           [ 35%]
+tests/unit/test_download_execution_receipt_nonce.py ....                 [ 35%]
+tests/unit/test_download_history_projection.py .....                     [ 36%]
+tests/unit/test_download_log_security.py ....................            [ 36%]
+tests/unit/test_download_provenance.py .............                     [ 36%]
+tests/unit/test_download_registration_contract.py ...................... [ 37%]
+.........                                                                [ 37%]
+tests/unit/test_download_s3_closure.py ................................. [ 38%]
+............                                                             [ 38%]
+tests/unit/test_download_s4a_reliability.py ........................     [ 39%]
+tests/unit/test_download_s4b0_reliability.py ..............              [ 39%]
+tests/unit/test_download_s5a_catalog.py .......................          [ 40%]
+tests/unit/test_download_s5b_consumption.py ..........................   [ 40%]
+tests/unit/test_download_service.py ........                             [ 40%]
+tests/unit/test_download_supervisor_authority.py ........                [ 41%]
+tests/unit/test_download_supervisor_client.py ..................         [ 41%]
+tests/unit/test_download_supervisor_server.py .......................... [ 42%]
+                                                                         [ 42%]
+tests/unit/test_download_transport_contract.py ......................... [ 42%]
+.....                                                                    [ 42%]
+tests/unit/test_download_trusted_execution_contract.py ................. [ 43%]
+..........                                                               [ 43%]
+tests/unit/test_download_worker_protocol_gate.py .                       [ 43%]
+tests/unit/test_download_worker_supervisor.py ..                         [ 43%]
+tests/unit/test_dual_registry_contract.py ........                       [ 43%]
+tests/unit/test_embedding_provider_selection.py .............            [ 44%]
+tests/unit/test_env_example_drift.py ...........                         [ 44%]
+tests/unit/test_evaluate_model_routing_ab.py ..                          [ 44%]
+tests/unit/test_execution_definition_contract.py ...........             [ 44%]
+tests/unit/test_execution_events.py ..                                   [ 44%]
+tests/unit/test_execution_evidence_projection.py ..                      [ 44%]
+tests/unit/test_execution_evidence_ri13.py .........................     [ 45%]
+tests/unit/test_export_agent_tool_snapshots.py .                         [ 45%]
+tests/unit/test_export_agentteams_evidence.py .                          [ 45%]
+tests/unit/test_fastq_qc_foundation.py .....                             [ 45%]
+tests/unit/test_file_service.py .............................            [ 46%]
+tests/unit/test_file_service_presigned.py .........                      [ 46%]
+tests/unit/test_fixed_flow_tools_api.py .....                            [ 46%]
+tests/unit/test_flow_contract_drift.py .....                             [ 46%]
+tests/unit/test_flow_registry.py ............                            [ 46%]
+tests/unit/test_flow_validation_parity.py ...........                    [ 47%]
+tests/unit/test_general_assistant_regression.py ......                   [ 47%]
+tests/unit/test_general_persona_isolation.py .....                       [ 47%]
+tests/unit/test_goal_lease.py ..                                         [ 47%]
+tests/unit/test_goal_recovery_task.py .                                  [ 47%]
+tests/unit/test_goal_runtime.py .....................                    [ 47%]
+tests/unit/test_import_atacseq_knowledge.py .....                        [ 48%]
+tests/unit/test_import_cloud_knowledge.py ....                           [ 48%]
+tests/unit/test_import_qc_knowledge.py .........                         [ 48%]
+tests/unit/test_import_rnaseq_knowledge.py ...                           [ 48%]
+tests/unit/test_inactive_middleware_paths.py .................           [ 48%]
+tests/unit/test_knowledge_asset_service.py ...                           [ 48%]
+tests/unit/test_knowledge_base_builtin_resources.py ....                 [ 48%]
+tests/unit/test_knowledge_bootstrap_service.py ..                        [ 49%]
+tests/unit/test_knowledge_index_service.py ....                          [ 49%]
+tests/unit/test_knowledge_search_chat.py .....                           [ 49%]
+tests/unit/test_langgraph_runtime.py .......................             [ 49%]
+tests/unit/test_legacy_pipeline_tools_gate.py ......                     [ 49%]
+tests/unit/test_lifecycle_download_security.py ......................... [ 50%]
+...........................                                              [ 51%]
+tests/unit/test_lifecycle_report_delivery.py .....................       [ 51%]
+tests/unit/test_lifecycle_stabilization.py ...                           [ 51%]
+tests/unit/test_linux_scope_backend.py ................................. [ 52%]
+...                                                                      [ 52%]
+tests/unit/test_makefile_knowledge_sync.py ..                            [ 52%]
+tests/unit/test_mas_plan_approval_gate.py .                              [ 52%]
+tests/unit/test_mas_worker_policy.py .........                           [ 52%]
+tests/unit/test_mcp_agentteams_query_tools.py .............              [ 53%]
+tests/unit/test_mcp_budget_and_pagination.py .......                     [ 53%]
+tests/unit/test_mcp_builder_approval_and_safety.py ..................... [ 53%]
+.................                                                        [ 54%]
+tests/unit/test_mcp_builder_invoke_gate.py .......                       [ 54%]
+tests/unit/test_mcp_builder_version_control.py ..............            [ 54%]
+tests/unit/test_mcp_circuit_breaker_kinds.py .......                     [ 54%]
+tests/unit/test_mcp_dual_surface_parity.py ........                      [ 55%]
+tests/unit/test_mcp_europe_pmc.py ..                                     [ 55%]
+tests/unit/test_mcp_hot_reload.py .......                                [ 55%]
+tests/unit/test_mcp_platform_time.py ..                                  [ 55%]
+tests/unit/test_mcp_preset_resync.py .....                               [ 55%]
+tests/unit/test_mcp_session_pool_lock.py ....                            [ 55%]
+tests/unit/test_mcp_version_control.py ...........                       [ 55%]
+tests/unit/test_memory_baseline_script.py ...                            [ 55%]
+tests/unit/test_memory_block_http.py ......                              [ 55%]
+tests/unit/test_memory_consolidation.py ...........                      [ 56%]
+tests/unit/test_memory_embedding_cli.py ...........                      [ 56%]
+tests/unit/test_memory_embedding_models.py ......................        [ 57%]
+tests/unit/test_memory_fact_store.py ..............                      [ 57%]
+tests/unit/test_memory_fact_versions.py ...........                      [ 57%]
+tests/unit/test_memory_focus_project.py ....                             [ 57%]
+tests/unit/test_memory_hybrid_retrieval.py .............                 [ 58%]
+tests/unit/test_memory_partition_migration.py ....                       [ 58%]
+tests/unit/test_memory_project_migration.py ...                          [ 58%]
+tests/unit/test_memory_recall_transactions.py .                          [ 58%]
+tests/unit/test_memory_residuals.py ..........                           [ 58%]
+tests/unit/test_memory_runtime_policy.py .................               [ 58%]
+tests/unit/test_memory_v2_helpers.py .............                       [ 59%]
+tests/unit/test_minio_store.py .....                                     [ 59%]
+tests/unit/test_model_routing.py .............                           [ 59%]
+tests/unit/test_module_gate.py ...........                               [ 59%]
+tests/unit/test_module_registry.py .........                             [ 60%]
+tests/unit/test_multi_expert_consultation_service.py .                   [ 60%]
+tests/unit/test_network_request_tool.py ......                           [ 60%]
+tests/unit/test_next_step_suggestions.py ..............                  [ 60%]
+tests/unit/test_openai_usage.py .........                                [ 60%]
+tests/unit/test_orchestrator_checkpoint_recovery.py ...                  [ 60%]
+tests/unit/test_orchestrator_graph.py ........                           [ 61%]
+tests/unit/test_overdrive_chat.py ...................................... [ 61%]
+.....sssss....ssss.......ss.ss..ss..                                     [ 62%]
+tests/unit/test_overdrive_execution_service.py ......................... [ 63%]
+.....                                                                    [ 63%]
+tests/unit/test_overdrive_persona_config.py .                            [ 63%]
+tests/unit/test_overdrive_plan_constraint_service.py ...............     [ 63%]
+tests/unit/test_overdrive_planning_service.py .......................... [ 64%]
+.                                                                        [ 64%]
+tests/unit/test_overdrive_planning_telemetry_service.py ....             [ 64%]
+tests/unit/test_overdrive_runtime.py ....                                [ 64%]
+tests/unit/test_p0a_approval_snapshot.py ..............                  [ 65%]
+tests/unit/test_p0a_migration_contract.py ...........                    [ 65%]
+tests/unit/test_parallel_subagent_service.py ........................... [ 65%]
+........                                                                 [ 66%]
+tests/unit/test_pdf_inspector_adapter.py .                               [ 66%]
+tests/unit/test_pdf_processor.py ......                                  [ 66%]
+tests/unit/test_pgvector_migration_contract.py ..                        [ 66%]
+tests/unit/test_phase0a_security.py ...                                  [ 66%]
+tests/unit/test_phase0b_confirmation.py .........                        [ 66%]
+tests/unit/test_platform_admin_health_tool.py ....                       [ 66%]
+tests/unit/test_platform_user_info_tool.py ...                           [ 66%]
+tests/unit/test_polardb_operational_assets.py ......                     [ 66%]
+tests/unit/test_project_archive_service.py ................              [ 67%]
+tests/unit/test_project_boundary_models.py .                             [ 67%]
+tests/unit/test_project_delivery.py ..........................           [ 67%]
+tests/unit/test_project_delivery_stabilization.py .....                  [ 68%]
+tests/unit/test_project_get_or_create.py ..                              [ 68%]
+tests/unit/test_project_identity_wp1_wp2.py ............................ [ 68%]
+..                                                                       [ 68%]
+tests/unit/test_project_lifecycle.py ...........F.                       [ 69%]
+tests/unit/test_project_overview.py ......                               [ 69%]
+tests/unit/test_project_report_selection.py ...........                  [ 69%]
+tests/unit/test_project_scope.py ...                                     [ 69%]
+tests/unit/test_project_summary_prototype.py .....                       [ 69%]
+tests/unit/test_prompt_config_contract.py ....                           [ 69%]
+tests/unit/test_prompt_loader.py ...                                     [ 69%]
+tests/unit/test_provider_retry_policy.py .F...................           [ 70%]
+tests/unit/test_ptc_llm_handler.py ..........                            [ 70%]
+tests/unit/test_ptc_orchestrator.py ...................                  [ 71%]
+tests/unit/test_rate_limit_whitelist.py ...                              [ 71%]
+tests/unit/test_redis_client.py .                                        [ 71%]
+tests/unit/test_reference_genomes_api.py .........................       [ 71%]
+tests/unit/test_reference_genomes_indexer.py ....................        [ 72%]
+tests/unit/test_reference_genomes_sequence.py ....................       [ 72%]
+tests/unit/test_report_delivery_phase2.py ....                           [ 72%]
+tests/unit/test_report_pdf_and_bioreport_phase2.py .....                 [ 72%]
+tests/unit/test_report_preview_grant.py ........                         [ 73%]
+tests/unit/test_report_repository.py .                                   [ 73%]
+tests/unit/test_report_service.py ......                                 [ 73%]
+tests/unit/test_report_snapshot.py ...................................F. [ 74%]
+.                                                                        [ 74%]
+tests/unit/test_report_versions.py ..                                    [ 74%]
+tests/unit/test_reproducible_report_phase1.py ......................F.   [ 74%]
+tests/unit/test_request_identity.py ..............                       [ 75%]
+tests/unit/test_research_benchmark_phase5.py .........................   [ 75%]
+tests/unit/test_research_claim_artifact_phase5.py .                      [ 75%]
+tests/unit/test_research_data_api.py .....                               [ 75%]
+tests/unit/test_research_delivery_phase4.py ............................ [ 76%]
+....                                                                     [ 76%]
+tests/unit/test_research_plan_gateway_phase5.py ..............           [ 76%]
+tests/unit/test_research_plan_phase5.py ...............................  [ 77%]
+tests/unit/test_research_plan_storage_phase5.py .......                  [ 77%]
+tests/unit/test_research_preset.py ..................................... [ 78%]
+.....................                                                    [ 79%]
+tests/unit/test_research_science_phase5.py ...................           [ 79%]
+tests/unit/test_research_search_optimizer.py ...                         [ 79%]
+tests/unit/test_research_tool_pack_binding.py F                          [ 79%]
+tests/unit/test_research_treasure_phase1.py ...                          [ 79%]
+tests/unit/test_runtime_image_loader.py ........                         [ 79%]
+tests/unit/test_sandbox_agent_paths.py ..................s               [ 80%]
+tests/unit/test_sandbox_pool.py ...................                      [ 80%]
+tests/unit/test_sandbox_tool_manifest.py .                               [ 80%]
+tests/unit/test_scratch_volume.py .....                                  [ 80%]
+tests/unit/test_security_fixes.py ................                       [ 81%]
+tests/unit/test_security_round2.py ..........................            [ 81%]
+tests/unit/test_session_project_binding.py ..........                    [ 82%]
+tests/unit/test_session_service_sanitize.py ....                         [ 82%]
+tests/unit/test_site_content_service.py ..........                       [ 82%]
+tests/unit/test_skill_builder_prompt.py ....                             [ 82%]
+tests/unit/test_skill_candidate_promote.py ......                        [ 82%]
+tests/unit/test_skill_route_service.py ........                          [ 82%]
+tests/unit/test_skill_system.py ............................             [ 83%]
+tests/unit/test_skill_version_control.py ...                             [ 83%]
+tests/unit/test_stats_service.py ..........                              [ 83%]
+tests/unit/test_storage_backend.py ........                              [ 84%]
+tests/unit/test_storage_lifecycle_tasks.py ......                        [ 84%]
+tests/unit/test_storage_path_factory.py ...                              [ 84%]
+tests/unit/test_studio_always_allow.py .................                 [ 84%]
+tests/unit/test_studio_approval.py ....F.                                [ 84%]
+tests/unit/test_studio_approval_service.py ..                            [ 84%]
+tests/unit/test_studio_build_script.py ..............                    [ 85%]
+tests/unit/test_studio_capabilities.py .....                             [ 85%]
+tests/unit/test_studio_checkpoints.py ....                               [ 85%]
+tests/unit/test_studio_context_service.py ...........                    [ 85%]
+tests/unit/test_studio_control.py ........                               [ 85%]
+tests/unit/test_studio_egress_proxy.py ...............                   [ 86%]
+tests/unit/test_studio_file_mount.py ......                              [ 86%]
+tests/unit/test_studio_loader.py ..........                              [ 86%]
+tests/unit/test_studio_long_task.py ...............                      [ 86%]
+tests/unit/test_studio_loop_guard.py ....                                [ 87%]
+tests/unit/test_studio_manager.py .....F..........................       [ 87%]
+tests/unit/test_studio_micro_compaction.py ..                            [ 87%]
+tests/unit/test_studio_plan_advance.py .....                             [ 87%]
+tests/unit/test_studio_platform_paths.py ..............                  [ 88%]
+tests/unit/test_studio_platform_tools.py .................               [ 88%]
+tests/unit/test_studio_prewarm.py ....                                   [ 88%]
+tests/unit/test_studio_retention.py .....                                [ 88%]
+tests/unit/test_studio_session_delete.py ....                            [ 89%]
+tests/unit/test_studio_sharing.py .........                              [ 89%]
+tests/unit/test_studio_tools.py ...............................          [ 89%]
+tests/unit/test_studio_workspace.py ..................                   [ 90%]
+tests/unit/test_summarize_acceptance_matrix.py ...                       [ 90%]
+tests/unit/test_sync_knowledge_from_files.py ..                          [ 90%]
+tests/unit/test_task_queue_dispatcher.py ....                            [ 90%]
+tests/unit/test_task_schema.py ..                                        [ 90%]
+tests/unit/test_team_file_acl.py ......                                  [ 90%]
+tests/unit/test_teaming_eval.py ...........                              [ 91%]
+tests/unit/test_tool_manifest.py ...                                     [ 91%]
+tests/unit/test_treasure_native_access.py .............................. [ 91%]
+.............                                                            [ 92%]
+tests/unit/test_unified_intent_router.py ............................... [ 92%]
+......................                                                   [ 93%]
+tests/unit/test_upload_dedup_guard.py .......                            [ 93%]
+tests/unit/test_user_agent_capabilities.py .....                         [ 93%]
+tests/unit/test_vector_retrieval_service.py ....                         [ 93%]
+tests/unit/test_vector_type.py ...                                       [ 93%]
+tests/unit/test_verify_overdrive_deployment.py ........                  [ 94%]
+tests/unit/test_verify_overdrive_manager_planning.py ...                 [ 94%]
+tests/unit/test_web_search_service.py ................                   [ 94%]
+tests/unit/test_welcome_agent.py ..................                      [ 94%]
+tests/unit/test_workspace_archive.py ..........                          [ 95%]
+tests/unit/test_workspace_env_restore.py .......................         [ 95%]
+tests/unit/test_workspace_references.py ....                             [ 95%]
+tests/unit/tools/test_analysis_flow_tool.py .....                        [ 95%]
+tests/unit/tools/test_blast_core.py ...........................          [ 96%]
+tests/unit/tools/test_container_paths.py .......................         [ 97%]
+tests/unit/tools/test_deg_tool.py ................                       [ 97%]
+tests/unit/tools/test_enrichment_config.py ..                            [ 97%]
+tests/unit/tools/test_enrichment_examples.py ....                        [ 97%]
+tests/unit/tools/test_enrichment_runner.py ...........                   [ 97%]
+tests/unit/tools/test_fixed_flow_bridge.py ....                          [ 97%]
+tests/unit/tools/test_flow_schema_compiler.py .....                      [ 98%]
+tests/unit/tools/test_gsea_worker_registration.py .                      [ 98%]
+tests/unit/tools/test_jbrowse_paths.py ......                            [ 98%]
+tests/unit/tools/test_mcp_flow_preset.py ..                              [ 98%]
+tests/unit/tools/test_new_tool_parsers.py ..                             [ 98%]
+tests/unit/tools/test_phylogenetic_tree_config.py ...                    [ 98%]
+tests/unit/tools/test_pipeline_mcp.py .....                              [ 98%]
+tests/unit/tools/test_storage_config_contract.py ......                  [ 98%]
+tests/unit/tools/test_tool_bridge.py .................                   [ 99%]
+tests/unit/tools/test_tool_error_codes.py .............F.....F           [ 99%]
+tests/unit/tools/test_tool_schema_lint.py ...                            [ 99%]
+tests/e2e/agentteams/test_acceptance_profile.py s                        [ 99%]
+tests/e2e/agentteams/test_default_bridge_e2e.py .                        [ 99%]
+tests/e2e/agentteams/test_hi_no_case_e2e.py .                            [ 99%]
+tests/e2e/agentteams/test_live_foundation_e2e.py sssss                   [ 99%]
+tests/e2e/test_chat_sandbox_hardening_e2e.py ...                         [ 99%]
+tests/e2e/test_langgraph_chat_sandbox_approval.py FFFFFFF                [100%]
+
+=================================== FAILURES ===================================
+______ test_capability_owner_permissions_and_effective_export_dependency _______
+tests/unit/test_project_lifecycle.py:192: in test_capability_owner_permissions_and_effective_export_dependency
+    assert all(
+E   assert False
+E    +  where False = all(<generator object test_capability_owner_permissions_and_effective_export_dependency.<locals>.<genexpr> at 0x70d33f9efa60>)
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+_____________ test_litellm_embedding_routes_custom_openai_endpoint _____________
+tests/unit/test_provider_retry_policy.py:116: in test_litellm_embedding_routes_custom_openai_endpoint
+    assert await provider.embeddings("hello") == [0.1]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/infrastructure/ai_provider/litellm_provider.py:468: in embeddings
+    config = await self._get_embedding_config()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/infrastructure/ai_provider/litellm_provider.py:454: in _get_embedding_config
+    raise ValueError("Explicit Provider conflicts with embedding Provider ID")
+E   ValueError: Explicit Provider conflicts with embedding Provider ID
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+____________ test_database_adapter_is_owner_scoped_and_never_writes ____________
+tests/unit/test_report_snapshot.py:476: in test_database_adapter_is_owner_scoped_and_never_writes
+    result = await source.read(synthetic_rna.owner, synthetic_rna.records.task.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/application/services/report_snapshot_sources.py:148: in read
+    research = await ResearchProvenanceService(self._db).task(
+src/cygnusx/application/services/research_provenance_service.py:241: in task
+    task, link = await self.task_scope(owner, task_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/application/services/research_provenance_service.py:113: in task_scope
+    user = await self.db.get(UserModel, owner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: object MagicMock can't be used in 'await' expression
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+______________ test_retry_budget_is_terminal_without_recollecting ______________
+tests/unit/test_reproducible_report_phase1.py:369: in test_retry_budget_is_terminal_without_recollecting
+    await run_reproducible_report(db, job.id)
+src/cygnusx/application/services/reproducible_report_service.py:305: in run_reproducible_report
+    await ResearchProvenanceService(db).task_scope(job.user_id, job.task_id)
+src/cygnusx/application/services/research_provenance_service.py:115: in task_scope
+    raise NotFoundError("User unavailable")
+E   cygnusx.core.exceptions.NotFoundError: User unavailable
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+________________ test_research_pack_binds_database_mcp_presets _________________
+tests/unit/test_research_tool_pack_binding.py:16: in test_research_pack_binds_database_mcp_presets
+    assert len(pack["mcp_tools"][research_id]) == 26
+E   AssertionError: assert 28 == 26
+E    +  where 28 = len(['cygnusx_genome_lookup', 'cygnusx_genome_homology', 'cygnusx_genome_region', 'cygnusx_genome_sequence', 'cygnusx_plant_search', 'cygnusx_plant_get', ...])
+_____________ test_approval_required_tools_cover_write_and_execute _____________
+tests/unit/test_studio_approval.py:226: in test_approval_required_tools_cover_write_and_execute
+    assert {
+E   AssertionError: assert {'artifact_re...kspace_write'} == frozenset({'a...e_edit', ...})
+E     
+E     Extra items in the right set:
+E     'network_request'
+E     Use -v to get more diff
+_________________________ test_container_mounts_match __________________________
+tests/unit/test_studio_manager.py:153: in test_container_mounts_match
+    assert StudioSandboxManager._container_mounts_match(ok, expected) is True
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: StudioSandboxManager._container_mounts_match() missing 1 required positional argument: 'expected_platform_source'
+_______________ test_requires_confirm_carries_confirmation_code ________________
+src/cygnusx/application/services/tool_confirmation_service.py:264: in _get_store
+    store = _RedisStore(get_redis())
+                        ^^^^^^^^^^^
+src/cygnusx/infrastructure/cache/redis_client.py:35: in get_redis
+    raise ConnectionError("Redis host resolution is temporarily disabled")
+E   ConnectionError: Redis host resolution is temporarily disabled
+
+The above exception was the direct cause of the following exception:
+tests/unit/tools/test_tool_error_codes.py:310: in test_requires_confirm_carries_confirmation_code
+    result = await service.execute(
+src/cygnusx/application/services/tool_bridge_service.py:164: in execute
+    record = await confirmation_service.create_for_tool(
+src/cygnusx/application/services/tool_confirmation_service.py:344: in create_for_tool
+    store = await self._get_store()
+            ^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/application/services/tool_confirmation_service.py:270: in _get_store
+    raise DependencyUnavailableError(code="CONFIRMATION_STORE_UNAVAILABLE") from exc
+E   cygnusx.core.exceptions.DependencyUnavailableError: Required dependency unavailable
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+------------------------------ Captured log call -------------------------------
+INFO     cygnusx.application.services.tool_bridge_service:tool_bridge_service.py:119 tool_invocation user_id=u1 tool=cygnusx_plot_volcano mode=backend_shim
+WARNING  cygnusx.application.services.tool_confirmation_service:tool_confirmation_service.py:269 确认共享存储不可用；拒绝创建或消费凭证
+_________________ test_control_params_not_reported_as_ignored __________________
+src/cygnusx/application/services/tool_confirmation_service.py:264: in _get_store
+    store = _RedisStore(get_redis())
+                        ^^^^^^^^^^^
+src/cygnusx/infrastructure/cache/redis_client.py:35: in get_redis
+    raise ConnectionError("Redis host resolution is temporarily disabled")
+E   ConnectionError: Redis host resolution is temporarily disabled
+
+The above exception was the direct cause of the following exception:
+tests/unit/tools/test_tool_error_codes.py:437: in test_control_params_not_reported_as_ignored
+    result = await service.execute(
+src/cygnusx/application/services/tool_bridge_service.py:164: in execute
+    record = await confirmation_service.create_for_tool(
+src/cygnusx/application/services/tool_confirmation_service.py:344: in create_for_tool
+    store = await self._get_store()
+            ^^^^^^^^^^^^^^^^^^^^^^^
+src/cygnusx/application/services/tool_confirmation_service.py:270: in _get_store
+    raise DependencyUnavailableError(code="CONFIRMATION_STORE_UNAVAILABLE") from exc
+E   cygnusx.core.exceptions.DependencyUnavailableError: Required dependency unavailable
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+------------------------------ Captured log call -------------------------------
+INFO     cygnusx.application.services.tool_bridge_service:tool_bridge_service.py:119 tool_invocation user_id=u1 tool=cygnusx_plot_volcano mode=backend_shim
+WARNING  cygnusx.application.services.tool_confirmation_service:tool_confirmation_service.py:269 确认共享存储不可用；拒绝创建或消费凭证
+________________ test_supervised_approval_approve_then_execute _________________
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/locks.py:213: in wait
+    await fut
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+tests/e2e/test_langgraph_chat_sandbox_approval.py:183: in test_supervised_approval_approve_then_execute
+    chunks, collector, _, holder = await _run_stream_until_approval(runtime, sandbox_execute)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/e2e/test_langgraph_chat_sandbox_approval.py:160: in _run_stream_until_approval
+    await asyncio.wait_for(approval_seen.wait(), timeout=15)
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+_______________ test_supervised_approval_reject_blocks_execution _______________
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/locks.py:213: in wait
+    await fut
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+tests/e2e/test_langgraph_chat_sandbox_approval.py:230: in test_supervised_approval_reject_blocks_execution
+    chunks, collector, _, holder = await _run_stream_until_approval(runtime, sandbox_execute)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/e2e/test_langgraph_chat_sandbox_approval.py:160: in _run_stream_until_approval
+    await asyncio.wait_for(approval_seen.wait(), timeout=15)
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+_________________ test_supervised_approval_edited_args_execute _________________
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/locks.py:213: in wait
+    await fut
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+tests/e2e/test_langgraph_chat_sandbox_approval.py:266: in test_supervised_approval_edited_args_execute
+    chunks, collector, _, holder = await _run_stream_until_approval(runtime, sandbox_execute)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/e2e/test_langgraph_chat_sandbox_approval.py:160: in _run_stream_until_approval
+    await asyncio.wait_for(approval_seen.wait(), timeout=15)
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+________________ test_no_permission_mode_keeps_current_behavior ________________
+tests/e2e/test_langgraph_chat_sandbox_approval.py:302: in test_no_permission_mode_keeps_current_behavior
+    chunks = [
+tests/e2e/test_langgraph_chat_sandbox_approval.py:302: in <listcomp>
+    chunks = [
+src/cygnusx/application/services/chat/runtimes/langgraph_runtime.py:322: in _stream_agent_chat_langgraph
+    provider_result = await self._service._db.execute(
+                            ^^^^^^^^^^^^^^^^^
+E   AttributeError: '_Service' object has no attribute '_db'
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+__________________ test_supervised_timeout_records_audit_log ___________________
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:500: in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/locks.py:213: in wait
+    await fut
+E   asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+tests/e2e/test_langgraph_chat_sandbox_approval.py:354: in test_supervised_timeout_records_audit_log
+    chunks, collector, _, holder = await _run_stream_until_approval(runtime, sandbox_execute)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/e2e/test_langgraph_chat_sandbox_approval.py:160: in _run_stream_until_approval
+    await asyncio.wait_for(approval_seen.wait(), timeout=15)
+../../.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/asyncio/tasks.py:502: in wait_for
+    raise exceptions.TimeoutError() from exc
+E   TimeoutError
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+___________ test_always_allow_session_skip_and_user_resolution_audit ___________
+tests/e2e/test_langgraph_chat_sandbox_approval.py:409: in test_always_allow_session_skip_and_user_resolution_audit
+    chunks = [
+tests/e2e/test_langgraph_chat_sandbox_approval.py:409: in <listcomp>
+    chunks = [
+src/cygnusx/application/services/chat/runtimes/langgraph_runtime.py:322: in _stream_agent_chat_langgraph
+    provider_result = await self._service._db.execute(
+                            ^^^^^^^^^^^^^^^^^
+E   AttributeError: '_Service' object has no attribute '_db'
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+________________ test_auto_approve_skips_approval_gate_entirely ________________
+tests/e2e/test_langgraph_chat_sandbox_approval.py:490: in test_auto_approve_skips_approval_gate_entirely
+    async for chunk in runtime._stream_agent_chat_langgraph(
+src/cygnusx/application/services/chat/runtimes/langgraph_runtime.py:322: in _stream_agent_chat_langgraph
+    provider_result = await self._service._db.execute(
+                            ^^^^^^^^^^^^^^^^^
+E   AttributeError: '_Service' object has no attribute '_db'
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+=============================== warnings summary ===============================
+src/cygnusx/application/schemas/ai_provider.py:36
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/schemas/ai_provider.py:36: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AIProviderConfigDTO(AIProviderConfigBaseDTO):
+
+tests/unit/test_agent_tools_phase2.py::test_delegation_token_never_user_override_scope_or_replay
+  /home/zj/zj_code_libarary/OmicHub/.venv/lib/python3.11/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 6 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+tests/unit/test_agentteams_rooms.py::test_unbound_room_chat_never_creates_case
+tests/unit/test_agentteams_rooms.py::test_terminal_case_chat_still_replies
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/services/agent_memory_service.py:721: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    blocks = list(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_compaction_audit_defer.py::test_compaction_audit_flushed_by_consumer
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/services/chat/runtime_support.py:842: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    await self._write_compaction_audit(**payload)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_compaction_audit_defer.py::test_compaction_audit_writes_inline_without_defer
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/services/chat/runtime_support.py:831: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    await self._write_compaction_audit(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_delegation_conflict_code.py::test_toolbridge_maps_conflict_to_non_retryable
+  tests/unit/test_delegation_conflict_code.py:75: PytestWarning: The test <Function test_toolbridge_maps_conflict_to_non_retryable> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_toolbridge_maps_conflict_to_non_retryable():
+
+tests/unit/test_project_delivery.py::test_zip_hostile_members_rejected
+  /home/zj/.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/zipfile.py:1580: UserWarning: Duplicate name: 'README.md'
+    return self._open_to_write(zinfo, force_zip64=force_zip64)
+
+tests/unit/test_project_get_or_create.py::test_get_or_create_falls_back_to_create_when_absent
+tests/unit/test_session_project_binding.py::test_create_session_without_project_falls_back_to_default
+tests/unit/test_session_project_binding.py::test_create_session_internal_bypass_skips_explicit_validation
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/services/project_service.py:218: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    self._session.add(model)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/unit/test_research_delivery_phase4.py::test_published_provenance_schema_matches_python_dto
+  tests/unit/test_research_delivery_phase4.py:363: PytestWarning: The test <Function test_published_provenance_schema_matches_python_dto> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_published_provenance_schema_matches_python_dto():
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_project_lifecycle.py::test_capability_owner_permissions_and_effective_export_dependency
+FAILED tests/unit/test_provider_retry_policy.py::test_litellm_embedding_routes_custom_openai_endpoint
+FAILED tests/unit/test_report_snapshot.py::test_database_adapter_is_owner_scoped_and_never_writes
+FAILED tests/unit/test_reproducible_report_phase1.py::test_retry_budget_is_terminal_without_recollecting
+FAILED tests/unit/test_research_tool_pack_binding.py::test_research_pack_binds_database_mcp_presets
+FAILED tests/unit/test_studio_approval.py::test_approval_required_tools_cover_write_and_execute
+FAILED tests/unit/test_studio_manager.py::test_container_mounts_match - TypeE...
+FAILED tests/unit/tools/test_tool_error_codes.py::test_requires_confirm_carries_confirmation_code
+FAILED tests/unit/tools/test_tool_error_codes.py::test_control_params_not_reported_as_ignored
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_approve_then_execute
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_reject_blocks_execution
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_edited_args_execute
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_no_permission_mode_keeps_current_behavior
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_timeout_records_audit_log
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_always_allow_session_skip_and_user_resolution_audit
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_auto_approve_skips_approval_gate_entirely
+= 16 failed, 4205 passed, 22 skipped, 63 deselected, 12 warnings in 186.93s (0:03:06) =

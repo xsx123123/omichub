@@ -1,0 +1,7 @@
+{
+  "celery@5ca8224e52b3": {
+    "max_concurrency": 16,
+    "prefetch_count": 16,
+    "tasks_completed": 64926
+  }
+}

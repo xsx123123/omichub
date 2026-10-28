@@ -1,0 +1,15 @@
+{
+  "ab_mean_rps_before": 226.04,
+  "ab_mean_rps_after": 243.695,
+  "ab_rps_gain_percent": 7.810564501858086,
+  "ab_p95_reduction_percent": 9.099982791257943,
+  "steady_fixed_rate_short_test": 1250,
+  "production_released": false,
+  "ten_thousand_rps_verified": false,
+  "scale_metadata_cache": {
+    "hits": 192242,
+    "misses": 97,
+    "entries": 97
+  },
+  "evidence_contains_jwt": false
+}

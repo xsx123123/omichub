@@ -1,0 +1,34 @@
+{
+  "observed_at_utc": "2026-10-27T01:38:08.864265+00:00",
+  "temporary_layout_server_stopped": true,
+  "temporary_postgres_removed": true,
+  "containers": [
+    {
+      "name": "/cygnusx-web",
+      "status": "running",
+      "health": "healthy",
+      "started_at": "2026-10-27T01:14:52.707145492Z"
+    },
+    {
+      "name": "/cygnusx-worker",
+      "status": "running",
+      "health": "healthy",
+      "started_at": "2026-10-27T01:11:05.068090353Z"
+    },
+    {
+      "name": "/cygnusx-beat",
+      "status": "running",
+      "health": "healthy",
+      "started_at": "2026-10-27T01:15:21.856013067Z"
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "version": "0.1.0",
+    "git_sha": "9313e6ab",
+    "build_time": "2026-10-26T02:09:15Z"
+  },
+  "nginx_matches_current_frontend_build": true,
+  "frontend_index_sha256": "3ac14d1892ecacaea37317a351791cf12a45aae0c8961a688764ef64a6b77b8f",
+  "source_manifest_files": 56
+}

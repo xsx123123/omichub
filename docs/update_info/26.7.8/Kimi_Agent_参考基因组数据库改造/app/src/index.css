@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 30% 8%;
+    --foreground: 210 20% 95%;
+    --card: 220 25% 10%;
+    --card-foreground: 210 20% 95%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 220 20% 15%;
+    --muted-foreground: 215 15% 55%;
+    --accent: 220 20% 15%;
+    --accent-foreground: 210 20% 95%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 239 84% 67%;
+    --radius: 0.625rem;
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 15%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 239 84% 67%;
+
+    /* OmicHub Custom Properties */
+    --space-950: #030712;
+    --space-900: #0B1120;
+    --space-800: #111827;
+    --space-700: #1E293B;
+    --space-600: #334155;
+    --space-500: #475569;
+    --space-400: #94A3B8;
+    --space-300: #CBD5E1;
+    --space-200: #E2E8F0;
+    --space-100: #F1F5F9;
+
+    --nebula-600: #4F46E5;
+    --nebula-500: #6366F1;
+    --nebula-400: #818CF8;
+    --nebula-300: #A5B4FC;
+
+    --aurora-500: #8B5CF6;
+    --aurora-400: #A78BFA;
+    --aurora-300: #C4B5FD;
+
+    --cyan-500: #06B6D4;
+    --cyan-400: #22D3EE;
+    --cyan-300: #67E8F9;
+
+    --gradient-space: linear-gradient(135deg, #0B1120 0%, #111827 40%, #1E1B4B 100%);
+    --gradient-glow: linear-gradient(135deg, rgba(99,102,241,0.3) 0%, rgba(139,92,246,0.2) 100%);
+    --gradient-accent: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+    --gradient-border: linear-gradient(135deg, rgba(99,102,241,0.5) 0%, rgba(139,92,246,0.3) 50%, rgba(6,182,212,0.2) 100%);
+    --gradient-genome: linear-gradient(90deg, #06B6D4 0%, #6366F1 50%, #8B5CF6 100%);
+  }
+
+  .dark {
+    --background: 220 30% 8%;
+    --foreground: 210 20% 95%;
+    --card: 220 25% 10%;
+    --card-foreground: 210 20% 95%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 220 20% 15%;
+    --muted-foreground: 215 15% 55%;
+    --accent: 220 20% 15%;
+    --accent-foreground: 210 20% 95%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 239 84% 67%;
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 15%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 239 84% 67%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-space-900 text-space-200;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Exo 2', system-ui, sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .gradient-space {
+    background: var(--gradient-space);
+  }
+
+  .gradient-glow {
+    background: var(--gradient-glow);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-border {
+    background: var(--gradient-border);
+  }
+
+  .gradient-genome {
+    background: var(--gradient-genome);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #06B6D4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .backdrop-blur-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #111827;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #111827;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}

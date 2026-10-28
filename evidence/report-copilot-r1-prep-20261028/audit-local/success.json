@@ -1,0 +1,10 @@
+[
+  {
+    "json_path": "/tmp/r1-prep-fixture/reports/demo-report-01/report.paths.json",
+    "report_id": "4bc6934e-e758-4646-97e2-b7c349402972",
+    "task_id": "237b20bf-ecbc-4fe8-b33b-f4e3a096f6ca",
+    "schema_version": "2.1.0",
+    "file_count": 1,
+    "validated": true
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Vue axios callbacks; all/week ranking; real own-key highlight; platform-only tab and totals",
+    "Nickname save failure/retry; owner-only request body; leaderboard failure/retry",
+    "Usage failure/retry; persisted token totals and explicit historical coverage",
+    "Reload preserves server nickname; no uncaught promise errors"
+  ],
+  "errors": []
+}

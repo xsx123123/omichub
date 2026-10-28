@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-crispr-editing-pipeline
 description: Orchestrates an end-to-end CRISPR editing experiment design from target gene to delivery-ready, validatable constructs. Sequences guide design, off-target assessment, edit-modality selection (knockout, base editing, prime editing, HDR knock-in), and template/donor design, with a QC checkpoint at each handoff. Use when designing a complete CRISPR experiment for knockout, point correction, or tagging and the order of operations, the modality decision, and the cross-cutting traps are needed rather than a single step. Defers each step's mechanics to the genome-engineering skills.
+version: 1.0.0
+display_name: CRISPR 编辑设计流程
+display_name_en: CRISPR Editing Design Pipeline
+description_zh: >-
+  从靶基因到可递送、可验证构建体的 CRISPR 编辑实验设计流程，涵盖 guide 设计、脱靶评估、编辑模态选择（敲除、碱基编辑、先导编辑、HDR 敲入）及模板与供体设计和各环节质控。
+description_en: >-
+  Orchestrates an end-to-end CRISPR editing experiment design from target gene to delivery-ready, validatable constructs. Sequences guide design, off-target assessment, edit-modality selection (knockout, base editing, prime editing, HDR knock-in), and template/donor design, with a QC checkpoint at each handoff. Use when designing a complete CRISPR experiment for knockout, point correction, or tagging and the order of operations, the modality decision, and the cross-cutting traps are needed rather than a single step. Defers each step's mechanics to the genome-engineering skills.
+author: JZHANG
+examples_zh:
+  - "为这个基因设计一套敲除实验的 guide 和验证方案"
+  - "比较碱基编辑和先导编辑哪种更适合这个位点"
+  - "设计 HDR 敲入的供体模板并评估脱靶"
+examples_en:
+  - "Design guides and a validation plan for knocking out this gene"
+  - "Compare base editing and prime editing for this locus"
+  - "Design an HDR donor template and assess off-target risk"
 tool_type: mixed
 primary_tool: CRISPOR
 workflow: true
@@ -120,11 +136,11 @@ Target gene / position
 
 ## Related Skills
 
-- genome-engineering/grna-design - Guide design and outcome-aware knockout ranking
-- genome-engineering/off-target-prediction - Specificity assessment and the evidence ladder
-- genome-engineering/base-editing-design - CBE/ABE window, bystander purity, off-target classes
-- genome-engineering/prime-editing-design - pegRNA panel design and PE system selection
-- genome-engineering/hdr-template-design - Donor format and codon-checked blocking mutation
+- references/genome-engineering--grna-design.md - Guide design and outcome-aware knockout ranking
+- references/genome-engineering--off-target-prediction.md - Specificity assessment and the evidence ladder
+- references/genome-engineering--base-editing-design.md - CBE/ABE window, bystander purity, off-target classes
+- references/genome-engineering--prime-editing-design.md - pegRNA panel design and PE system selection
+- references/genome-engineering--hdr-template-design.md - Donor format and codon-checked blocking mutation
 - crispr-screens/crispresso-editing - Quantify and validate editing outcomes from amplicon reads
 - crispr-screens/library-design - Scale single-gene design to a pooled screen
 - primer-design/primer-basics - Design the genotyping/amplicon primers around the edit

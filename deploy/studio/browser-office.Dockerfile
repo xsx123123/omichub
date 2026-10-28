@@ -7,6 +7,10 @@ ARG CYGNUSX_IMAGE_TAG=v0.0.2dev
 #   -f deploy/studio/browser-office.Dockerfile deploy/studio
 FROM cygnusx-sandbox-bio:${CYGNUSX_IMAGE_TAG}
 
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ARG PIP_TIMEOUT=60
+ARG PIP_RETRIES=5
+
 USER root
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers \
     CHROME_BIN=/usr/bin/chromium \
@@ -40,7 +44,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && rm -rf /var/lib/apt/lists/*
 
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    python -m pip install --prefer-binary playwright python-docx python-pptx \
+    python -m pip install --prefer-binary \
+        --index-url "${PIP_INDEX_URL}" \
+        --timeout "${PIP_TIMEOUT}" \
+        --retries "${PIP_RETRIES}" \
+        playwright python-docx python-pptx \
     && chown -R 10001:10001 /opt/playwright-browsers /tmp/chromium /tmp/downloads
 
 USER 10001:10001

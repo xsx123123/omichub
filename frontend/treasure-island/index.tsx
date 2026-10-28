@@ -70,7 +70,7 @@ export function mount(container: HTMLElement, initial: TreasureIslandProps): Tre
     container.dataset.mode = props.mode || "welcome";
     theme.dataset.mode = props.mode || 'welcome';
     theme.lang = props.context.locale === 'zh' ? 'zh-CN' : 'en';
-    flushSync(() => root.render(<PresentationContext.Provider value={{ portalContainer: portal, onResearchAction: props.onResearchAction, workflow: props.workflow, loadLiterature: props.loadLiterature, theme: props.context.theme, viewport: () => container.getBoundingClientRect() }}><View props={props} portal={portal} /></PresentationContext.Provider>));
+    flushSync(() => root.render(<PresentationContext.Provider value={{ portalContainer: portal, onResearchAction: props.onResearchAction, workflow: props.workflow, loadLiterature: props.loadLiterature, loadLeaderboard: props.loadLeaderboard, loadUsage: props.loadUsage, updateNickname: props.updateNickname, theme: props.context.theme, viewport: () => container.getBoundingClientRect() }}><View props={props} portal={portal} /></PresentationContext.Provider>));
   }
   update(initial);
   return { update, unmount() {

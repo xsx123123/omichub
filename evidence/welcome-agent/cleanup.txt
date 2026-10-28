@@ -1,0 +1,2 @@
+Stopped only task-created preview/worker/beat processes; removed temporary preview HTML/TS/Vite config and the two task-created PostgreSQL/Redis containers and volumes.
+Provider config row count before cleanup: 0

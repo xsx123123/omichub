@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-microbiome-pipeline
 description: End-to-end 16S/ITS amplicon workflow from demultiplexed FASTQ to a consensus differential-abundance result, orchestrating cutadapt primer removal, per-run DADA2 ASV inference (learnErrors/mergeSequenceTables/removeBimeraDenovo), region-matched taxonomy assignment, a SEPP/Greengenes2 tree, alpha/beta diversity at a declared sampling depth (phyloseq/vegan, adonis2 paired with betadisper), compositional DA as a consensus of >=2 tools (ALDEx2/ANCOM-BC2) on unrarefied counts, and optional PICRUSt2 functional prediction gated on NSTI. Covers the stage-ordering decisions (primers before truncation, per-run error model, rarefy for diversity not DA, predicted potential not activity) and defers each per-step choice to the six microbiome skills. Use when staging an amplicon study end to end or chaining ASV inference, taxonomy, diversity, and differential abundance. For shotgun reads see workflows/metagenomics-pipeline.
+version: 1.0.0
+display_name: 16S/ITS 扩增子流程
+display_name_en: 16S/ITS Amplicon Pipeline
+description_zh: >-
+  从拆分后的 FASTQ 到共识差异丰度结果的 16S/ITS 扩增子全流程，涵盖引物去除、DADA2 ASV 推断、区域匹配物种注释、系统发育树、α/β 多样性与两种以上工具的组成型差异分析。
+description_en: >-
+  End-to-end 16S/ITS amplicon workflow from demultiplexed FASTQ to a consensus differential-abundance result, orchestrating cutadapt primer removal, per-run DADA2 ASV inference (learnErrors/mergeSequenceTables/removeBimeraDenovo), region-matched taxonomy assignment, a SEPP/Greengenes2 tree, alpha/beta diversity at a declared sampling depth (phyloseq/vegan, adonis2 paired with betadisper), compositional DA as a consensus of >=2 tools (ALDEx2/ANCOM-BC2) on unrarefied counts, and optional PICRUSt2 functional prediction gated on NSTI. Covers the stage-ordering decisions (primers before truncation, per-run error model, rarefy for diversity not DA, predicted potential not activity) and defers each per-step choice to the six microbiome skills. Use when staging an amplicon study end to end or chaining ASV inference, taxonomy, diversity, and differential abundance. For shotgun reads see workflows/metagenomics-pipeline.
+author: JZHANG
+examples_zh:
+  - "用 16S 数据生成 ASV 表并做多样性分析"
+  - "帮我用 DADA2 去噪并注释物种"
+  - "用 ALDEx2 和 ANCOM-BC2 做差异丰度共识"
+examples_en:
+  - "Generate an ASV table and run diversity analysis on my 16S data"
+  - "Denoise with DADA2 and assign region-matched taxonomy"
+  - "Reach a differential-abundance consensus with ALDEx2 and ANCOM-BC2"
 tool_type: mixed
 primary_tool: DADA2
 workflow: true
@@ -42,10 +58,10 @@ Scope: amplicon (16S/ITS) reads -> ASV table -> taxonomy -> diversity + consensu
 
 The feature table, the diversity number, and the differential-taxa list are not observations of the community - each is the residue of a knob turned at an EARLIER stage, before any result existed. Turn the knobs differently and the answer changes. The orchestration discipline is therefore to declare and defend each stage's choice, in order, because every stage silently constrains the next:
 
-1. **What is stripped and where reads are truncated decides what is detectable.** Primers left on corrupt the error model and inflate chimeras; truncating below the merge-overlap budget erases taxa by arithmetic. These are set before any ASV exists (microbiome/amplicon-processing).
-2. **The error model is per-run, the tree is a model, and the depth is a sample-deletion knob.** Pooling runs into one `learnErrors` denoises wrong; a de novo tree from short reads injects topology noise into UniFrac; a sampling depth above some samples' totals silently drops the lowest-biomass samples (microbiome/diversity-analysis).
-3. **Rarefy for diversity, never for DA; and which taxa are "significant" depends more on the tool than the biology.** Keep the raw counts, rarefy only into the diversity branch, and report a CONSENSUS of >=2 compositionally-aware tools rather than one tool's hit list (Nearing 2022 *Nat Commun* 13:342; microbiome/differential-abundance).
-4. **PICRUSt2 predicts potential, not activity, and is circular with taxonomy.** Predicted function is the ASV table re-encoded through a fixed lookup - hypothesis-generating, gated on NSTI, never "more active" (microbiome/functional-prediction).
+1. **What is stripped and where reads are truncated decides what is detectable.** Primers left on corrupt the error model and inflate chimeras; truncating below the merge-overlap budget erases taxa by arithmetic. These are set before any ASV exists (references/microbiome--amplicon-processing.md).
+2. **The error model is per-run, the tree is a model, and the depth is a sample-deletion knob.** Pooling runs into one `learnErrors` denoises wrong; a de novo tree from short reads injects topology noise into UniFrac; a sampling depth above some samples' totals silently drops the lowest-biomass samples (references/microbiome--diversity-analysis.md).
+3. **Rarefy for diversity, never for DA; and which taxa are "significant" depends more on the tool than the biology.** Keep the raw counts, rarefy only into the diversity branch, and report a CONSENSUS of >=2 compositionally-aware tools rather than one tool's hit list (Nearing 2022 *Nat Commun* 13:342; references/microbiome--differential-abundance.md).
+4. **PICRUSt2 predicts potential, not activity, and is circular with taxonomy.** Predicted function is the ASV table re-encoded through a fixed lookup - hypothesis-generating, gated on NSTI, never "more active" (references/microbiome--functional-prediction.md).
 
 ## Pipeline Stages
 
@@ -53,15 +69,15 @@ Each stage hands its decisions to the owning skill; this table is the routing ma
 
 | Stage | Operation | Owning skill (decisions) |
 |-------|-----------|--------------------------|
-| 0 | Read QC; confirm primers/region known | read-qc/quality-reports, read-qc/adapter-trimming |
-| 1 | Remove primers (cutadapt, BEFORE truncation) | microbiome/amplicon-processing, read-qc/adapter-trimming |
-| 2 | Per-RUN DADA2: filterAndTrim -> learnErrors -> dada -> mergePairs | microbiome/amplicon-processing |
-| 3 | mergeSequenceTables across runs, then ONE removeBimeraDenovo | microbiome/amplicon-processing |
-| 4 | Region-matched taxonomy (genus, not species, for 16S) | microbiome/taxonomy-assignment |
-| 5 | Build phyloseq + a SEPP/Greengenes2 tree (NOT de novo for short reads) | microbiome/diversity-analysis, phylogenetics/tree-io |
-| 6 | Alpha/beta diversity at a DECLARED depth; adonis2 + betadisper | microbiome/diversity-analysis |
-| 7 | Consensus DA of >=2 CoDA tools on UNrarefied counts | microbiome/differential-abundance |
-| 8 | Optional PICRUSt2 functional PREDICTION, gated on NSTI | microbiome/functional-prediction |
+| 0 | Read QC; confirm primers/region known | read-qc/quality-reports, references/read-qc--adapter-trimming.md |
+| 1 | Remove primers (cutadapt, BEFORE truncation) | references/microbiome--amplicon-processing.md, references/read-qc--adapter-trimming.md |
+| 2 | Per-RUN DADA2: filterAndTrim -> learnErrors -> dada -> mergePairs | references/microbiome--amplicon-processing.md |
+| 3 | mergeSequenceTables across runs, then ONE removeBimeraDenovo | references/microbiome--amplicon-processing.md |
+| 4 | Region-matched taxonomy (genus, not species, for 16S) | references/microbiome--taxonomy-assignment.md |
+| 5 | Build phyloseq + a SEPP/Greengenes2 tree (NOT de novo for short reads) | references/microbiome--diversity-analysis.md, phylogenetics/tree-io |
+| 6 | Alpha/beta diversity at a DECLARED depth; adonis2 + betadisper | references/microbiome--diversity-analysis.md |
+| 7 | Consensus DA of >=2 CoDA tools on UNrarefied counts | references/microbiome--differential-abundance.md |
+| 8 | Optional PICRUSt2 functional PREDICTION, gated on NSTI | references/microbiome--functional-prediction.md |
 
 QIIME2 artifact/provenance alternative for the whole chain: microbiome/qiime2-workflow (`qiime cutadapt` -> `dada2 denoise-paired` -> `feature-classifier classify-sklearn` -> `fragment-insertion sepp` -> `diversity core-metrics-phylogenetic` -> `composition ancombc` -> `q2-picrust2`). Same decisions, `.qza`/`.qzv` provenance ecosystem.
 
@@ -103,7 +119,7 @@ ASV table + taxonomy + diversity + consensus DA hits (+ predicted potential)
 
 **Goal:** Turn demultiplexed reads into one chimera-free ASV table, with primers off first and the error model fit per run.
 
-**Approach:** Strip primers with cutadapt before any quality step; run the DADA2 block (filter -> learnErrors -> dada -> mergePairs) ONCE PER sequencing run; merge the run-level tables by exact sequence string; remove chimeras once on the combined table. Decisions (truncLen budget, maxEE, pooling mode, ITS handling) live in microbiome/amplicon-processing.
+**Approach:** Strip primers with cutadapt before any quality step; run the DADA2 block (filter -> learnErrors -> dada -> mergePairs) ONCE PER sequencing run; merge the run-level tables by exact sequence string; remove chimeras once on the combined table. Decisions (truncLen budget, maxEE, pooling mode, ITS handling) live in references/microbiome--amplicon-processing.md.
 
 ```bash
 # Primers come OFF before truncation - leftover primer bases corrupt the error model and look chimeric.
@@ -129,13 +145,13 @@ seqtab <- mergeSequenceTables(seqtab_run1, seqtab_run2)   # single run: skip; pa
 seqtab_nochim <- removeBimeraDenovo(seqtab, method = 'consensus', multithread = TRUE)
 ```
 
-A merge cliff (near-zero `merged` column) or a large READ fraction lost as chimeric is a stage-1/2 knob problem, not bad data - see microbiome/amplicon-processing. For low-biomass studies, sequence negative/positive controls and run decontam on the ASV table before downstream analysis (microbiome/amplicon-processing; metagenomics/contamination-controls).
+A merge cliff (near-zero `merged` column) or a large READ fraction lost as chimeric is a stage-1/2 knob problem, not bad data - see references/microbiome--amplicon-processing.md. For low-biomass studies, sequence negative/positive controls and run decontam on the ASV table before downstream analysis (references/microbiome--amplicon-processing.md; metagenomics/contamination-controls).
 
 ## Stage 4 to 6: Taxonomy, Tree, Diversity
 
 **Goal:** Label ASVs against a region-matched reference, assemble a phyloseq object with a PLACED tree, and summarize diversity at a depth that retains samples.
 
-**Approach:** Assign taxonomy with a classifier trained on the amplicon region (report genus for 16S, not species); filter host mitochondria/chloroplast features (universal 16S primers amplify them); build the phyloseq object and attach a SEPP/Greengenes2 placed tree rather than a de novo tree from short reads; rarefy ONLY into the diversity branch at a declared depth, report the dropped samples, and pair adonis2 with betadisper. Decisions live in microbiome/taxonomy-assignment and microbiome/diversity-analysis.
+**Approach:** Assign taxonomy with a classifier trained on the amplicon region (report genus for 16S, not species); filter host mitochondria/chloroplast features (universal 16S primers amplify them); build the phyloseq object and attach a SEPP/Greengenes2 placed tree rather than a de novo tree from short reads; rarefy ONLY into the diversity branch at a declared depth, report the dropped samples, and pair adonis2 with betadisper. Decisions live in references/microbiome--taxonomy-assignment.md and references/microbiome--diversity-analysis.md.
 
 ```r
 library(phyloseq); library(vegan)
@@ -153,13 +169,13 @@ adonis2(UniFrac(ps_rare, weighted = TRUE) ~ Group, data = data.frame(sample_data
 permutest(betadisper(UniFrac(ps_rare, weighted = TRUE), sample_data(ps_rare)$Group))   # location vs dispersion
 ```
 
-SEPP placement is `qiime fragment-insertion sepp`; a de novo `align-to-tree-mafft-fasttree` is acceptable only when no reference package fits the marker, and unweighted UniFrac on it must be treated as suspect (microbiome/diversity-analysis).
+SEPP placement is `qiime fragment-insertion sepp`; a de novo `align-to-tree-mafft-fasttree` is acceptable only when no reference package fits the marker, and unweighted UniFrac on it must be treated as suspect (references/microbiome--diversity-analysis.md).
 
 ## Stage 7: Consensus Differential Abundance
 
 **Goal:** Identify differentially abundant taxa as a confidence-graded consensus, not one tool's volcano plot.
 
-**Approach:** On the UNrarefied counts (rarefying discards information DA needs), filter rare features, run ALDEx2 plus a second compositionally-aware tool (ANCOM-BC2 or LinDA), gate ALDEx2 on q AND effect size, and report the intersection as high-confidence. Tool mechanics live in microbiome/differential-abundance.
+**Approach:** On the UNrarefied counts (rarefying discards information DA needs), filter rare features, run ALDEx2 plus a second compositionally-aware tool (ANCOM-BC2 or LinDA), gate ALDEx2 on q AND effect size, and report the intersection as high-confidence. Tool mechanics live in references/microbiome--differential-abundance.md.
 
 ```r
 library(ALDEx2); library(ANCOMBC)
@@ -184,7 +200,7 @@ confident <- intersect(sig_aldex, sig_ancombc)   # high-confidence; union = expl
 
 **Goal:** Summarize predicted community functional POTENTIAL, framed as hypothesis-generating and gated on NSTI.
 
-**Approach:** Run PICRUSt2 on the rep-seqs and ASV table, report the NSTI distribution and the read fraction dropped at `--max_nsti 2`, and restrict every claim to "potential" - never "activity". Decisions live in microbiome/functional-prediction; for MEASURED function use shotgun (metagenomics/functional-profiling).
+**Approach:** Run PICRUSt2 on the rep-seqs and ASV table, report the NSTI distribution and the read fraction dropped at `--max_nsti 2`, and restrict every claim to "potential" - never "activity". Decisions live in references/microbiome--functional-prediction.md; for MEASURED function use shotgun (metagenomics/functional-profiling).
 
 ```bash
 # Predicts KO/MetaCyc POTENTIAL from who-is-there - never measured genes, never activity.
@@ -195,7 +211,7 @@ picrust2_pipeline.py -s asv_seqs.fna -i asv_table.biom -o picrust2_out -p 8 --ma
 ## Per-Stage Failure Modes
 
 ### Primers left on before truncation (stage 1)
-**Trigger:** running filterAndTrim/learnErrors on reads still carrying primers. **Mechanism:** degenerate primer bases read as sequencing error, corrupting the error model and masquerading as chimeras. **Symptom:** wrong error fit, a large READ fraction lost as chimeric, inflated ASV count. **Fix:** cutadapt `--discard-untrimmed` first; order is primers -> filter -> learnErrors (microbiome/amplicon-processing).
+**Trigger:** running filterAndTrim/learnErrors on reads still carrying primers. **Mechanism:** degenerate primer bases read as sequencing error, corrupting the error model and masquerading as chimeras. **Symptom:** wrong error fit, a large READ fraction lost as chimeric, inflated ASV count. **Fix:** cutadapt `--discard-untrimmed` first; order is primers -> filter -> learnErrors (references/microbiome--amplicon-processing.md).
 
 ### Pooling runs into one error model (stage 2)
 **Trigger:** concatenating multiple runs' FASTQs before `learnErrors`. **Mechanism:** one error model is fit to a mixture of run-specific error structures. **Symptom:** ASVs that vanish or appear when runs are split. **Fix:** per-run inference, then `mergeSequenceTables`, then one chimera removal; carry run as a batch covariate into DA.
@@ -204,7 +220,7 @@ picrust2_pipeline.py -s asv_seqs.fna -i asv_table.biom -o picrust2_out -p 8 --ma
 **Trigger:** truncLen_F + truncLen_R below amplicon length + ~12. **Mechanism:** denoised pairs no longer overlap enough to merge. **Symptom:** near-zero `merged` column, misread as "low diversity". **Fix:** compute the overlap budget first; keep length and loosen `maxEE` on the reverse for long amplicons.
 
 ### De novo tree on short reads (stage 5)
-**Trigger:** UniFrac/Faith PD on a MAFFT+FastTree tree from ~250 bp reads. **Mechanism:** short reads give an unstable topology and arbitrary midpoint root. **Symptom:** unweighted-UniFrac separation that vanishes under SEPP. **Fix:** use SEPP fragment-insertion or Greengenes2 placement (microbiome/diversity-analysis).
+**Trigger:** UniFrac/Faith PD on a MAFFT+FastTree tree from ~250 bp reads. **Mechanism:** short reads give an unstable topology and arbitrary midpoint root. **Symptom:** unweighted-UniFrac separation that vanishes under SEPP. **Fix:** use SEPP fragment-insertion or Greengenes2 placement (references/microbiome--diversity-analysis.md).
 
 ### Sampling-depth sample massacre (stage 6)
 **Trigger:** a rarefaction depth above some samples' totals (or `min(sample_sums)`). **Mechanism:** samples below the depth are silently dropped; the lost ones skew low-biomass. **Symptom:** fewer points in the PCoA than samples in the metadata. **Fix:** pick the depth from the alpha-rarefaction plateau, report the dropped-sample list, confirm at a nearby depth.
@@ -216,7 +232,7 @@ picrust2_pipeline.py -s asv_seqs.fna -i asv_table.biom -o picrust2_out -p 8 --ma
 **Trigger:** reporting only ALDEx2 (or only the tool that flagged the favored taxon). **Mechanism:** the significant-taxa list depends more on the tool than the biology (Nearing 2022). **Symptom:** "the method found X" with no mention of disagreeing tools. **Fix:** run >=2 CoDA tools, report the intersection as confident and the union as exploratory, name every tool.
 
 ### PICRUSt2 reported as activity (stage 8)
-**Trigger:** "increased butyrate production" / "upregulated" from predicted KOs. **Mechanism:** PICRUSt2 measured no genes and no transcripts - it re-encodes taxonomy through a fixed lookup. **Symptom:** an activity verb on a predicted pathway, or predicted+taxonomic differences claimed as two independent findings. **Fix:** restrict claims to "potential"; report NSTI; for activity use metatranscriptomics (microbiome/functional-prediction).
+**Trigger:** "increased butyrate production" / "upregulated" from predicted KOs. **Mechanism:** PICRUSt2 measured no genes and no transcripts - it re-encodes taxonomy through a fixed lookup. **Symptom:** an activity verb on a predicted pathway, or predicted+taxonomic differences claimed as two independent findings. **Fix:** restrict claims to "potential"; report NSTI; for activity use metatranscriptomics (references/microbiome--functional-prediction.md).
 
 ## Quantitative Thresholds
 
@@ -265,14 +281,14 @@ picrust2_pipeline.py -s asv_seqs.fna -i asv_table.biom -o picrust2_out -p 8 --ma
 
 ## Related Skills
 
-- microbiome/amplicon-processing - Primer removal, per-run error model, truncLen budget, chimeras, ITS
+- references/microbiome--amplicon-processing.md - Primer removal, per-run error model, truncLen budget, chimeras, ITS
 - reporting/automated-qc-reports - Aggregate FastQC/MultiQC across samples (sample-name resolution; the report is a snapshot, not a gate)
-- microbiome/taxonomy-assignment - Region-matched classifier and reference-database choice
-- microbiome/diversity-analysis - Sampling depth, tree choice, metric choice, adonis2 + betadisper
-- microbiome/differential-abundance - Compositional DA tools and the consensus deliverable
-- microbiome/functional-prediction - PICRUSt2 predicted potential gated on NSTI
+- references/microbiome--taxonomy-assignment.md - Region-matched classifier and reference-database choice
+- references/microbiome--diversity-analysis.md - Sampling depth, tree choice, metric choice, adonis2 + betadisper
+- references/microbiome--differential-abundance.md - Compositional DA tools and the consensus deliverable
+- references/microbiome--functional-prediction.md - PICRUSt2 predicted potential gated on NSTI
 - microbiome/qiime2-workflow - The QIIME2 artifact/provenance route for the whole chain
-- read-qc/adapter-trimming - cutadapt primer removal mechanics before DADA2
+- references/read-qc--adapter-trimming.md - cutadapt primer removal mechanics before DADA2
 - metagenomics/kraken-classification - Shotgun (not amplicon) read classification
 - metagenomics/abundance-estimation - Shared compositional/normalization/rarefaction theory
 - workflows/metagenomics-pipeline - The shotgun (WGS) equivalent of this amplicon pipeline

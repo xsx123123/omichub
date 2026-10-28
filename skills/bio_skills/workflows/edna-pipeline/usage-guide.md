@@ -93,9 +93,9 @@ Tell your AI agent what you want to do:
 - For taxonomic ambiguity, phylogenetic placement (EPA-ng + gappa) is more accurate than closest-match assignment though 10-100x slower
 
 ## Related Skills
-- ecological-genomics/edna-metabarcoding - Detailed eDNA processing with ASV/OTU decision and primer-bias caveats
-- ecological-genomics/biodiversity-metrics - Hill-number diversity and Baselga/Podani beta partitions
-- ecological-genomics/community-ecology - PERMANOVA + PERMDISP, JSDMs, RLQ + fourth-corner
-- read-qc/quality-reports - Raw read quality assessment
+- references/ecological-genomics--edna-metabarcoding.md - Detailed eDNA processing with ASV/OTU decision and primer-bias caveats
+- references/ecological-genomics--biodiversity-metrics.md - Hill-number diversity and Baselga/Podani beta partitions
+- references/ecological-genomics--community-ecology.md - PERMANOVA + PERMDISP, JSDMs, RLQ + fourth-corner
+- references/read-qc--quality-reports.md - Raw read quality assessment
 - reporting/automated-qc-reports - Aggregate FastQC across samples with MultiQC
 - microbiome/amplicon-processing - 16S clinical alternative

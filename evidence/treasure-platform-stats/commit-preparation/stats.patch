@@ -1,0 +1,1010 @@
+diff --git a/.env.example b/.env.example
+index c2aebc0d..7af1c347 100644
+--- a/.env.example
++++ b/.env.example
+@@ -20,6 +20,8 @@ APP_ENV=development
+ TREASURE_NATIVE_UI_ENABLED=false
+ TREASURE_MOUSE_INTERNAL_TOKEN=replace-with-a-random-server-secret
+ TREASURE_AGENT_WRITE_TOOLS_ENABLED=false
++# 排行榜周界：默认北京时间周一 00:00；仅影响统计，不影响消息时间戳。
++TREASURE_STATS_TIMEZONE=Asia/Shanghai
+ # BioOps Phase 2: only read/prepare can be opted in after migration and checks.
+ TOOL_GATEWAY_READ_ENABLED=false
+ AGENT_DOWNLOAD_WRITE_ENABLED=false
+diff --git a/ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md b/ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md
+index 4c56add0..16073881 100644
+--- a/ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md
++++ b/ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md
+@@ -10,7 +10,7 @@
+ | 平台界面 | `frontend/package.json` 的 `predev`/`prebuild` 执行 Island 构建，消费子仓当前共享组件和样式；改源码后需要重新构建或重新启动开发服务，并刷新浏览器 |
+ | 平台业务 | Vue 工作台、BFF、平台账号/项目/会话/API 仍独立维护；独立 SPA 新增消息队列、后台任务、自托管账号/历史不会自动接入 |
+ | 新增检索工具 | protocols.io 等由实际运行的 Node 服务代码、配置与令牌共同决定；前端重新构建不更新 Node 服务 |
+-| 当前 Node 容器 | `cygnusx-treasure-mouse-chat:1ea2f79`；容器 `/app/functions/seqout-chat/index.ts` 的 SHA-256 为 `5a323716d51dccc75c22e279694dd724378b9d8e609b77915a7d831d7101f950`，当前源码为 `919e932606d6e09aecd231528d93ce96ea369331dce469fcdab186c9ef4bee9a`，确有运行版本差异；本轮未重启或替换该容器 |
++| 当前 Node 容器 | 已在平台统计接入时更新为 `cygnusx-treasure-mouse-chat:16f2376`；镜像来自该子仓已提交源码，容器 `/app/functions/seqout-chat/index.ts` 与提交版本 SHA-256 均为 `61fb4bd6dea98bd6d91672bcb02b1215e854f4ab49eab3af915221fcf2b0f147`。未把工作区其他未提交改动打入镜像，验证范围见 §10 |
+ | 当前前端托管 | `cygnusx-nginx` 只读挂载宿主 `frontend/dist`；本地生产构建会更新它实际提供的前端文件。Island 稳定入口已有 `Cache-Control: no-cache`，无需修改缓存策略 |
+ 
+ 子仓新版任务协议保留无 `session_ref` 的兼容聊天路径；平台现有 BFF 仍请求受信 `/cygnusx/discovery`，不发送该字段。本轮子仓 Node HTTP/协议测试与平台隔离测试通过，但未将其当作真实模型、真实数据库和跨进程后台任务的运行验收。
+@@ -101,3 +101,19 @@ Docker 冷构建已通过子仓冻结依赖安装及新目录 COPY，随后在
+ 目标截图 B 缺失，当前按文字规范统一而非像素对齐；保留现有产品的四类入口、文案与夜探矿洞暗色主题。主平台外层 CygnusX 导航、真实登录和项目权限继续由平台负责，本轮没有模拟替换产品业务。
+ 
+ 需要更新 Node 检索/任务能力时，应单独按现有镜像 SHA 规范构建并核对运行镜像，再验证平台受信端点；不能把子仓拉取、前端重建或本轮截图当作后端已升级。全新容器安装还需先处理原有前端锁文件问题。其他人的文档移动和技能元数据改动未纳入本次变更。
++
++## 10. 平台排行榜、昵称与使用统计
++
++排行榜与统计改由 Vue 宿主的 `researchAgentApi` 调用 `/research-agent/leaderboard?period=all|week`、`GET /research-agent/stats`、`PATCH /research-agent/nickname`，经 `PlatformStatsProps` 和 React PresentationContext 传给共享组件。构建阶段只扩展暂存 contract，不修改子仓归档文件。三个接口均复用平台 JWT/账号激活状态、寻宝鼠模块权限与 native 开关，读取历史统计不依赖 Node 在线；不调用独立站账号接口、不接访客设备统计，也不接受浏览器上报计数。
++
++`ResearchStatsService` 流式读取带 `research-treasure-mouse` 标记的会话及 terminal assistant 消息快照（含已归档会话，排除仍在生成的消息、普通 AI 聊天和非 active 用户）。宝藏为每轮去重后的发现卡片数，不代表已验证或已导入的 Dataset；同卡在不同轮次出现仍分别计数。下铲为完成或失败的工具调用，排除 running 中间帧及 intent_plan/grounding_check 审计项。统计依据当前保留的消息，无新表、无迁移、无重复刷新/重放增量。周界为 `TREASURE_STATS_TIMEZONE`（默认 Asia/Shanghai）的周一 00:00；服务端分别排序周榜/累计榜并返回前 100 名及完整总数，周榜只含本周有终态记录的用户。
++
++公开响应仅含哈希用户键、显示昵称和聚合计数；不返回用户 UUID、邮箱、登录名、会话/项目/消息内容或凭证。`ownKey` 用于标记“我”。昵称校验为 trim 后 1–16 字、无控制字符，行锁下合并写入本人 `users.preferences.treasure_mouse_nickname`，保留其他设置，不改变平台昵称/登录身份；默认优先平台公开昵称，否则使用匿名显示名。平台只显示“平台寻宝榜”，不展示无对应身份源的“临时矿工”。
++
++供应商每轮 usage 由 Node 的独立请求上下文累积，以新增 `usage` 帧传给 BFF，并在 terminal 消息保存 `metadata_json.usage` / `llm_calls`；旧客户端忽略未知帧，重放只读取同一快照。此数据仅用于统计，不改扣费规则、不用字符估算补齐缺失历史 Token。统计响应含 `usageRecordedChats`，页面明确显示记录覆盖率，完全没有记录时显示“—”。错误/重试与迟到请求隔离由共享展示组件处理，回调不随草稿变动重复请求。
++
++验证包含真实 PostgreSQL 独立 schema + HTTP/JWT 的统计/隐私/改名持久化/权限/周界与去重测试、BFF usage 重放测试、Node 并发请求用量隔离测试，以及实际 Vue 工作台、构建 React Island、axios HTTP fixture 的浏览器检查。浏览器入口 `scripts/poc/treasure-stats-browser.mjs`，证据 `evidence/treasure-platform-stats/`。联网真实模型不用于测试数据生成，历史缺失用量不回填。
++
++本次运行验收：前端 102 文件/758 测试、type-check、生产构建通过；后端相关单元与 PostgreSQL 隔离接口测试 55 项通过，新增服务/DTO/路由 Ruff 和定向 mypy 通过，迁移检查通过。以子仓 `16f2376` 的 git archive 构建镜像（197 测试通过、1 跳过），已替换本机寻宝服务并重启 Web，两者 healthy。真实 JWT 的累计/周榜/统计接口均 HTTP 200，生产 `/treasure-mouse` 浏览器通过；验收时保留数据为 308 张卡片、本周 117 张、9 轮、17 次工具调用、2 个账号，历史 Token 记录覆盖 0/9。真实运行镜像另用隔离 OpenAI SSE fixture 验证解析 37 输入/5 输出并发出 total=42 的 usage 帧：`scripts/poc/treasure-runtime-usage.mjs <image:sha>`；未调用真实模型或修改真实用户昵称。
++
++门禁边界：最后一次 Island PoC 为 14/16 通过，2 项数据集检查/导入预案测试在并行共享工具适配变更后失败，不属于排行榜回调验证；本次不覆盖该并行变更。额外直接编译 Node tasks 依赖闭包仍有原有类型问题（RoundDigest 重复导入、GroundingReport/存储快照转换等）；子仓规范的前端 typecheck 与实际 Node HTTP/协议测试通过，不将其表述为整个 Node 后端严格类型检查全绿。全仓既存后端 Ruff/mypy/测试失败结论不因本次定向通过而改变。
+diff --git a/deploy/docker/docker-compose.yml b/deploy/docker/docker-compose.yml
+index ab50d35f..b6798b21 100644
+--- a/deploy/docker/docker-compose.yml
++++ b/deploy/docker/docker-compose.yml
+@@ -429,7 +429,7 @@ services:
+       context: ../../pipelines/Treasure-Seeking_Mouse
+       dockerfile: deploy/Dockerfile
+       target: chat
+-    image: ${TREASURE_MOUSE_CHAT_IMAGE:-cygnusx-treasure-mouse-chat:1ea2f79}
++    image: ${TREASURE_MOUSE_CHAT_IMAGE:-cygnusx-treasure-mouse-chat:16f2376}
+     container_name: cygnusx-treasure-mouse-chat
+     restart: unless-stopped
+     logging: *default-logging
+diff --git a/frontend/scripts/build-treasure-island.mjs b/frontend/scripts/build-treasure-island.mjs
+index 7aedf511..52c78835 100644
+--- a/frontend/scripts/build-treasure-island.mjs
++++ b/frontend/scripts/build-treasure-island.mjs
+@@ -1,6 +1,6 @@
+ /** Build only the original display island with its own locked dependencies. */
+ import { spawnSync } from 'node:child_process';
+-import { access, cp, mkdtemp, rm, symlink } from 'node:fs/promises';
++import { access, appendFile, cp, mkdtemp, rm, symlink } from 'node:fs/promises';
+ import { fileURLToPath } from 'node:url';
+ import { resolve } from 'node:path';
+ import { tmpdir } from 'node:os';
+@@ -23,9 +23,11 @@ try {
+     await cp(resolve(source, 'src'), resolve(staging, 'src'), { recursive: true });
+     await cp(resolve(source, 'shared'), resolve(staging, 'shared'), { recursive: true });
+     await cp(resolve(archive, 'src/island'), resolve(staging, 'src/island'), { recursive: true });
+-    for (const name of ['FullPresentation.tsx', 'index.tsx']) {
++    for (const name of ['FullPresentation.tsx', 'index.tsx', 'platformStats.ts']) {
+       await cp(resolve(frontend, 'treasure-island', name), resolve(staging, 'src/island', name));
+     }
++    // Extend the frozen adapter's props without changing archived source files.
++    await appendFile(resolve(staging, 'src/island/contract.ts'), '\nimport type { PlatformStatsProps } from "./platformStats";\nexport interface TreasureIslandProps extends PlatformStatsProps {}\n');
+     for (const name of ['vite.island.config.ts', 'tsconfig.island.json']) {
+       await cp(resolve(archive, name), resolve(staging, name));
+     }
+diff --git a/frontend/src/api/researchAgent.ts b/frontend/src/api/researchAgent.ts
+index 1dec6f6d..c3a29724 100644
+--- a/frontend/src/api/researchAgent.ts
++++ b/frontend/src/api/researchAgent.ts
+@@ -1,6 +1,7 @@
+ import apiClient from './client'
+ import { chatApi } from './chat'
+ import type { TreasureIslandProps } from '@/types/treasureIsland'
++import type { PlatformLeaderboard, PlatformUsageStats } from '../../treasure-island/platformStats'
+ 
+ export interface ResearchCapabilities {
+   native_ui_enabled: boolean
+@@ -82,6 +83,15 @@ export interface ResearchMessage {
+ }
+ 
+ export const researchAgentApi = {
++  async leaderboard(period: 'all' | 'week' = 'all'): Promise<PlatformLeaderboard> {
++    return (await apiClient.get<PlatformLeaderboard>('/research-agent/leaderboard', { params: { period } })).data
++  },
++  async usageStats(): Promise<PlatformUsageStats> {
++    return (await apiClient.get<PlatformUsageStats>('/research-agent/stats')).data
++  },
++  async updateNickname(nickname: string): Promise<{ ok: boolean }> {
++    return (await apiClient.patch<{ ok: boolean }>('/research-agent/nickname', { nickname })).data
++  },
+   async capabilities(): Promise<ResearchCapabilities> {
+     return (await apiClient.get<ResearchCapabilities>('/research-agent/capabilities')).data
+   },
+diff --git a/frontend/src/types/treasureIsland.d.ts b/frontend/src/types/treasureIsland.d.ts
+index 48d375d5..932b704b 100644
+--- a/frontend/src/types/treasureIsland.d.ts
++++ b/frontend/src/types/treasureIsland.d.ts
+@@ -1,3 +1,4 @@
++import type { PlatformStatsProps } from '../../treasure-island/platformStats'
+ /** Non-sensitive view data only. Authentication, networking and state belong to Vue. */
+ export interface TreasureCard {
+   tool: string; accession: string; title: string; summary: string; meta: Record<string, string>;
+@@ -10,7 +11,7 @@ export interface TreasureMessage {
+   boost?: { accession: string | null } | null;
+   streaming?: boolean; error?: string | null;
+ }
+-export interface TreasureIslandProps {
++export interface TreasureIslandProps extends PlatformStatsProps {
+   context: { projectId: string | null; projectName: string; locale: 'zh' | 'en'; theme: 'light' | 'dark' };
+   messages: readonly TreasureMessage[];
+   mode?: 'welcome' | 'composer' | 'pet' | 'app';
+diff --git a/frontend/src/views/TreasureResearchWorkbench.vue b/frontend/src/views/TreasureResearchWorkbench.vue
+index 461ffc46..58412bae 100644
+--- a/frontend/src/views/TreasureResearchWorkbench.vue
++++ b/frontend/src/views/TreasureResearchWorkbench.vue
+@@ -263,6 +263,9 @@ const presentation = computed<Partial<TreasureIslandProps>>(() => ({
+   onArchiveSession: id => { void editSession(id) },
+   onChangeProject: id => { void changeProject(id) }, onRefresh: () => { void refreshAccess() },
+   onRegenerate: regenerate, loadLiterature: literature,
++  loadLeaderboard: researchAgentApi.leaderboard,
++  loadUsage: researchAgentApi.usageStats,
++  updateNickname: researchAgentApi.updateNickname,
+   workflow: { ...workflow.view }, onResearchAction: intent => { void handleResearchAction(intent) },
+ }))
+ onMounted(() => {
+diff --git a/frontend/treasure-island/FullPresentation.tsx b/frontend/treasure-island/FullPresentation.tsx
+index 95995d7b..e8dd4f40 100644
+--- a/frontend/treasure-island/FullPresentation.tsx
++++ b/frontend/treasure-island/FullPresentation.tsx
+@@ -115,8 +115,8 @@ export function FullPresentation({ props }: { props: TreasureIslandProps }): Rea
+     {props.paperWorkspace?.open && props.onPaperAction ? <PaperWorkspace view={props.paperWorkspace} action={props.onPaperAction} /> : null}
+     <TreasureMouse event={petEvent} startQuiet />
+     {petPanel ? <><div className="fixed inset-0 z-[60]" onClick={() => setPetPanel(false)} /><div className="fixed right-3 top-14 z-[60]"><PetSettingsPanel onClose={() => setPetPanel(false)} /></div></> : null}
+-    <Leaderboard open={board} onClose={() => setBoard(false)} />
+-    <UsageStatsDialog open={stats} onClose={() => setStats(false)} />
++    <Leaderboard platform open={board} onClose={() => setBoard(false)} />
++    <UsageStatsDialog platform open={stats} onClose={() => setStats(false)} />
+     {about ? <div role="dialog" aria-modal="true" aria-label={t('header.about')} className="fixed inset-0 z-50 overflow-auto bg-background" onKeyDown={event => { if (event.key === 'Escape') setAbout(false); }}><button className="absolute right-3 top-3 rounded p-2 text-muted-foreground" aria-label={t('lit.close')} onClick={() => setAbout(false)}><X size={18} /></button><AboutPresentation onBack={() => setAbout(false)} theme={props.context.theme} onThemeChange={() => props.onThemeChange?.()} /></div> : null}
+   </div>;
+ }
+diff --git a/frontend/treasure-island/index.tsx b/frontend/treasure-island/index.tsx
+index 29969504..e5beb568 100644
+--- a/frontend/treasure-island/index.tsx
++++ b/frontend/treasure-island/index.tsx
+@@ -70,7 +70,7 @@ export function mount(container: HTMLElement, initial: TreasureIslandProps): Tre
+     container.dataset.mode = props.mode || "welcome";
+     theme.dataset.mode = props.mode || 'welcome';
+     theme.lang = props.context.locale === 'zh' ? 'zh-CN' : 'en';
+-    flushSync(() => root.render(<PresentationContext.Provider value={{ portalContainer: portal, onResearchAction: props.onResearchAction, workflow: props.workflow, loadLiterature: props.loadLiterature, theme: props.context.theme, viewport: () => container.getBoundingClientRect() }}><View props={props} portal={portal} /></PresentationContext.Provider>));
++    flushSync(() => root.render(<PresentationContext.Provider value={{ portalContainer: portal, onResearchAction: props.onResearchAction, workflow: props.workflow, loadLiterature: props.loadLiterature, loadLeaderboard: props.loadLeaderboard, loadUsage: props.loadUsage, updateNickname: props.updateNickname, theme: props.context.theme, viewport: () => container.getBoundingClientRect() }}><View props={props} portal={portal} /></PresentationContext.Provider>));
+   }
+   update(initial);
+   return { update, unmount() {
+diff --git a/frontend/treasure-island/platformStats.ts b/frontend/treasure-island/platformStats.ts
+new file mode 100644
+index 00000000..dbb1702a
+--- /dev/null
++++ b/frontend/treasure-island/platformStats.ts
+@@ -0,0 +1,21 @@
++/** Platform DTOs. Vue owns authentication and I/O; React only receives callbacks. */
++export interface PlatformStatRow {
++  key: string; name: string; treasures: number; digs: number; chats: number;
++  updated_at: string; isGuest: boolean;
++  weekTreasures: number; weekDigs: number; weekChats: number;
++}
++export interface PlatformLeaderboard {
++  users: PlatformStatRow[]; guests: PlatformStatRow[];
++  ownKey: string; nickname: string; totalTreasures: number; weekTreasures: number;
++}
++export interface PlatformUsageStats {
++  chats: number; llmCalls: number; promptTokens: number; completionTokens: number;
++  totalTokens: number; toolCalls: number; toolErrors: number; actors: number;
++  tools: { name: string; label: string; count: number; errors: number; empties: number }[];
++  since: string; updatedAt: string; usageRecordedChats: number;
++}
++export interface PlatformStatsProps {
++  loadLeaderboard?: (period: 'all' | 'week') => Promise<PlatformLeaderboard>;
++  loadUsage?: () => Promise<PlatformUsageStats | null>;
++  updateNickname?: (nickname: string) => Promise<{ ok: boolean; message?: string }>;
++}
+diff --git a/pipelines/Treasure-Seeking_Mouse b/pipelines/Treasure-Seeking_Mouse
+index e4f462b3..16f2376e 160000
+--- a/pipelines/Treasure-Seeking_Mouse
++++ b/pipelines/Treasure-Seeking_Mouse
+@@ -1 +1 @@
+-Subproject commit e4f462b3d31a9e495474d8d338900fe15bfb4297
++Subproject commit 16f2376ea36287b206b20134a6e2c30e924ad520
+diff --git a/scripts/poc/treasure-runtime-usage.mjs b/scripts/poc/treasure-runtime-usage.mjs
+new file mode 100644
+index 00000000..65eb3b9d
+--- /dev/null
++++ b/scripts/poc/treasure-runtime-usage.mjs
+@@ -0,0 +1,67 @@
++/** Verify the actual runtime image against an isolated OpenAI SSE fixture.
++ * node scripts/poc/treasure-runtime-usage.mjs cygnusx-treasure-mouse-chat:<sha>
++ * No production account, database, model key or data volume is used.
++ */
++import assert from 'node:assert/strict';
++import { createServer } from 'node:http';
++import { once } from 'node:events';
++import { spawn, spawnSync } from 'node:child_process';
++import { randomUUID } from 'node:crypto';
++import { mkdir, writeFile } from 'node:fs/promises';
++
++const image = process.argv[2];
++if (!image) throw new Error('Pass the runtime image with its immutable SHA tag');
++const output = 'evidence/treasure-platform-stats';
++await mkdir(output, { recursive: true });
++const upstream = createServer(async (req, res) => {
++  let body = '';
++  for await (const chunk of req) body += chunk;
++  assert.equal(JSON.parse(body).stream_options.include_usage, true);
++  res.setHeader('Content-Type', 'text/event-stream');
++  res.end([
++    { choices: [{ delta: { content: 'Isolated fixture answer.' } }] },
++    { choices: [], usage: { prompt_tokens: 37, completion_tokens: 5, total_tokens: 42 } },
++  ].map(frame => `data: ${JSON.stringify(frame)}\n\n`).join('') + 'data: [DONE]\n\n');
++});
++upstream.listen(0, '127.0.0.1'); await once(upstream, 'listening');
++const reserve = createServer(); reserve.listen(0, '127.0.0.1'); await once(reserve, 'listening');
++const port = reserve.address().port;
++await new Promise(resolve => reserve.close(resolve));
++const name = 'treasure-stats-test-' + randomUUID();
++const args = ['run', '--rm', '--network', 'host', '--name', name,
++  '-e', 'CHAT_API_HOST=127.0.0.1', '-e', `CHAT_API_PORT=${port}`,
++  '-e', 'TREASURE_MOUSE_PLATFORM_ONLY=true', '-e', 'TREASURE_MOUSE_INTERNAL_TOKEN=isolated-test-token',
++  '-e', 'LLM_API_KEY=isolated-fixture-key', '-e', `LLM_BASE_URL=http://127.0.0.1:${upstream.address().port}`,
++  '-e', 'DATA_DIR=/tmp/isolated-stats', '-e', 'STATS_FILE=/tmp/isolated-stats/stats.json', image];
++const child = spawn('docker', args, { stdio: ['ignore', 'pipe', 'pipe'] });
++let logs = '';
++child.stdout.on('data', bytes => { logs += bytes; });
++child.stderr.on('data', bytes => { logs += bytes; });
++try {
++  const endpoint = `http://127.0.0.1:${port}`;
++  let ready = false;
++  for (let i = 0; i < 40; i++) {
++    if (child.exitCode !== null) throw new Error('Isolated runtime stopped: ' + logs);
++    try { ready = (await fetch(endpoint + '/stats')).ok; } catch { /* starting */ }
++    if (ready) break;
++    await new Promise(resolve => setTimeout(resolve, 250));
++  }
++  assert.ok(ready, 'runtime must start');
++  const response = await fetch(endpoint + '/cygnusx/discovery', {
++    method: 'POST', headers: { 'Content-Type': 'application/json',
++      'X-CygnusX-Internal-Token': 'isolated-test-token', 'X-CygnusX-Principal': randomUUID() },
++    body: JSON.stringify({ model: 'fixture-model', messages: [{ role: 'user', content: 'fixture' }], lang: 'en' }),
++  });
++  assert.equal(response.status, 200);
++  const frames = (await response.text()).split('\n').filter(line => line.startsWith('data: ') && !line.includes('[DONE]')).map(line => JSON.parse(line.slice(6)));
++  const usage = frames.find(frame => frame.event === 'usage');
++  assert.deepEqual(usage, { event: 'usage', llm_calls: 1, usage: { prompt_tokens: 37, completion_tokens: 5, total_tokens: 42 } });
++  assert.ok(frames.some(frame => frame.event === 'end'));
++  const report = { image, checks: ['Actual image starts', 'Trusted endpoint accepts platform identity', 'OpenAI SSE usage parsed', 'Request-local token telemetry emitted before end'], usage };
++  await writeFile(`${output}/runtime-usage-result.json`, JSON.stringify(report, null, 2));
++  console.log(JSON.stringify(report));
++} finally {
++  spawnSync('docker', ['rm', '-f', name], { stdio: 'ignore' });
++  if (child.exitCode === null) await once(child, 'exit');
++  await new Promise(resolve => upstream.close(resolve));
++}
+diff --git a/scripts/poc/treasure-stats-browser.mjs b/scripts/poc/treasure-stats-browser.mjs
+new file mode 100644
+index 00000000..14b95375
+--- /dev/null
++++ b/scripts/poc/treasure-stats-browser.mjs
+@@ -0,0 +1,120 @@
++/** Real Vue workbench / React Island / axios boundary, with explicit HTTP fixtures.
++ * Run from repository root after building the Island. Set PLAYWRIGHT_MODULE and
++ * CHROMIUM_PATH if Playwright/Chromium are not on the standard module path.
++ */
++import assert from 'node:assert/strict';
++import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
++import { resolve, basename } from 'node:path';
++import { pathToFileURL } from 'node:url';
++import { createServer } from '../../frontend/node_modules/vite/dist/node/index.js';
++
++const frontend = resolve('frontend');
++const fixture = await mkdtemp(resolve(frontend, '.stats-check-'));
++const output = resolve('evidence/treasure-platform-stats');
++await mkdir(output, { recursive: true });
++await writeFile(resolve(fixture, 'index.html'), '<html lang="zh-CN"><div id="app" style="height:100vh"></div><script type="module" src="./main.ts"></script></html>');
++await writeFile(resolve(fixture, 'main.ts'), `import { createApp } from 'vue'; import Workbench from '@/views/TreasureResearchWorkbench.vue'; createApp(Workbench).mount('#app');`);
++let server, browser;
++const report = { checks: [], errors: [] };
++try {
++  server = await createServer({ configFile: resolve(frontend, 'vite.config.ts'), root: frontend,
++    optimizeDeps: { entries: [resolve(fixture, 'index.html')] },
++    server: { host: '127.0.0.1', port: 0, open: false }, logLevel: 'error',
++    plugins: [{ name: 'built-stats-island', configureServer(vite) {
++      vite.middlewares.use(async (req, res, next) => {
++        if (req.url?.split('?')[0] !== '/treasure-island/treasure-island.js') return next();
++        res.setHeader('Content-Type', 'text/javascript');
++        res.end(await readFile(resolve(frontend, 'public/treasure-island/treasure-island.js')));
++      });
++    } }],
++  });
++  await server.listen();
++  const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ? pathToFileURL(process.env.PLAYWRIGHT_MODULE).href : 'playwright');
++  browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH });
++  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
++  page.on('pageerror', error => report.errors.push(error.message));
++  const state = { nickname: '浏览器用户', boardError: false, nickError: false, statsError: false };
++  const requests = [];
++  const row = (key, name, treasures, weekTreasures) => ({ key, name, treasures, weekTreasures,
++    chats: 3, digs: 4, weekChats: 1, weekDigs: 2, isGuest: false, updated_at: new Date().toISOString() });
++  await page.route('**/api/v1/**', async route => {
++    const request = route.request(), url = new URL(request.url()), path = url.pathname;
++    requests.push({ path, method: request.method(), period: url.searchParams.get('period') });
++    const json = value => route.fulfill({ json: value });
++    if (path.endsWith('/capabilities')) return json({ enabled: true, native_ui_enabled: true, read_discovery: true, read_sessions: true, prepare_import: false });
++    if (path.endsWith('/projects') || path.endsWith('/projects/') || path.endsWith('/sessions')) return json([]);
++    if (path.endsWith('/leaderboard')) {
++      if (state.boardError) return route.fulfill({ status: 503, json: { code: 'UNAVAILABLE' } });
++      return json({ users: [row('u:me', state.nickname, 5, 1), row('u:other', '其他研究者', 3, 3)],
++        guests: [], ownKey: 'u:me', nickname: state.nickname, totalTreasures: 8, weekTreasures: 4 });
++    }
++    if (path.endsWith('/nickname')) {
++      assert.equal(request.method(), 'PATCH');
++      assert.deepEqual(Object.keys(request.postDataJSON()), ['nickname']);
++      if (state.nickError) return route.fulfill({ status: 503, json: {} });
++      state.nickname = request.postDataJSON().nickname;
++      return json({ ok: true, nickname: state.nickname });
++    }
++    if (path.endsWith('/stats')) {
++      if (state.statsError) return route.fulfill({ status: 503, json: {} });
++      return json({ chats: 3, actors: 2, llmCalls: 4, totalTokens: 125, promptTokens: 100, completionTokens: 25,
++        toolCalls: 6, toolErrors: 1, tools: [{ name: 'search_geo', label: 'GEO 检索', count: 6, errors: 1, empties: 0 }],
++        usageRecordedChats: 2, since: '2026-10-01T00:00:00Z', updatedAt: new Date().toISOString() });
++    }
++    throw new Error('Unexpected fixture API: ' + path);
++  });
++  const url = `http://127.0.0.1:${server.httpServer.address().port}/${basename(fixture)}/index.html`;
++  await page.goto(url);
++  await page.getByRole('button', { name: '打开寻宝排行榜' }).click();
++  const board = page.getByRole('dialog', { name: '寻宝排行榜', exact: true });
++  await board.getByText('浏览器用户', { exact: true }).waitFor();
++  assert.equal(await board.getByText('临时矿工', { exact: true }).count(), 0);
++  assert.equal(await board.getByText('我', { exact: true }).count(), 1);
++  assert.ok((await board.textContent()).includes('8 件宝藏'));
++  await board.getByRole('button', { name: '本周', exact: true }).click();
++  await page.waitForFunction(() => [...document.querySelector('.original-display-host').shadowRoot.querySelectorAll('ol li')][0]?.textContent.includes('其他研究者'));
++  assert.ok((await board.textContent()).includes('4 件宝藏'));
++  report.checks.push('Vue axios callbacks; all/week ranking; real own-key highlight; platform-only tab and totals');
++  await board.getByRole('button', { name: /给自己取个上榜昵称/ }).click();
++  const nick = board.locator('input');
++  assert.equal(await nick.inputValue(), '浏览器用户');
++  await nick.fill('我的新寻宝名');
++  state.nickError = true;
++  await board.getByRole('button', { name: '保存', exact: true }).click();
++  await board.getByText('保存失败', { exact: true }).waitFor();
++  state.nickError = false;
++  await board.getByRole('button', { name: '保存', exact: true }).click();
++  await board.getByText('我的新寻宝名', { exact: true }).waitFor();
++  state.boardError = true;
++  await board.getByRole('button', { name: '刷新榜单' }).click();
++  await board.getByRole('button', { name: '重试', exact: true }).waitFor();
++  state.boardError = false;
++  await board.getByRole('button', { name: '重试', exact: true }).click();
++  await board.getByText('我的新寻宝名', { exact: true }).waitFor();
++  await page.screenshot({ path: resolve(output, 'leaderboard.png') });
++  await board.getByRole('button', { name: '关闭排行榜' }).click();
++  report.checks.push('Nickname save failure/retry; owner-only request body; leaderboard failure/retry');
++  state.statsError = true;
++  await page.getByRole('button', { name: '打开使用统计' }).click();
++  const stats = page.getByRole('dialog', { name: '使用统计', exact: true });
++  await stats.getByText(/暂不可用/).waitFor();
++  state.statsError = false;
++  await stats.getByRole('button', { name: '刷新统计' }).click();
++  await stats.getByText(/覆盖 2 \/ 3 轮/).waitFor();
++  assert.ok((await stats.textContent()).includes('125'));
++  assert.ok((await stats.textContent()).includes('CygnusX 科研寻宝鼠'));
++  await page.screenshot({ path: resolve(output, 'usage.png') });
++  report.checks.push('Usage failure/retry; persisted token totals and explicit historical coverage');
++  await page.reload();
++  await page.getByRole('button', { name: '打开寻宝排行榜' }).click();
++  await page.getByText('我的新寻宝名', { exact: true }).waitFor();
++  assert.ok(requests.some(request => request.period === 'week'));
++  assert.deepEqual(report.errors, []);
++  report.checks.push('Reload preserves server nickname; no uncaught promise errors');
++  console.log(JSON.stringify(report, null, 2));
++} finally {
++  await writeFile(resolve(output, 'browser-result.json'), JSON.stringify(report, null, 2));
++  await browser?.close();
++  await server?.close();
++  await rm(fixture, { recursive: true, force: true });
++}
+diff --git a/src/cygnusx/api/v1/research_agent.py b/src/cygnusx/api/v1/research_agent.py
+index d73b2a1b..ea27a931 100644
+--- a/src/cygnusx/api/v1/research_agent.py
++++ b/src/cygnusx/api/v1/research_agent.py
+@@ -7,6 +7,7 @@ from __future__ import annotations
+ 
+ import json
+ from collections.abc import AsyncIterator
++from typing import Literal
+ from uuid import UUID
+ 
+ from fastapi import APIRouter, Header, HTTPException
+@@ -20,9 +21,36 @@ from cygnusx.application.schemas.research_agent import (
+     ResearchLiteratureRequest,
+     ResearchSessionUpdate,
+ )
++from cygnusx.application.schemas.research_stats import (
++    ResearchLeaderboard,
++    ResearchNicknameUpdate,
++    ResearchUsageStats,
++)
++from cygnusx.application.services.research_stats_service import ResearchStatsService
+ from cygnusx.application.services.research_treasure_service import ResearchTreasureService
+ 
+ router = APIRouter()
++
++
++@router.get("/leaderboard", response_model=ResearchLeaderboard)
++async def leaderboard(
++    current_user_id: CurrentUserId, db: DbSession, period: Literal["all", "week"] = "all",
++) -> ResearchLeaderboard:
++    return await ResearchStatsService(db).leaderboard(current_user_id, period)
++
++
++@router.get("/stats", response_model=ResearchUsageStats)
++async def usage_stats(current_user_id: CurrentUserId, db: DbSession) -> ResearchUsageStats:
++    return await ResearchStatsService(db).usage(current_user_id)
++
++
++@router.patch("/nickname")
++async def update_nickname(
++    request: ResearchNicknameUpdate, current_user_id: CurrentUserId, db: DbSession,
++) -> dict[str, object]:
++    return await ResearchStatsService(db).set_nickname(current_user_id, request.nickname)
++
++
+ def _service(db: DbSession) -> ResearchTreasureService:
+     return ResearchTreasureService(db)
+ 
+diff --git a/src/cygnusx/application/schemas/research_stats.py b/src/cygnusx/application/schemas/research_stats.py
+new file mode 100644
+index 00000000..e70e3dd8
+--- /dev/null
++++ b/src/cygnusx/application/schemas/research_stats.py
+@@ -0,0 +1,71 @@
++"""Public aggregate views; never expose sessions, prompts, emails or login names."""
++
++from datetime import datetime
++from unicodedata import category
++
++from pydantic import BaseModel, ConfigDict, Field, field_validator
++
++
++class ResearchStatRow(BaseModel):
++    model_config = ConfigDict(populate_by_name=True)
++
++    key: str
++    name: str
++    treasures: int = 0
++    digs: int = 0
++    chats: int = 0
++    updated_at: datetime | None = None
++    is_guest: bool = Field(default=False, alias="isGuest")
++    week_treasures: int = Field(default=0, alias="weekTreasures")
++    week_digs: int = Field(default=0, alias="weekDigs")
++    week_chats: int = Field(default=0, alias="weekChats")
++
++
++class ResearchLeaderboard(BaseModel):
++    model_config = ConfigDict(populate_by_name=True)
++
++    users: list[ResearchStatRow]
++    guests: list[ResearchStatRow] = Field(default_factory=list)
++    own_key: str = Field(alias="ownKey")
++    nickname: str
++    total_treasures: int = Field(alias="totalTreasures")
++    week_treasures: int = Field(alias="weekTreasures")
++
++
++class ResearchToolStat(BaseModel):
++    name: str
++    label: str
++    count: int = 0
++    errors: int = 0
++    empties: int = 0
++
++
++class ResearchUsageStats(BaseModel):
++    model_config = ConfigDict(populate_by_name=True)
++
++    chats: int = 0
++    llm_calls: int = Field(default=0, alias="llmCalls")
++    prompt_tokens: int = Field(default=0, alias="promptTokens")
++    completion_tokens: int = Field(default=0, alias="completionTokens")
++    total_tokens: int = Field(default=0, alias="totalTokens")
++    tool_calls: int = Field(default=0, alias="toolCalls")
++    tool_errors: int = Field(default=0, alias="toolErrors")
++    actors: int = 0
++    tools: list[ResearchToolStat] = Field(default_factory=list)
++    since: datetime
++    updated_at: datetime = Field(alias="updatedAt")
++    usage_recorded_chats: int = Field(default=0, alias="usageRecordedChats")
++
++
++class ResearchNicknameUpdate(BaseModel):
++    model_config = ConfigDict(extra="forbid")
++    nickname: str = Field(min_length=1, max_length=16)
++
++    @field_validator("nickname", mode="before")
++    @classmethod
++    def clean_nickname(cls, value: object) -> object:
++        if isinstance(value, str):
++            value = value.strip()
++            if any(category(char) in {"Cc", "Cs"} for char in value):
++                raise ValueError("昵称不能包含控制字符")
++        return value
+diff --git a/src/cygnusx/application/services/research_stats_service.py b/src/cygnusx/application/services/research_stats_service.py
+new file mode 100644
+index 00000000..adae15c4
+--- /dev/null
++++ b/src/cygnusx/application/services/research_stats_service.py
+@@ -0,0 +1,178 @@
++"""Compute platform statistics from durable research message snapshots.
++
++No browser supplied counters, no extra ledger and no replay-sensitive increments.
++Historical provider usage is unknown unless actually recorded; never estimate it.
++"""
++
++from __future__ import annotations
++
++import hashlib
++from datetime import UTC, datetime, timedelta
++from typing import Any, Literal
++from zoneinfo import ZoneInfo
++
++from sqlalchemy import String, cast, select
++from sqlalchemy.ext.asyncio import AsyncSession
++from sqlalchemy.orm import load_only
++
++from cygnusx.application.schemas.research_stats import (
++    ResearchLeaderboard,
++    ResearchStatRow,
++    ResearchToolStat,
++    ResearchUsageStats,
++)
++from cygnusx.application.services.research_treasure_service import (
++    RESEARCH_AGENT_MARKER,
++    ResearchTreasureService,
++    merge_discovery_cards,
++)
++from cygnusx.core.config import get_settings
++from cygnusx.infrastructure.database.models.chat import ChatMessageModel, ChatSessionModel
++from cygnusx.infrastructure.database.models.user import UserModel
++
++NICKNAME_KEY = "treasure_mouse_nickname"
++_NON_SEARCH_TOOLS = {"intent_plan", "grounding_check"}
++_LEADERBOARD_LIMIT = 100
++_SNAPSHOT_BATCH_SIZE = 500
++
++
++def public_key(user_id: str) -> str:
++    return "u:" + hashlib.sha256(user_id.encode()).hexdigest()[:24]
++
++
++def display_name(user: UserModel) -> str:
++    nickname = (user.preferences or {}).get(NICKNAME_KEY)
++    return str(nickname or user.nickname or f"寻宝鼠 {public_key(str(user.id))[-6:]}")[:16]
++
++
++def _utc(value: datetime) -> datetime:
++    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
++
++
++def _count(value: object) -> int:
++    return max(0, value) if isinstance(value, int) and not isinstance(value, bool) else 0
++
++
++def completed_tools(metadata: dict[str, Any]) -> list[dict[str, Any]]:
++    events = metadata.get("events")
++    raw = events.get("tools", []) if isinstance(events, dict) else []
++    if not isinstance(raw, list):
++        return []
++    return [
++        item for item in raw if isinstance(item, dict)
++        and item.get("name") not in _NON_SEARCH_TOOLS
++        and (isinstance(item.get("ok"), bool) or item.get("status") in {"done", "error"})
++    ]
++
++
++class ResearchStatsService:
++    def __init__(self, db: AsyncSession) -> None:
++        self._db = db
++
++    async def _snapshot(
++        self,
++    ) -> tuple[dict[str, ResearchStatRow], ResearchUsageStats]:
++        now = datetime.now(UTC)
++        local = now.astimezone(ZoneInfo(get_settings().treasure_stats_timezone))
++        monday = (local - timedelta(days=local.weekday())).replace(
++            hour=0, minute=0, second=0, microsecond=0,
++        ).astimezone(UTC)
++        stats = ResearchUsageStats(since=now, updated_at=now)
++        users: dict[str, ResearchStatRow] = {}
++        tools: dict[str, ResearchToolStat] = {}
++        # Select no content or project/session identifiers. Stream bounded batches
++        # rather than materializing the complete message history in memory.
++        query = (
++            select(UserModel, ChatMessageModel.metadata_json, ChatMessageModel.created_at)
++            .select_from(ChatMessageModel)
++            .join(ChatSessionModel, ChatSessionModel.session_id == ChatMessageModel.session_id)
++            .join(UserModel, cast(UserModel.id, String) == ChatSessionModel.user_id)
++            .where(
++                UserModel.status == "active",
++                ChatSessionModel.sandbox_meta["research_agent"].as_string()
++                == RESEARCH_AGENT_MARKER,
++                ChatMessageModel.role == "assistant",
++                ChatMessageModel.status.in_(
++                    ["end", "complete", "completed", "error", "cancel", "interrupted"],
++                ),
++            )
++            .options(load_only(UserModel.id, UserModel.nickname, UserModel.preferences))
++            .execution_options(yield_per=_SNAPSHOT_BATCH_SIZE)
++        )
++        result = await self._db.stream(query)
++        async for user, metadata, created_at in result:
++            key = public_key(str(user.id))
++            row = users.setdefault(key, ResearchStatRow(key=key, name=display_name(user)))
++            created = _utc(created_at)
++            stats.since = min(stats.since, created)
++            row.updated_at = max(row.updated_at or created, created)
++            metadata = metadata if isinstance(metadata, dict) else {}
++            events = metadata.get("events")
++            cards = events.get("cards", []) if isinstance(events, dict) else []
++            treasures = len(merge_discovery_cards([], cards if isinstance(cards, list) else []))
++            calls = completed_tools(metadata)
++            row.chats += 1
++            row.treasures += treasures
++            row.digs += len(calls)
++            if created >= monday:
++                row.week_chats += 1
++                row.week_treasures += treasures
++                row.week_digs += len(calls)
++            for item in calls:
++                name = str(item.get("name") or "unknown")[:128]
++                tool = tools.setdefault(
++                    name, ResearchToolStat(name=name, label=str(item.get("label") or name)[:128]),
++                )
++                tool.count += 1
++                tool.errors += int(item.get("ok") is False or item.get("status") == "error")
++                tool.empties += int(item.get("empty") is True)
++            usage = metadata.get("usage")
++            if isinstance(usage, dict):
++                stats.usage_recorded_chats += 1
++                stats.prompt_tokens += _count(usage.get("prompt_tokens"))
++                stats.completion_tokens += _count(usage.get("completion_tokens"))
++                stats.total_tokens += _count(usage.get("total_tokens"))
++            stats.llm_calls += _count(metadata.get("llm_calls"))
++        stats.chats = sum(row.chats for row in users.values())
++        stats.actors = len(users)
++        stats.tools = sorted(tools.values(), key=lambda tool: (-tool.count, tool.name))
++        stats.tool_calls = sum(tool.count for tool in stats.tools)
++        stats.tool_errors = sum(tool.errors for tool in stats.tools)
++        return users, stats
++
++    async def leaderboard(
++        self, user_id: str, period: Literal["all", "week"] = "all",
++    ) -> ResearchLeaderboard:
++        access = ResearchTreasureService(self._db)
++        await access.ensure_access(user_id)
++        own_user = await access._current_user(user_id)
++        users, _stats = await self._snapshot()
++        ranked = sorted(
++            [row for row in users.values() if period == "all" or row.week_chats > 0],
++            key=lambda row: (
++                -(row.week_treasures if period == "week" else row.treasures),
++                -(row.week_chats if period == "week" else row.chats),
++                -(row.week_digs if period == "week" else row.digs), row.key,
++            ),
++        )
++        return ResearchLeaderboard(
++            users=ranked[:_LEADERBOARD_LIMIT],
++            own_key=public_key(user_id), nickname=display_name(own_user),
++            total_treasures=sum(row.treasures for row in users.values()),
++            week_treasures=sum(row.week_treasures for row in users.values()),
++        )
++
++    async def usage(self, user_id: str) -> ResearchUsageStats:
++        await ResearchTreasureService(self._db).ensure_access(user_id)
++        _users, stats = await self._snapshot()
++        return stats
++
++    async def set_nickname(self, user_id: str, nickname: str) -> dict[str, object]:
++        access = ResearchTreasureService(self._db)
++        await access.ensure_access(user_id)
++        user = await access._current_user(user_id)
++        # Lock the user row so parallel preference updates cannot lose this value.
++        await self._db.refresh(user, with_for_update=True)
++        user.preferences = {**(user.preferences or {}), NICKNAME_KEY: nickname}
++        await self._db.flush()
++        return {"ok": True, "nickname": nickname}
+diff --git a/src/cygnusx/application/services/research_treasure_service.py b/src/cygnusx/application/services/research_treasure_service.py
+index 380240f6..32095915 100644
+--- a/src/cygnusx/application/services/research_treasure_service.py
++++ b/src/cygnusx/application/services/research_treasure_service.py
+@@ -593,10 +593,14 @@ class ResearchTreasureService:
+         sequence = 0
+         terminal_event_saved = False
+         next_cancel_check = 0.0
++        usage: dict[str, int] | None = None
++        llm_calls = 0
+ 
+         def snapshot_metadata() -> dict[str, Any]:
+             return {
+                 **request_metadata,
++                **({"usage": usage} if usage is not None else {}),
++                "llm_calls": llm_calls,
+                 "events": {
+                     "cards": cards,
+                     "tools": tools,
+@@ -675,6 +679,18 @@ class ResearchTreasureService:
+                     event_name = str(event.get("type") or "")
+                 if isinstance(event.get("delta"), str):
+                     assistant_text += event["delta"]
++                if event_name == "usage":
++                    raw_usage = event.get("usage")
++                    if isinstance(raw_usage, dict):
++                        usage = {
++                            key: max(0, value) if isinstance(value, int)
++                            and not isinstance(value, bool) else 0
++                            for key in ("prompt_tokens", "completion_tokens", "total_tokens")
++                            for value in [raw_usage.get(key)]
++                        }
++                    raw_calls = event.get("llm_calls")
++                    if isinstance(raw_calls, int) and not isinstance(raw_calls, bool):
++                        llm_calls = max(llm_calls, raw_calls)
+                 if isinstance(event.get("cards"), list):
+                     cards = merge_discovery_cards(cards, event["cards"])
+                 if event_name == "end" and isinstance(event.get("tools"), list) and event["tools"]:
+diff --git a/src/cygnusx/core/config.py b/src/cygnusx/core/config.py
+index 821794be..1eae873e 100644
+--- a/src/cygnusx/core/config.py
++++ b/src/cygnusx/core/config.py
+@@ -133,6 +133,7 @@ class Settings(BaseSettings):
+     treasure_agent_url: str = ""
+     treasure_agent_internal_token: str = ""
+     treasure_agent_timeout_seconds: float = Field(default=900.0, ge=30.0, le=3600.0)
++    treasure_stats_timezone: str = "Asia/Shanghai"
+     agent_context_cache_ttl_seconds: int = 60
+     # Use a factory so each Settings() construction re-reads the nested
+     # CONTEXT_COMPACTION_* environment variables instead of freezing values at
+@@ -892,6 +893,7 @@ class Settings(BaseSettings):
+     def validate_welcome_settings(self) -> "Settings":
+         from zoneinfo import ZoneInfo
+         ZoneInfo(self.welcome_timezone)
++        ZoneInfo(self.treasure_stats_timezone)
+         if self.welcome_min_valid_count > self.welcome_target_count:
+             raise ValueError("welcome_min_valid_count must not exceed target count")
+         return self
+diff --git a/tests/integration/test_research_stats_isolated.py b/tests/integration/test_research_stats_isolated.py
+new file mode 100644
+index 00000000..6b6d763c
+--- /dev/null
++++ b/tests/integration/test_research_stats_isolated.py
+@@ -0,0 +1,182 @@
++"""Real PostgreSQL, isolated schema and HTTP/JWT tests; no business rows are written."""
++
++from collections.abc import AsyncIterator
++from datetime import UTC, datetime, timedelta
++from typing import Any
++from uuid import uuid4
++
++import pytest
++from fastapi import FastAPI, Request
++from fastapi.responses import JSONResponse
++from httpx import ASGITransport, AsyncClient
++from sqlalchemy import text
++from sqlalchemy.engine import make_url
++from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
++
++from cygnusx.api import deps
++from cygnusx.api.v1 import research_agent
++from cygnusx.application.services.research_stats_service import NICKNAME_KEY
++from cygnusx.application.services.research_treasure_service import RESEARCH_AGENT_MARKER
++from cygnusx.core.config import get_settings
++from cygnusx.core.exceptions import CygnusXError
++from cygnusx.core.security import create_access_token
++from cygnusx.infrastructure.database.models.chat import ChatMessageModel, ChatSessionModel
++from cygnusx.infrastructure.database.models.user import UserModel
++
++pytestmark = pytest.mark.integration
++
++
++@pytest.fixture
++async def stats_api(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[dict[str, Any]]:
++    settings = get_settings()
++    url = make_url(settings.database_url)
++    if url.host == "db":
++        url = url.set(host="127.0.0.1")
++    admin = create_async_engine(url)
++    schema = "research_stats_test_" + uuid4().hex
++    try:
++        async with admin.begin() as connection:
++            await connection.execute(text(f'CREATE SCHEMA "{schema}"'))
++            for table in ("users", "chat_sessions", "chat_messages"):
++                await connection.execute(text(
++                    f'CREATE TABLE "{schema}".{table} (LIKE public.{table} INCLUDING DEFAULTS)'
++                ))
++    except Exception:
++        await admin.dispose()
++        raise
++    engine = create_async_engine(url, connect_args={"server_settings": {"search_path": schema}})
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    monkeypatch.setattr(deps, "get_session_factory", lambda: factory)
++    monkeypatch.setattr(settings, "treasure_native_ui_enabled", True)
++    monkeypatch.setattr(settings, "treasure_stats_timezone", "Asia/Shanghai")
++    owner, other, disabled = uuid4(), uuid4(), uuid4()
++    app = FastAPI()
++    app.include_router(research_agent.router, prefix="/api/v1/research-agent")
++
++    @app.exception_handler(CygnusXError)
++    async def error_handler(_request: Request, exc: CygnusXError) -> JSONResponse:
++        return JSONResponse({"detail": exc.detail, "code": exc.code}, status_code=exc.status_code)
++
++    now = datetime.now(UTC)
++    old = now - timedelta(days=14)
++    async with factory() as db:
++        for uid, name, status, nickname in (
++            (owner, "private-login", "active", "平台公开昵称"),
++            (other, "other-private-login", "active", "另一位研究者"),
++            (disabled, "disabled", "disabled", "禁用账号"),
++        ):
++            db.add(UserModel(
++                id=uid, username=name, email=f"{uid}@private.test", hashed_password="private-hash",
++                role="user", status=status, nickname=nickname, preferences={"theme": "dark"},
++                disabled_modules=[],
++            ))
++        for uid, suffix, marker in (
++            (owner, "owner", RESEARCH_AGENT_MARKER),
++            (other, "other", RESEARCH_AGENT_MARKER),
++            (owner, "ordinary", "ordinary-chat"),
++            (disabled, "disabled", RESEARCH_AGENT_MARKER),
++        ):
++            db.add(ChatSessionModel(
++                id=uuid4(), session_id=suffix, user_id=str(uid), title="private research title",
++                model_id=uuid4(), status="archived" if suffix == "owner" else "active",
++                sandbox_meta={"research_agent": marker},
++            ))
++        await db.flush()
++
++        def message(session: str, count: int, created: datetime, status: str = "end") -> None:
++            cards = [{"accession": f"GSE{i}", "title": "private study"} for i in range(count)]
++            db.add(ChatMessageModel(
++                id=uuid4(), message_id=uuid4().hex, session_id=session, role="assistant",
++                status=status, content="private content must never appear in public aggregates",
++                created_at=created,
++                metadata_json={"events": {"cards": cards + cards, "tools": [
++                    {"name": "search_geo", "status": "running"},
++                    {"name": "search_geo", "status": "done", "label": "检索"},
++                    {"name": "search_sra", "ok": False},
++                    {"name": "grounding_check", "ok": False},
++                    {"name": "intent_plan", "ok": True},
++                ]}, "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
++                    "llm_calls": 2},
++            ))
++        message("owner", 4, old)
++        message("owner", 1, now)
++        message("other", 3, now)
++        message("ordinary", 99, now)
++        message("disabled", 99, now)
++        message("owner", 99, now, "streaming")
++        await db.commit()
++    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
++        client.headers["Authorization"] = "Bearer " + create_access_token(str(owner), token_version=0)
++        try:
++            yield {"client": client, "factory": factory, "owner": owner, "other": other}
++        finally:
++            await engine.dispose()
++            async with admin.begin() as connection:
++                await connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
++            await admin.dispose()
++
++
++async def test_rankings_are_real_deduplicated_weekly_and_private(stats_api: dict[str, Any]) -> None:
++    client = stats_api["client"]
++    all_time = (await client.get("/api/v1/research-agent/leaderboard")).json()
++    week = (await client.get("/api/v1/research-agent/leaderboard?period=week")).json()
++    assert all_time["users"][0]["name"] == "平台公开昵称"
++    assert week["users"][0]["name"] == "另一位研究者"
++    assert all_time["users"][0]["treasures"] == 5
++    assert all_time["totalTreasures"] == 8
++    assert all_time["weekTreasures"] == 4
++    assert all_time["guests"] == []
++    assert all_time["ownKey"] == all_time["users"][0]["key"]
++    serialized = str(all_time)
++    for private in ("private-login", "@private.test", "private content", "private study",
++                    "private-hash", "private research title", str(stats_api["owner"])):
++        assert private not in serialized
++    assert (await client.get("/api/v1/research-agent/leaderboard")).json() == all_time
++
++
++async def test_usage_counts_only_platform_terminal_records(stats_api: dict[str, Any]) -> None:
++    response = await stats_api["client"].get("/api/v1/research-agent/stats")
++    assert response.status_code == 200
++    data = response.json()
++    assert data["chats"] == 3
++    assert data["actors"] == 2
++    assert data["toolCalls"] == 6
++    assert data["toolErrors"] == 3
++    assert data["totalTokens"] == 45
++    assert data["llmCalls"] == 6
++    assert data["usageRecordedChats"] == 3
++    assert {item["name"] for item in data["tools"]} == {"search_geo", "search_sra"}
++
++
++async def test_nickname_is_persisted_owner_scoped_and_validated(stats_api: dict[str, Any]) -> None:
++    client = stats_api["client"]
++    response = await client.patch("/api/v1/research-agent/nickname", json={"nickname": "  探矿员  "})
++    assert response.status_code == 200
++    assert response.json()["nickname"] == "探矿员"
++    async with stats_api["factory"]() as db:
++        user = await db.get(UserModel, stats_api["owner"])
++        other = await db.get(UserModel, stats_api["other"])
++        assert user.preferences == {"theme": "dark", NICKNAME_KEY: "探矿员"}
++        assert user.username == "private-login" and user.nickname == "平台公开昵称"
++        assert NICKNAME_KEY not in other.preferences
++    assert (await client.get("/api/v1/research-agent/leaderboard")).json()["nickname"] == "探矿员"
++    for nickname in (" ", "x" * 17, "a\nb"):
++        assert (await client.patch("/api/v1/research-agent/nickname", json={"nickname": nickname})).status_code == 422
++    assert (await client.patch("/api/v1/research-agent/nickname", json={
++        "nickname": "不能修改他人", "user_id": str(stats_api["other"]),
++    })).status_code == 422
++
++
++async def test_all_stats_routes_require_auth_and_module_access(stats_api: dict[str, Any]) -> None:
++    client = stats_api["client"]
++    for path in ("leaderboard", "stats"):
++        token = client.headers.pop("Authorization")
++        assert (await client.get(f"/api/v1/research-agent/{path}")).status_code == 401
++        client.headers["Authorization"] = token
++    async with stats_api["factory"]() as db:
++        user = await db.get(UserModel, stats_api["owner"])
++        user.disabled_modules = ["treasure-mouse"]
++        await db.commit()
++    assert (await client.get("/api/v1/research-agent/leaderboard")).status_code == 403
++    assert (await client.get("/api/v1/research-agent/stats")).status_code == 403
++    assert (await client.patch("/api/v1/research-agent/nickname", json={"nickname": "无权改名"})).status_code == 403
+diff --git a/tests/unit/test_treasure_native_access.py b/tests/unit/test_treasure_native_access.py
+index e2c7dc4c..b1ecdb51 100644
+--- a/tests/unit/test_treasure_native_access.py
++++ b/tests/unit/test_treasure_native_access.py
+@@ -39,6 +39,44 @@ pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
+ TEST_KEY = "treasure-native-test-key-only-not-production"
+ 
+ 
++async def test_request_usage_snapshots_survive_replay_without_double_counting(
++    env: SimpleNamespace, monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    calls = 0
++
++    async def provider(self: Any, model_id: Any) -> Any:
++        return SimpleNamespace(model="isolated-test-model")
++
++    async def stream(self: Any, **kwargs: Any) -> AsyncIterator[dict[str, Any]]:
++        nonlocal calls
++        calls += 1
++        yield {"event": "usage", "llm_calls": 1, "usage": {
++            "prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12,
++        }}
++        yield {"event": "usage", "llm_calls": 2, "usage": {
++            "prompt_tokens": 30, "completion_tokens": 5, "total_tokens": 35,
++        }}
++        yield {"event": "end", "cards": [], "tools": []}
++
++    monkeypatch.setattr(research.ResearchTreasureService, "_provider", provider)
++    monkeypatch.setattr(research.TreasureAgentAdapter, "stream", stream)
++    service = research.ResearchTreasureService(env.db)
++    request_id = uuid4()
++    first = [event async for event in service.stream_message(
++        str(env.owner), "global", "usage fixture", None, "zh", request_id,
++    )]
++    replay = [event async for event in service.stream_message(
++        str(env.owner), "global", "usage fixture", None, "zh", request_id,
++    )]
++    assert replay == first
++    rows = await service.messages(str(env.owner), "global")
++    assistant = next(row for row in rows if row.role == "assistant"
++                     and row.metadata_json.get("research_request_id") == str(request_id))
++    assert assistant.metadata_json["usage"]["total_tokens"] == 35
++    assert assistant.metadata_json["llm_calls"] == 2
++    assert calls == 1
++
++
+ @compiles(JSONB, "sqlite")
+ def sqlite_json(element: Any, compiler: Any, **kw: Any) -> str:
+     return "JSON"

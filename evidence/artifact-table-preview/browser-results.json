@@ -1,0 +1,33 @@
+{
+  "checks": [
+    "Real 17-column manifest: aligned columns, horizontal/vertical scroll, fixed header, correct row count",
+    "Long platform field tooltip shows full text",
+    "manifest-125.tsv: scientific sample rendered",
+    "enrichment.csv: scientific sample rendered",
+    "ScTypeDB_full.xlsx: scientific sample rendered",
+    "multiple.xlsx: scientific sample rendered, sheet switching verified",
+    "legacy.XLS: scientific sample rendered, sheet switching verified",
+    "empty.csv: expected placeholder/fallback/original preview",
+    "broken.xlsx: expected placeholder/fallback/original preview",
+    "notes.txt: expected placeholder/fallback/original preview",
+    "notes.md: expected placeholder/fallback/original preview",
+    "5 MB protection: confirmation before download/parse",
+    "Missing manifest size: stream stopped at response headers and reloaded only after confirmation",
+    "Download retains original filename and identical bytes",
+    "Light/dark desktop and mobile screenshots captured",
+    "Studio panel loads the same table renderer and switches Excel sheets"
+  ],
+  "errors": [],
+  "sampleRows": 20,
+  "geometry": {
+    "aligned": true,
+    "vertical": true,
+    "horizontal": true,
+    "before": 275.890625,
+    "headerAfter": 275.890625
+  },
+  "darkColors": {
+    "text": "rgba(255, 255, 255, 0.82)",
+    "background": "rgb(44, 44, 50)"
+  }
+}

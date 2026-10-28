@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-grn-pipeline
 description: Orchestrates gene regulatory network inference from processed single-cell data to regulons and in-silico perturbation, via pySCENIC (RNA-only GRNBoost2 -> cisTarget -> AUCell), SCENIC+ (multiome cisTopic -> pycistarget -> eGRN), and CellOracle perturbation. Use when recognizing that an inferred GRN is UNDIRECTED by default and reporting only the evidence tier delivered (co-expression vs motif-pruned vs enhancer-resolved vs perturbation), matching species/assembly/namespace across the TF-list + cisTarget DB + motif2TF annotation, feeding RAW counts of the cleaned/doublet-free/batch-controlled cells (never imputed/batch-corrected values), running the cisTarget pruning that buys directionality (modules are not regulons without it), or choosing the RNA-only vs multiome path. Hands mechanism to the gene-regulatory-networks component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 基因调控网络推断流程
+display_name_en: Gene Regulatory Network Pipeline
+description_zh: >-
+  从单细胞数据推断基因调控网络到 regulon 与计算机扰动分析，支持 pySCENIC（GRNBoost2、cisTarget、AUCell）、SCENIC+ 与 CellOracle，并强调证据层级与物种、组装和命名空间一致性。
+description_en: >-
+  Orchestrates gene regulatory network inference from processed single-cell data to regulons and in-silico perturbation, via pySCENIC (RNA-only GRNBoost2 -> cisTarget -> AUCell), SCENIC+ (multiome cisTopic -> pycistarget -> eGRN), and CellOracle perturbation. Use when recognizing that an inferred GRN is UNDIRECTED by default and reporting only the evidence tier delivered (co-expression vs motif-pruned vs enhancer-resolved vs perturbation), matching species/assembly/namespace across the TF-list + cisTarget DB + motif2TF annotation, feeding RAW counts of the cleaned/doublet-free/batch-controlled cells (never imputed/batch-corrected values), running the cisTarget pruning that buys directionality (modules are not regulons without it), or choosing the RNA-only vs multiome path. Hands mechanism to the gene-regulatory-networks component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 pySCENIC 从 scRNA-seq 推断 regulon"
+  - "帮我用 SCENIC+ 构建增强子驱动的调控网络"
+  - "用 CellOracle 做关键转录因子的计算机扰动"
+examples_en:
+  - "Infer regulons from my scRNA-seq data with pySCENIC"
+  - "Build an enhancer-driven regulatory network with SCENIC+"
+  - "Run an in-silico perturbation of this TF with CellOracle"
 tool_type: python
 primary_tool: pySCENIC
 workflow: true
@@ -260,7 +276,7 @@ cistarget_results = run_cistarget(
 
 **Goal:** Assemble eRegulons (TF -> enhancer -> gene triplets) from the multiome data.
 
-**Approach:** Current SCENIC+ runs topic modeling, motif enrichment, and eGRN construction through one Snakemake pipeline; the deprecated manual `create_SCENICPLUS_object`/`build_grn` API (and pre-2024 tutorials) should not be used. See gene-regulatory-networks/multiomics-grn for the full pipeline and the peak-to-gene caveats.
+**Approach:** Current SCENIC+ runs topic modeling, motif enrichment, and eGRN construction through one Snakemake pipeline; the deprecated manual `create_SCENICPLUS_object`/`build_grn` API (and pre-2024 tutorials) should not be used. See references/gene-regulatory-networks--multiomics-grn.md for the full pipeline and the peak-to-gene caveats.
 
 ```bash
 # Scaffold, edit the config (point at fragments, scRNA AnnData, cell-type labels, databases),
@@ -282,7 +298,7 @@ print(f'eRegulons: {eregulons["TF"].nunique()} enhancer-driven regulators')
 
 **Goal:** Predict the direction cells move under a TF knockout, as a hypothesis (direction, not calibrated magnitude).
 
-**Approach:** CellOracle needs a base GRN (a TF-target scaffold from motif scanning of accessible regions, not the pySCENIC adjacencies), then learns per-cluster weights, propagates a forced expression shift, and projects it onto the cell-state graph. See gene-regulatory-networks/perturbation-simulation for the base-GRN construction and the local-linear / direction-only caveats.
+**Approach:** CellOracle needs a base GRN (a TF-target scaffold from motif scanning of accessible regions, not the pySCENIC adjacencies), then learns per-cluster weights, propagates a forced expression shift, and projects it onto the cell-state graph. See references/gene-regulatory-networks--perturbation-simulation.md for the base-GRN construction and the local-linear / direction-only caveats.
 
 ```python
 import celloracle as co
@@ -423,10 +439,10 @@ def run_scenic_pipeline(adata_path, tf_list_path, db_paths, motif_annotations_pa
 
 ## Related Skills
 
-- gene-regulatory-networks/scenic-regulons - pySCENIC implementation details
-- gene-regulatory-networks/multiomics-grn - SCENIC+ enhancer-driven GRNs
-- gene-regulatory-networks/perturbation-simulation - CellOracle details
-- single-cell/clustering - Upstream cell type annotation
+- references/gene-regulatory-networks--scenic-regulons.md - pySCENIC implementation details
+- references/gene-regulatory-networks--multiomics-grn.md - SCENIC+ enhancer-driven GRNs
+- references/gene-regulatory-networks--perturbation-simulation.md - CellOracle details
+- references/single-cell--clustering.md - Upstream cell type annotation
 - single-cell/preprocessing - QC and normalization before GRN inference
 - atac-seq/single-cell-atac - scATAC preprocessing for SCENIC+ Multiome input
 - atac-seq/co-accessibility - Cicero / SCENIC+ cis-regulatory connections

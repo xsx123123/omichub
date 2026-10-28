@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-somatic-variant-pipeline
 description: Chains a somatic (tumor-normal) SNV/indel and structural-variant pipeline end to end with GATK Mutect2 (or Strelka2), wiring the somatic-specific machinery - panel-of-normals and gnomAD germline-resource priors, GetPileupSummaries/CalculateContamination, and LearnReadOrientationModel FFPE/oxoG orientation-bias filtering fed into FilterMutectCalls. Use when calling somatic mutations from a tumor-normal pair (or tumor-only with PoN caveats), deciding which artifact filter removes which class of false positive, reasoning about VAF/purity/ploidy and clonal-vs-subclonal detection, adding somatic SV/CNV or TMB/MSI/signatures, or routing variants to AMP/ASCO/CAP tier and oncogenicity interpretation (never germline ACMG).
+version: 1.0.0
+display_name: 体细胞变异检测流程
+display_name_en: Somatic Variant Pipeline
+description_zh: >-
+  使用 GATK Mutect2 或 Strelka2 端到端检测肿瘤-正常配对 SNV/indel 与结构变异，涵盖 PoN 与 gnomAD 先验、污染度估计、FFPE/oxoG 方向偏好过滤及 VAF、纯度和克隆性解读。
+description_en: >-
+  Chains a somatic (tumor-normal) SNV/indel and structural-variant pipeline end to end with GATK Mutect2 (or Strelka2), wiring the somatic-specific machinery - panel-of-normals and gnomAD germline-resource priors, GetPileupSummaries/CalculateContamination, and LearnReadOrientationModel FFPE/oxoG orientation-bias filtering fed into FilterMutectCalls. Use when calling somatic mutations from a tumor-normal pair (or tumor-only with PoN caveats), deciding which artifact filter removes which class of false positive, reasoning about VAF/purity/ploidy and clonal-vs-subclonal detection, adding somatic SV/CNV or TMB/MSI/signatures, or routing variants to AMP/ASCO/CAP tier and oncogenicity interpretation (never germline ACMG).
+author: JZHANG
+examples_zh:
+  - "用肿瘤-正常配对样本调用体细胞突变"
+  - "帮我配置 Mutect2 的 PoN 和污染度过滤"
+  - "判断这些变异是克隆性还是亚克隆性"
+examples_en:
+  - "Call somatic mutations from my tumor-normal pair"
+  - "Configure Mutect2 with a PoN and contamination filtering"
+  - "Decide whether these variants are clonal or subclonal"
 tool_type: cli
 primary_tool: GATK Mutect2
 workflow: true
@@ -29,7 +45,7 @@ Before using code patterns, verify installed versions match. If versions differ:
 If code throws ImportError, AttributeError, or TypeError, introspect the installed
 package and adapt the example to match the actual API rather than retrying.
 
-Note: this is a WORKFLOW skill - it wires the somatic-specific chain and the DECISIONS between steps. Component mechanism (caller internals, filter thresholds, annotation, CNV) lives in the cross-referenced component skills; interpretation lives in variant-calling/clinical-interpretation and uses the AMP/ASCO/CAP tier system, NOT germline ACMG.
+Note: this is a WORKFLOW skill - it wires the somatic-specific chain and the DECISIONS between steps. Component mechanism (caller internals, filter thresholds, annotation, CNV) lives in the cross-referenced component skills; interpretation lives in references/variant-calling--clinical-interpretation.md and uses the AMP/ASCO/CAP tier system, NOT germline ACMG.
 
 # Somatic Variant Pipeline
 
@@ -42,7 +58,7 @@ A somatic callset is not a fact about the tumor; it is a joint property of (tumo
 
 1. **There is no universal somatic truth set.** The ICGC-TCGA DREAM Mutation Calling challenge (Alioto 2015 *Nat Commun* 6:10001) gave expert teams the SAME tumor-normal WGS and got widely varying call rates and low SNV concordance - indels and SVs far worse. Somatic reproducibility is intrinsically worse than germline (low VAF, subclonality, purity/ploidy, normal contamination) and there is still no GIAB-grade generalizable somatic reference. Practical corollary: pin the pipeline, benchmark against orthogonal validation for the assay, and prefer multi-caller consensus where feasible - do not treat one caller's VCF as ground truth.
 2. **Somatic variants are sub-1.0 VAF and depth/purity-limited.** Unlike a germline 0/0.5/1.0 genotype, a somatic variant sits at a continuous allele fraction set by tumor purity, local copy number, and clonal fraction. Detecting a low-VAF subclonal or low-purity variant is a depth problem (the somatic regime is the one place more coverage genuinely helps). This is why Mutect2 uses a somatic likelihood model, not a diploid genotyper.
-3. **Somatic interpretation uses a DIFFERENT framework.** Never apply germline ACMG (PVS1/PM2/PP3) to a tumor variant - it is a category error. Somatic variants are classified by clinical actionability (AMP/ASCO/CAP tiers, Li 2017) and oncogenicity (ClinGen/CGC/VICC, Horak 2022), and the tier is tumor-type-specific. See the interpretation section and variant-calling/clinical-interpretation.
+3. **Somatic interpretation uses a DIFFERENT framework.** Never apply germline ACMG (PVS1/PM2/PP3) to a tumor variant - it is a category error. Somatic variants are classified by clinical actionability (AMP/ASCO/CAP tiers, Li 2017) and oncogenicity (ClinGen/CGC/VICC, Horak 2022), and the tier is tumor-type-specific. See the interpretation section and references/variant-calling--clinical-interpretation.md.
 
 ## Pipeline map
 
@@ -59,11 +75,11 @@ Tumor BAM + matched Normal BAM   (aligned, dedup'd, BQSR - see read-alignment/*)
     │     GetPileupSummaries -> CalculateContamination
     │     FilterMutectCalls (consumes all three) -> PASS somatic VCF
     │
-    ├── Structural variants     -> variant-calling/structural-variant-calling (Manta somatic mode)
-    ├── Copy number + purity/ploidy -> copy-number/cnvkit-analysis (purity feeds VAF reasoning)
-    ├── Annotation (normalize FIRST) -> variant-calling/variant-annotation (VEP/Funcotator)
+    ├── Structural variants     -> references/variant-calling--structural-variant-calling.md (Manta somatic mode)
+    ├── Copy number + purity/ploidy -> references/copy-number--cnvkit-analysis.md (purity feeds VAF reasoning)
+    ├── Annotation (normalize FIRST) -> references/variant-calling--variant-annotation.md (VEP/Funcotator)
     │
-    └── Interpretation -> variant-calling/clinical-interpretation
+    └── Interpretation -> references/variant-calling--clinical-interpretation.md
           AMP/ASCO/CAP Tier I-IV + oncogenicity (Horak) + TMB/MSI/signatures
 ```
 
@@ -170,7 +186,7 @@ Somatic VAF is not a genotype - it is `(clonal_fraction x mutation_copies) / loc
 
 - **Purity sets sensitivity.** At 30% purity a truly clonal heterozygous mutation in diploid regions sits near ~15% VAF; at 10% purity near ~5%. Low-purity samples need higher depth to call the same variant - the one regime where "sequence deeper" is the correct fix (contrast germline, which saturates ~30-35x).
 - **Clonal vs subclonal.** High-VAF (adjusted for purity/copy number) variants are clonal (present in most cells, likely early drivers); low-VAF are subclonal (later, spatially/temporally heterogeneous). Clonality informs driver-vs-passenger and treatment-resistance reasoning.
-- **Copy number confounds VAF.** A mutation on an amplified allele reads high; on a deleted/LOH background it reads near 1.0. Interpret VAF only alongside local copy number and purity - run copy-number/cnvkit-analysis (or PURPLE) to get purity/ploidy and correct VAF to cancer-cell fraction before calling something subclonal.
+- **Copy number confounds VAF.** A mutation on an amplified allele reads high; on a deleted/LOH background it reads near 1.0. Interpret VAF only alongside local copy number and purity - run references/copy-number--cnvkit-analysis.md (or PURPLE) to get purity/ploidy and correct VAF to cancer-cell fraction before calling something subclonal.
 
 ## Strelka2 (faster alternative / consensus arm)
 
@@ -210,8 +226,8 @@ Strict all-agree intersection sacrifices too much recall; union admits too many 
 
 A complete somatic profile is more than SNVs/indels - hand each off to its component skill:
 
-- **Structural variants:** run Manta in tumor-normal (somatic) mode; it emits `somaticSV.vcf.gz`. For complex rearrangements/fusions use GRIDSS -> GRIPSS -> LINX. See variant-calling/structural-variant-calling.
-- **Copy number + purity/ploidy:** CNVkit (targeted/exome), or PURPLE for allele-specific CN with purity/ploidy fit. Purity/ploidy is a required input for correct VAF-to-cancer-cell-fraction. See copy-number/cnvkit-analysis.
+- **Structural variants:** run Manta in tumor-normal (somatic) mode; it emits `somaticSV.vcf.gz`. For complex rearrangements/fusions use GRIDSS -> GRIPSS -> LINX. See references/variant-calling--structural-variant-calling.md.
+- **Copy number + purity/ploidy:** CNVkit (targeted/exome), or PURPLE for allele-specific CN with purity/ploidy fit. Purity/ploidy is a required input for correct VAF-to-cancer-cell-fraction. See references/copy-number--cnvkit-analysis.md.
 - **Genomic biomarkers (brief):** Tumor Mutational Burden (TMB) = eligible somatic mutations per Mb of covered target (filter out germline and low-VAF artifacts first - inflated TMB is usually residual germline in tumor-only). Microsatellite instability (MSI) is called from indel patterns at microsatellite loci (e.g. MSIsensor). Mutational signatures (SBS/ID/CNV, COSMIC catalogue) attribute the mutation spectrum to processes (APOBEC, UV, MMR-deficiency, platinum) and cross-check artifacts - a dominant C>A/G>T signature can be residual oxoG, not biology. Verify current tool choices and thresholds against the latest docs.
 
 ## Annotation (normalize FIRST)
@@ -227,11 +243,11 @@ vep -i somatic_norm.vcf.gz -o annotated_vep.vcf --vcf --cache --offline \
     --custom cosmic.vcf.gz,COSMIC,vcf,exact,0,CNT --fork 4
 ```
 
-Normalize BEFORE annotating (annotate-then-normalize is an order error): un-normalized records attach annotations to a non-canonical representation and fail to match COSMIC/gnomAD. Full annotation mechanics (transcript choice, MANE, HGVS 3'-shift) live in variant-calling/variant-annotation.
+Normalize BEFORE annotating (annotate-then-normalize is an order error): un-normalized records attach annotations to a non-canonical representation and fail to match COSMIC/gnomAD. Full annotation mechanics (transcript choice, MANE, HGVS 3'-shift) live in references/variant-calling--variant-annotation.md.
 
 ## Interpretation: somatic tiers, NOT germline ACMG
 
-This is the critical decision of the whole pipeline and the most common category error. Route the annotated somatic VCF to variant-calling/clinical-interpretation, which applies TWO orthogonal cancer frameworks:
+This is the critical decision of the whole pipeline and the most common category error. Route the annotated somatic VCF to references/variant-calling--clinical-interpretation.md, which applies TWO orthogonal cancer frameworks:
 
 **AMP/ASCO/CAP four-tier clinical actionability (Li 2017 *J Mol Diagn* 19:4-23):**
 
@@ -278,17 +294,17 @@ Do NOT judge somatic SNVs by a fixed germline-like Ti/Tv (~2-3); the somatic spe
 | GetPileupSummaries gives nonsense contamination | Used af-only-gnomAD instead of a common biallelic-SNP resource | Use `small_exac_common_3.vcf.gz` (common SNP sites with AF) |
 | Consensus intersection drops real shared calls | VCFs not normalized before `bcftools isec` | `bcftools norm -f ref.fa -m-` every caller's VCF first |
 | Low-purity tumor: expected drivers missing | VAF below detection at that purity/depth | Get purity from copy-number; increase depth; correct VAF to cancer-cell fraction |
-| Applied ACMG PVS1/PM2 to a tumor variant | Germline framework used for somatic | Use AMP/ASCO/CAP tiers + oncogenicity via variant-calling/clinical-interpretation |
+| Applied ACMG PVS1/PM2 to a tumor variant | Germline framework used for somatic | Use AMP/ASCO/CAP tiers + oncogenicity via references/variant-calling--clinical-interpretation.md |
 
 ## Related Skills
 
-- variant-calling/gatk-variant-calling - Mutect2 mechanism and germline HaplotypeCaller context
-- variant-calling/filtering-best-practices - FilterMutectCalls internals, normalization, hard filters
-- variant-calling/variant-annotation - VEP/Funcotator/SnpEff, transcript choice, HGVS, COSMIC
-- variant-calling/clinical-interpretation - AMP/ASCO/CAP tiers and oncogenicity (somatic interpretation)
-- variant-calling/structural-variant-calling - Somatic SV detection (Manta somatic mode, GRIDSS/LINX)
-- copy-number/cnvkit-analysis - Somatic CNV, purity/ploidy for VAF-to-cancer-cell-fraction
-- read-alignment/bwa-alignment - Upstream alignment/dedup/BQSR of tumor and normal BAMs
+- references/variant-calling--gatk-variant-calling.md - Mutect2 mechanism and germline HaplotypeCaller context
+- references/variant-calling--filtering-best-practices.md - FilterMutectCalls internals, normalization, hard filters
+- references/variant-calling--variant-annotation.md - VEP/Funcotator/SnpEff, transcript choice, HGVS, COSMIC
+- references/variant-calling--clinical-interpretation.md - AMP/ASCO/CAP tiers and oncogenicity (somatic interpretation)
+- references/variant-calling--structural-variant-calling.md - Somatic SV detection (Manta somatic mode, GRIDSS/LINX)
+- references/copy-number--cnvkit-analysis.md - Somatic CNV, purity/ploidy for VAF-to-cancer-cell-fraction
+- references/read-alignment--bwa-alignment.md - Upstream alignment/dedup/BQSR of tumor and normal BAMs
 
 ## References
 

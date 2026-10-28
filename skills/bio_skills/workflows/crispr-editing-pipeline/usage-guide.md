@@ -79,11 +79,11 @@ What edit do you need?
 
 ## Related Skills
 
-- genome-engineering/grna-design - Guide design and outcome-aware knockout ranking
-- genome-engineering/off-target-prediction - Specificity assessment and the evidence ladder
-- genome-engineering/base-editing-design - CBE/ABE window, bystander purity, off-target classes
-- genome-engineering/prime-editing-design - pegRNA panel design and PE system selection
-- genome-engineering/hdr-template-design - Donor format and codon-checked blocking mutation
+- references/genome-engineering--grna-design.md - Guide design and outcome-aware knockout ranking
+- references/genome-engineering--off-target-prediction.md - Specificity assessment and the evidence ladder
+- references/genome-engineering--base-editing-design.md - CBE/ABE window, bystander purity, off-target classes
+- references/genome-engineering--prime-editing-design.md - pegRNA panel design and PE system selection
+- references/genome-engineering--hdr-template-design.md - Donor format and codon-checked blocking mutation
 - crispr-screens/crispresso-editing - Quantify and validate editing outcomes from amplicon reads
 - crispr-screens/library-design - Scale single-gene design to a pooled screen
 - primer-design/primer-basics - Design the genotyping/amplicon primers around the edit

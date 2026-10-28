@@ -346,6 +346,7 @@ function isActive(item: NavItem): boolean {
       return route.path === path && route.query.type === type
     }
     if (route.path === item.to) return true
+    if (item.key === 'reports') return route.path.startsWith('/reports/')
     return false
   }
   return item.children.some((child) => {

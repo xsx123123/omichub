@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-rnaseq-to-de
 description: Orchestrates the end-to-end bulk RNA-seq differential-expression pipeline from FASTQ to an annotated DE gene table, chaining fastp QC/trim, Salmon (decoy-aware) or STAR+featureCounts quantification, tximport gene-level collapse, DESeq2/edgeR/limma-voom testing, apeglm shrinkage, and VST-based visualization. Use when committing the reference release and gene-ID namespace once for the whole run, sequencing steps in the defensible order (tximport before DE, raw counts into the model, VST only for viz/clustering), choosing alignment-free vs align-then-count and the DE engine, setting strandedness correctly, keeping batch in the design instead of correcting-then-testing, or handing the signed ranking statistic to downstream enrichment. Hands mechanism to the component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: 转录组差异表达分析流程
+display_name_en: Bulk RNA-seq to Differential Expression
+description_zh: >-
+  从 FASTQ 到带注释差异基因表的体转录组全流程，串联 fastp 质控、Salmon 或 STAR+featureCounts 定量、tximport 基因汇总、DESeq2/edgeR/limma-voom 检验、apeglm 收缩与 VST 可视化。
+description_en: >-
+  Orchestrates the end-to-end bulk RNA-seq differential-expression pipeline from FASTQ to an annotated DE gene table, chaining fastp QC/trim, Salmon (decoy-aware) or STAR+featureCounts quantification, tximport gene-level collapse, DESeq2/edgeR/limma-voom testing, apeglm shrinkage, and VST-based visualization. Use when committing the reference release and gene-ID namespace once for the whole run, sequencing steps in the defensible order (tximport before DE, raw counts into the model, VST only for viz/clustering), choosing alignment-free vs align-then-count and the DE engine, setting strandedness correctly, keeping batch in the design instead of correcting-then-testing, or handing the signed ranking statistic to downstream enrichment. Hands mechanism to the component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用我的 RNA-seq FASTQ 跑完整差异表达分析"
+  - "帮我选择 Salmon 还是 STAR+featureCounts"
+  - "生成收缩后的差异基因表、火山图和热图"
+examples_en:
+  - "Run the full differential expression analysis on my RNA-seq FASTQ files"
+  - "Should I use Salmon or STAR plus featureCounts?"
+  - "Produce the shrunken DE table, volcano plot, and heatmap"
 tool_type: mixed
 primary_tool: DESeq2
 workflow: true
@@ -55,20 +71,20 @@ A bulk RNA-seq result is decided at four seams between steps, not inside any one
 
 ```
 FASTQ (paired)
-  | [1] QC & trim ----------------> fastp              (read-qc/fastp-workflow)
+  | [1] QC & trim ----------------> fastp              (references/read-qc--fastp-workflow.md)
   v
-  | [2] Quantify -----------------> salmon (decoy-aware)   (rna-quantification/alignment-free-quant)
-  v     |   OR  STAR + featureCounts (need a BAM?)         (read-alignment/star-alignment)
+  | [2] Quantify -----------------> salmon (decoy-aware)   (references/rna-quantification--alignment-free-quant.md)
+  v     |   OR  STAR + featureCounts (need a BAM?)         (references/read-alignment--star-alignment.md)
   v     ^-- commitment: reference RELEASE + tx/GTF pair, gene-ID namespace
-  | [3] Import & collapse tx->gene -> tximport         (rna-quantification/tximport-workflow)
+  | [3] Import & collapse tx->gene -> tximport         (references/rna-quantification--tximport-workflow.md)
   v     ^-- carries the length offset; NEVER sum NumReads
-  | [4] Pre-DE QC ----------------> PCA / dispersion / outliers  (rna-quantification/count-matrix-qc)
+  | [4] Pre-DE QC ----------------> PCA / dispersion / outliers  (references/rna-quantification--count-matrix-qc.md)
   v
-  | [5] DE test ------------------> DESeq2 | edgeR-QL | limma-voom  (differential-expression/deseq2-basics)
+  | [5] DE test ------------------> DESeq2 | edgeR-QL | limma-voom  (references/differential-expression--deseq2-basics.md)
   v     ^-- RAW counts in; batch in the design, not corrected-then-tested
-  | [6] Shrink & extract ---------> lfcShrink(apeglm); pull Wald `stat` for ranking  (differential-expression/de-results)
+  | [6] Shrink & extract ---------> lfcShrink(apeglm); pull Wald `stat` for ranking  (references/differential-expression--de-results.md)
   v
-  | [7] Visualize ----------------> VST heatmap/PCA, volcano  (differential-expression/de-visualization)
+  | [7] Visualize ----------------> VST heatmap/PCA, volcano  (references/differential-expression--de-visualization.md)
   v
 Annotated DE table (ENSG + symbol + biotype, log2FC, stat, pvalue, padj, baseMean)
 ```
@@ -80,7 +96,7 @@ Decided before the first `salmon quant`; everything downstream inherits them. Me
 | Commitment | Options | Consequence inherited downstream |
 |------------|---------|----------------------------------|
 | Reference release | One Ensembl/GENCODE release for BOTH the transcriptome FASTA (index) and the GTF (tx2gene / featureCounts) | Any mismatch silently drops renamed transcripts; fixes DE row names and the pathway-DB key space |
-| Gene-ID namespace | ENSG backbone (convert to symbol/Entrez only at reporting) | Symbol space is lossy (aliases, many-ENSG-one-symbol merges genes); stripping the ENSG `.version` with `\..*` also destroys the GENCODE `_PAR_Y` tag, collapsing chrY-PAR onto chrX (rna-quantification/tximport-workflow) |
+| Gene-ID namespace | ENSG backbone (convert to symbol/Entrez only at reporting) | Symbol space is lossy (aliases, many-ENSG-one-symbol merges genes); stripping the ENSG `.version` with `\..*` also destroys the GENCODE `_PAR_Y` tag, collapsing chrY-PAR onto chrX (references/rna-quantification--tximport-workflow.md) |
 | Quantification target | Gene-level DGE (`countsFromAbundance="no"`, offset carried) vs transcript-level DTU | DTU needs a DIFFERENT import (`txOut=TRUE` + `dtuScaledTPM`); switching later is a re-import, not a filter — see workflows/splicing-pipeline |
 | 3'-tagged vs full-length | 3'-tagged (QuantSeq/bulk-10x): `countsFromAbundance="no"`, no length offset | Length-bias correction does not apply to 3'-tagged libraries |
 
@@ -102,10 +118,10 @@ Pipeline-level selection only; mechanism lives in the component skills.
 
 | Fork | Lean toward | Hand off to |
 |------|-------------|-------------|
-| Alignment-free (Salmon/kallisto) vs align-then-count (STAR+featureCounts) | Salmon for gene-level DGE (decoy-aware, GC/seq-bias correction, no BAM); STAR when a genome BAM is also needed (splicing, coverage, novel junctions, variants) | rna-quantification/alignment-free-quant, read-alignment/star-alignment |
-| DESeq2 vs edgeR-QL vs limma-voom | limma-voom when library sizes vary >3x or outliers dominate; edgeR-QL for tight finite-sample type-I control; DESeq2 for the apeglm/downstream ecosystem (70-90% top-gene overlap on well-designed data) | differential-expression/deseq2-basics, differential-expression/edger-basics |
-| `countsFromAbundance` | `no` (gene DGE via DESeqDataSetFromTximport) / `lengthScaledTPM` (DGE when the tool can't take offsets) / `dtuScaledTPM`+`txOut` (DTU) | rna-quantification/tximport-workflow |
-| Strandedness `-s` | Confirm, never assume: STAR `ReadsPerGene.out.tab` cols 3 vs 4, or RSeQC `infer_experiment.py`; dUTP/TruSeq is reverse (`-s 2`) | read-qc/rnaseq-qc |
+| Alignment-free (Salmon/kallisto) vs align-then-count (STAR+featureCounts) | Salmon for gene-level DGE (decoy-aware, GC/seq-bias correction, no BAM); STAR when a genome BAM is also needed (splicing, coverage, novel junctions, variants) | references/rna-quantification--alignment-free-quant.md, references/read-alignment--star-alignment.md |
+| DESeq2 vs edgeR-QL vs limma-voom | limma-voom when library sizes vary >3x or outliers dominate; edgeR-QL for tight finite-sample type-I control; DESeq2 for the apeglm/downstream ecosystem (70-90% top-gene overlap on well-designed data) | references/differential-expression--deseq2-basics.md, references/differential-expression--edger-basics.md |
+| `countsFromAbundance` | `no` (gene DGE via DESeqDataSetFromTximport) / `lengthScaledTPM` (DGE when the tool can't take offsets) / `dtuScaledTPM`+`txOut` (DTU) | references/rna-quantification--tximport-workflow.md |
+| Strandedness `-s` | Confirm, never assume: STAR `ReadsPerGene.out.tab` cols 3 vs 4, or RSeQC `infer_experiment.py`; dUTP/TruSeq is reverse (`-s 2`) | references/read-qc--rnaseq-qc.md |
 
 ## Primary path: Salmon + tximport + DESeq2
 
@@ -163,9 +179,9 @@ dds <- DESeqDataSetFromMatrix(countData = counts, colData = coldata, design = ~ 
 | After | Gate | Interpretation |
 |-------|------|----------------|
 | QC/trim | Q30 >80%, adapter <5% | RNA has a lower quality floor than DNA; sharp Q30 drop = degraded input |
-| Quant/align | Mapping >70%, >10M reads mapped; flat gene-body coverage; low rRNA%/intronic% | 3' bias = degradation/oligo-dT; high intronic = pre-mRNA/gDNA; high intergenic = gDNA/annotation gap — all compromise DE BEFORE it runs (read-qc/rnaseq-qc) |
+| Quant/align | Mapping >70%, >10M reads mapped; flat gene-body coverage; low rRNA%/intronic% | 3' bias = degradation/oligo-dT; high intronic = pre-mRNA/gDNA; high intergenic = gDNA/annotation gap — all compromise DE BEFORE it runs (references/read-qc--rnaseq-qc.md) |
 | Import | tx2gene release == index release; few transcripts dropped; report the ID-conversion rate (<0.85 => wrong ID type or organism) | Mismatched release silently loses renamed transcripts |
-| Pre-DE | Dispersion trend sane; PCA separates condition not batch; no Cook's outliers | PCA clustering by batch => batch dominates; add it to the design (rna-quantification/count-matrix-qc) |
+| Pre-DE | Dispersion trend sane; PCA separates condition not batch; no Cook's outliers | PCA clustering by batch => batch dominates; add it to the design (references/rna-quantification--count-matrix-qc.md) |
 
 ## Common Errors
 
@@ -180,14 +196,14 @@ dds <- DESeqDataSetFromMatrix(countData = counts, colData = coldata, design = ~ 
 
 ## Pipeline map (hand-offs)
 
-- read-qc/fastp-workflow - adapter/quality trimming and report interpretation
-- rna-quantification/alignment-free-quant - Salmon/kallisto decoy-aware quantification
-- read-alignment/star-alignment - STAR index/sjdbOverhang, 2-pass, GeneCounts strandedness
-- rna-quantification/tximport-workflow - tx->gene collapse, countsFromAbundance, tx2gene, ID-version traps
-- rna-quantification/count-matrix-qc - pre-DE PCA, dispersion, Cook's outliers, batch checks
-- differential-expression/deseq2-basics - the DESeq2 model, design, contrasts
-- differential-expression/de-results - extracting/annotating results and the signed ranking statistic
-- differential-expression/de-visualization - volcano/MA/heatmap on the right scale
+- references/read-qc--fastp-workflow.md - adapter/quality trimming and report interpretation
+- references/rna-quantification--alignment-free-quant.md - Salmon/kallisto decoy-aware quantification
+- references/read-alignment--star-alignment.md - STAR index/sjdbOverhang, 2-pass, GeneCounts strandedness
+- references/rna-quantification--tximport-workflow.md - tx->gene collapse, countsFromAbundance, tx2gene, ID-version traps
+- references/rna-quantification--count-matrix-qc.md - pre-DE PCA, dispersion, Cook's outliers, batch checks
+- references/differential-expression--deseq2-basics.md - the DESeq2 model, design, contrasts
+- references/differential-expression--de-results.md - extracting/annotating results and the signed ranking statistic
+- references/differential-expression--de-visualization.md - volcano/MA/heatmap on the right scale
 
 The complete runnable scripts for both paths are in this skill's examples/ (`salmon_deseq2_workflow.R`, `star_deseq2_workflow.sh`).
 
@@ -197,15 +213,15 @@ The complete runnable scripts for both paths are in this skill's examples/ (`sal
 - database-access/sra-data - Download paired-end FASTQ from SRA / ENA / STRIDES cloud
 - sequence-io/fastq-quality - Confirm the FASTQ quality encoding before trimming public or pre-2011 data
 - sequence-io/paired-end-fastq - Keep R1/R2 mates synchronized; independent per-mate filtering desyncs pairs
-- read-qc/fastp-workflow - Detailed QC options and parameters
-- read-qc/rnaseq-qc - Post-alignment RNA QC: strandedness, gene-body coverage, rRNA/intronic
-- read-alignment/star-alignment - The align path (BAM for splicing/coverage/variants)
-- rna-quantification/alignment-free-quant - Salmon and kallisto details
-- rna-quantification/tximport-workflow - tximport options, countsFromAbundance, tx2gene creation
-- rna-quantification/count-matrix-qc - Pre-DE QC and diagnostics
-- differential-expression/deseq2-basics - Complete DESeq2 reference
-- differential-expression/de-results - Results extraction, annotation, ranking statistic
-- differential-expression/de-visualization - Advanced visualization options
+- references/read-qc--fastp-workflow.md - Detailed QC options and parameters
+- references/read-qc--rnaseq-qc.md - Post-alignment RNA QC: strandedness, gene-body coverage, rRNA/intronic
+- references/read-alignment--star-alignment.md - The align path (BAM for splicing/coverage/variants)
+- references/rna-quantification--alignment-free-quant.md - Salmon and kallisto details
+- references/rna-quantification--tximport-workflow.md - tximport options, countsFromAbundance, tx2gene creation
+- references/rna-quantification--count-matrix-qc.md - Pre-DE QC and diagnostics
+- references/differential-expression--deseq2-basics.md - Complete DESeq2 reference
+- references/differential-expression--de-results.md - Results extraction, annotation, ranking statistic
+- references/differential-expression--de-visualization.md - Advanced visualization options
 - alternative-splicing/isoform-switching - Transcript-level DTU when gene-level is not enough (splicing fork)
 - pathway-analysis/go-enrichment - Next step: functional enrichment (workflows/expression-to-pathways)
 

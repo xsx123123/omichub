@@ -1,0 +1,16 @@
+short test summary info ============================
+FAILED tests/unit/test_parallel_subagent_service.py::test_fanout_merges_token_usage_across_rounds_and_children
+FAILED tests/unit/test_provider_retry_policy.py::test_litellm_embedding_routes_custom_openai_endpoint
+FAILED tests/unit/test_research_tool_pack_binding.py::test_research_pack_binds_database_mcp_presets
+FAILED tests/unit/test_studio_approval.py::test_approval_required_tools_cover_write_and_execute
+FAILED tests/unit/test_studio_manager.py::test_container_mounts_match - TypeE...
+FAILED tests/unit/tools/test_tool_error_codes.py::test_requires_confirm_carries_confirmation_code
+FAILED tests/unit/tools/test_tool_error_codes.py::test_control_params_not_reported_as_ignored
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_approve_then_execute
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_reject_blocks_execution
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_approval_edited_args_execute
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_no_permission_mode_keeps_current_behavior
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_supervised_timeout_records_audit_log
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_always_allow_session_skip_and_user_resolution_audit
+FAILED tests/e2e/test_langgraph_chat_sandbox_approval.py::test_auto_approve_skips_approval_gate_entirely
+= 14 failed, 4127 passed, 22 skipped, 63 deselected, 12 warnings in 192.78s (0:03:12) =

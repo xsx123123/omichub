@@ -1,0 +1,41 @@
+[
+  {
+    "user": "admin",
+    "claims": [
+      {
+        "status": 200,
+        "body": {
+          "delivery_id": "ace3e211-7932-471b-b1b3-e08bd782ddb5",
+          "reservation_expires_at": "2026-11-02T08:05:00Z",
+          "title": "欢迎回来",
+          "message": "解释要经得起检验，也容得下被修正的余地。",
+          "source": "agent_pool",
+          "duration_ms": 5000
+        }
+      }
+    ],
+    "errors": []
+  },
+  {
+    "user": "general",
+    "claims": [
+      {
+        "status": 200,
+        "body": {
+          "delivery_id": "7c50fbd8-c91d-4aae-8a7c-7d480b9b291e",
+          "reservation_expires_at": "2026-11-02T08:05:00Z",
+          "title": "欢迎回来",
+          "message": "给各步骤取个清楚的名字，回看时便不迷路。",
+          "source": "agent_pool",
+          "duration_ms": 5000
+        }
+      }
+    ],
+    "errors": []
+  },
+  {
+    "user": "first",
+    "claims": [],
+    "errors": []
+  }
+]

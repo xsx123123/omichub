@@ -18,7 +18,7 @@ kraken2-build --standard --db kraken2_db        # or download a pre-built, versi
 bracken-build -d kraken2_db -k 35 -l 150        # -k MUST equal the Kraken2 build k; -l the read length
 ```
 
-Carry extraction blanks and a mock community through the entire workflow - they are the only way to tell a real low-biomass signal from the kitome (see metagenomics/contamination-controls).
+Carry extraction blanks and a mock community through the entire workflow - they are the only way to tell a real low-biomass signal from the kitome (see references/metagenomics--contamination-controls.md).
 
 ## Quick Start
 
@@ -83,13 +83,13 @@ Frame the choice by precision/recall and by what quantity you need, never as "ac
 
 ## Related Skills
 
-- read-qc/fastp-workflow - Adapter trimming and quality filtering up front
-- metagenomics/contamination-controls - Host depletion, blanks/decontam, depth checks
-- metagenomics/kraken-classification - Kraken2 confidence, hit-groups, minimizer evidence
-- metagenomics/metaphlan-profiling - MetaPhlAn 4 parameters and cell-fraction interpretation
-- metagenomics/abundance-estimation - Bracken options and compositional handling
-- metagenomics/functional-profiling - HUMAnN workflow and UNMAPPED handling
-- metagenomics/metagenome-visualization - Community statistics and plotting
+- references/read-qc--fastp-workflow.md - Adapter trimming and quality filtering up front
+- references/metagenomics--contamination-controls.md - Host depletion, blanks/decontam, depth checks
+- references/metagenomics--kraken-classification.md - Kraken2 confidence, hit-groups, minimizer evidence
+- references/metagenomics--metaphlan-profiling.md - MetaPhlAn 4 parameters and cell-fraction interpretation
+- references/metagenomics--abundance-estimation.md - Bracken options and compositional handling
+- references/metagenomics--functional-profiling.md - HUMAnN workflow and UNMAPPED handling
+- references/metagenomics--metagenome-visualization.md - Community statistics and plotting
 - metagenomics/amr-detection - Community resistome from the same reads
 - metagenomics/strain-tracking - Strain resolution from the same reads
 - genome-assembly/metagenome-assembly - Assembly-based route when reads cannot resolve the question

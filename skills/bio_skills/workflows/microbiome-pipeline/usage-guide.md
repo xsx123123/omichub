@@ -51,15 +51,15 @@ Tell your AI agent what you want to do:
 ## What the Agent Will Do
 
 1. Confirms the reads are demultiplexed and that the primers and region are known, and runs read QC (read-qc/quality-reports).
-2. Removes primers with cutadapt BEFORE any truncation, discarding primerless pairs (read-qc/adapter-trimming, microbiome/amplicon-processing).
-3. Runs the DADA2 block (filterAndTrim -> learnErrors -> dada -> mergePairs) ONCE PER sequencing run, choosing truncation lengths within the merge-overlap budget (microbiome/amplicon-processing).
+2. Removes primers with cutadapt BEFORE any truncation, discarding primerless pairs (references/read-qc--adapter-trimming.md, references/microbiome--amplicon-processing.md).
+3. Runs the DADA2 block (filterAndTrim -> learnErrors -> dada -> mergePairs) ONCE PER sequencing run, choosing truncation lengths within the merge-overlap budget (references/microbiome--amplicon-processing.md).
 4. Merges the per-run sequence tables by exact sequence string, then removes chimeras once on the combined table.
-5. Assigns taxonomy with a region-matched classifier, reporting genus rather than species for 16S (microbiome/taxonomy-assignment).
-6. Filters host mitochondria/chloroplast features after taxonomy, and for low-biomass studies removes reagent contaminants with decontam using the negative controls (microbiome/taxonomy-assignment, microbiome/amplicon-processing).
-7. Assembles the phyloseq object and attaches a SEPP/Greengenes2 placed tree rather than a de novo tree from short reads (microbiome/diversity-analysis, phylogenetics/tree-io).
-8. Rarefies ONLY into the diversity branch at a declared depth, reports the dropped samples, computes alpha/beta diversity, and pairs adonis2 with betadisper (microbiome/diversity-analysis).
-9. Runs differential abundance on the UNrarefied counts using two or more compositionally-aware tools and reports the intersection as high-confidence (microbiome/differential-abundance).
-10. Optionally runs PICRUSt2, reports the NSTI distribution and the dropped read fraction, and frames every claim as predicted potential (microbiome/functional-prediction).
+5. Assigns taxonomy with a region-matched classifier, reporting genus rather than species for 16S (references/microbiome--taxonomy-assignment.md).
+6. Filters host mitochondria/chloroplast features after taxonomy, and for low-biomass studies removes reagent contaminants with decontam using the negative controls (references/microbiome--taxonomy-assignment.md, references/microbiome--amplicon-processing.md).
+7. Assembles the phyloseq object and attaches a SEPP/Greengenes2 placed tree rather than a de novo tree from short reads (references/microbiome--diversity-analysis.md, phylogenetics/tree-io).
+8. Rarefies ONLY into the diversity branch at a declared depth, reports the dropped samples, computes alpha/beta diversity, and pairs adonis2 with betadisper (references/microbiome--diversity-analysis.md).
+9. Runs differential abundance on the UNrarefied counts using two or more compositionally-aware tools and reports the intersection as high-confidence (references/microbiome--differential-abundance.md).
+10. Optionally runs PICRUSt2, reports the NSTI distribution and the dropped read fraction, and frames every claim as predicted potential (references/microbiome--functional-prediction.md).
 11. Records the per-stage choices (primers, truncation, error model per run, database release, organelle/decontam filtering, tree method, rarefaction depth, DA tool panel, PICRUSt2 reference) alongside the results.
 
 ## QC Checkpoints
@@ -79,7 +79,7 @@ Tell your AI agent what you want to do:
 - Primer removal comes first: leftover primers corrupt the error model and look chimeric. Remove them with cutadapt before filterAndTrim.
 - Fit the error model per sequencing run. Concatenating runs before learnErrors denoises wrong; merge run-level sequence tables instead, and carry run as a batch covariate into DA.
 - Set truncation lengths to keep the merge-overlap budget (truncLen_F + truncLen_R >= amplicon length + ~12), not just to chase quality.
-- Filter host mitochondria/chloroplast features after taxonomy, and decontaminate low-biomass samples with decontam using negative controls, before diversity and DA (microbiome/taxonomy-assignment, microbiome/amplicon-processing).
+- Filter host mitochondria/chloroplast features after taxonomy, and decontaminate low-biomass samples with decontam using negative controls, before diversity and DA (references/microbiome--taxonomy-assignment.md, references/microbiome--amplicon-processing.md).
 - Prefer a SEPP/Greengenes2 placed tree over a de novo tree from short reads for any UniFrac or Faith PD metric.
 - Rarefy for diversity, never for differential abundance. Keep the raw counts and rarefy only into the diversity branch.
 - Report the rarefaction depth AND which samples were dropped below it; the dropped ones are rarely random.
@@ -90,13 +90,13 @@ Tell your AI agent what you want to do:
 
 ## Related Skills
 
-- microbiome/amplicon-processing - Primer removal, per-run error model, truncLen budget, chimeras, ITS
-- microbiome/taxonomy-assignment - Region-matched classifier and reference-database choice
-- microbiome/diversity-analysis - Sampling depth, tree choice, metric choice, adonis2 + betadisper
-- microbiome/differential-abundance - Compositional DA tools and the consensus deliverable
-- microbiome/functional-prediction - PICRUSt2 predicted potential gated on NSTI
+- references/microbiome--amplicon-processing.md - Primer removal, per-run error model, truncLen budget, chimeras, ITS
+- references/microbiome--taxonomy-assignment.md - Region-matched classifier and reference-database choice
+- references/microbiome--diversity-analysis.md - Sampling depth, tree choice, metric choice, adonis2 + betadisper
+- references/microbiome--differential-abundance.md - Compositional DA tools and the consensus deliverable
+- references/microbiome--functional-prediction.md - PICRUSt2 predicted potential gated on NSTI
 - microbiome/qiime2-workflow - The QIIME2 artifact/provenance route for the whole chain
-- read-qc/adapter-trimming - cutadapt primer removal mechanics before DADA2
+- references/read-qc--adapter-trimming.md - cutadapt primer removal mechanics before DADA2
 - reporting/automated-qc-reports - Aggregate FastQC/MultiQC across samples
 - metagenomics/abundance-estimation - Shared compositional/normalization/rarefaction theory
 - workflows/metagenomics-pipeline - The shotgun (WGS) equivalent of this amplicon pipeline

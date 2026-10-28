@@ -66,7 +66,7 @@ BiocManager::install(c('exomePeak2', 'GenomicFeatures', 'BSgenome.Hsapiens.UCSC.
 - Align to the GENOME for MeRIP peak calling. Transcriptome alignment is for m6anet-analysis only (ONT DRS).
 - Peak counts are library-size-dependent. Rarefy to common depth or report saturation curves alongside.
 - exomePeak2 has NO `mode=` or `experiment_design=` argument. Populate `bam_treated_ip` + `bam_treated_input` for differential.
-- For batch / antibody-lot covariate adjustment, fall through to featureCounts-on-peaks then DESeq2 (see `epitranscriptomics/m6a-differential`).
+- For batch / antibody-lot covariate adjustment, fall through to featureCounts-on-peaks then DESeq2 (see `references/epitranscriptomics--m6a-differential.md`).
 - DRACH motif is a sanity check on the peak set (HOMER P-value < 1e-50). NEVER post-hoc filter individual peaks by DRACH content.
 - Stop-codon enrichment in the Guitar metagene is the biological QC anchor (Dominissini 2012 *Nature* 485:201; Meyer 2012 *Cell* 149:1635). Absence means failed IP or non-m6A modification.
 - 5'UTR peaks (within ~50 nt of TSS) are m6A-or-m6Am ambiguous because anti-m6A antibodies cross-react with PCIF1-deposited cap m6Am.
@@ -75,14 +75,14 @@ BiocManager::install(c('exomePeak2', 'GenomicFeatures', 'BSgenome.Hsapiens.UCSC.
 
 ## Related Skills
 
-- epitranscriptomics/merip-preprocessing - Per-step preprocessing detail
-- epitranscriptomics/m6a-peak-calling - exomePeak2 / MeTPeak / MACS3 deep treatment
-- epitranscriptomics/m6a-differential - Differential methods and batch / lot handling
-- epitranscriptomics/modification-visualization - Guitar metagene, heatmaps, browser tracks
+- references/epitranscriptomics--merip-preprocessing.md - Per-step preprocessing detail
+- references/epitranscriptomics--m6a-peak-calling.md - exomePeak2 / MeTPeak / MACS3 deep treatment
+- references/epitranscriptomics--m6a-differential.md - Differential methods and batch / lot handling
+- references/epitranscriptomics--modification-visualization.md - Guitar metagene, heatmaps, browser tracks
 - epitranscriptomics/m6anet-analysis - ONT DRS alternative for orthogonal stoichiometry
 - chip-seq/peak-calling - Sibling IP-vs-input peak-calling framework
 - chip-seq/chipseq-qc - IP enrichment QC concepts
-- read-alignment/star-alignment - Splice-aware alignment
+- references/read-alignment--star-alignment.md - Splice-aware alignment
 - workflow-management/snakemake-workflows - Snakemake orchestration
 - workflow-management/nextflow-pipelines - Nextflow orchestration
 - workflows/rnaseq-to-de - General RNA-seq pipeline patterns

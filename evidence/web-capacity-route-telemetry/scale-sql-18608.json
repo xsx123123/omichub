@@ -1,0 +1,10 @@
+{
+  "selects": 29152,
+  "users_selects": 17462,
+  "completed_http_requests": 14550,
+  "telemetry_route_cache": {
+    "hits": 14544,
+    "misses": 6,
+    "entries": 6
+  }
+}

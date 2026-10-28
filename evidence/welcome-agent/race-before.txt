@@ -1,0 +1,56 @@
+warning: Ignoring unsupported Python request `omichub_3.11` in version file: /home/zj/zj_code_libarary/OmicHub/.python-version
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/zj/zj_code_libarary/OmicHub
+configfile: pyproject.toml
+plugins: anyio-4.14.2, asyncio-1.4.0, cov-7.1.0, langsmith-0.10.16
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 13 items / 10 deselected / 3 selected
+
+tests/integration/test_welcome_pool.py FFF                               [100%]
+
+=================================== FAILURES ===================================
+___________ test_due_publication_does_not_undo_concurrent_withdrawal ___________
+tests/integration/test_welcome_pool.py:577: in test_due_publication_does_not_undo_concurrent_withdrawal
+    assert (await db.get(Batch, bid)).status == "withdrawn"
+E   AssertionError: assert 'validated' == 'withdrawn'
+E     
+E     - withdrawn
+E     + validated
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+----------------------------- Captured stdout call -----------------------------
+[32m2026-10-26 10:53:01.527[0m | [1mINFO    [0m | [36mapp[0m | [36mcygnusx.application.services.welcome.generation[0m:[36mgenerate_batch[0m:[36m215[0m | [1mWelcome generation completed[0m
+[32m2026-10-26 10:53:01.552[0m | [33m[1mWARNING [0m | [36mapp[0m | [36mcygnusx.application.services.welcome.publishing[0m:[36mpublish_due[0m:[36m104[0m | [33m[1mWelcome batch 84d132e1-864c-4412-a942-7f055f38fc53 needs publication review[0m
+__________ test_generation_retry_does_not_undo_concurrent_withdrawal ___________
+tests/integration/test_welcome_pool.py:621: in test_generation_retry_does_not_undo_concurrent_withdrawal
+    assert (await db.get(Batch, bid)).status == "withdrawn"
+E   AssertionError: assert 'scheduled' == 'withdrawn'
+E     
+E     - withdrawn
+E     + scheduled
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+----------------------------- Captured stdout call -----------------------------
+[32m2026-10-26 10:53:01.929[0m | [1mINFO    [0m | [36mapp[0m | [36mcygnusx.application.services.welcome.generation[0m:[36mgenerate_batch[0m:[36m215[0m | [1mWelcome generation completed[0m
+[32m2026-10-26 10:53:01.998[0m | [1mINFO    [0m | [36mapp[0m | [36mcygnusx.application.services.welcome.generation[0m:[36mgenerate_batch[0m:[36m215[0m | [1mWelcome generation completed[0m
+_________ test_message_restore_refreshes_state_after_waiting_for_lock __________
+tests/integration/test_welcome_pool.py:669: in test_message_restore_refreshes_state_after_waiting_for_lock
+    assert message.enabled is True
+E   assert False is True
+E    +  where False = <cygnusx.infrastructure.database.models.welcome.WelcomeMessageModel object at 0x7888a92ff090>.enabled
+------------------------------ Captured log setup ------------------------------
+DEBUG    asyncio:selector_events.py:54 Using selector: EpollSelector
+----------------------------- Captured stdout call -----------------------------
+[32m2026-10-26 10:53:02.206[0m | [1mINFO    [0m | [36mapp[0m | [36mcygnusx.application.services.welcome.generation[0m:[36mgenerate_batch[0m:[36m215[0m | [1mWelcome generation completed[0m
+=============================== warnings summary ===============================
+src/cygnusx/application/schemas/ai_provider.py:36
+  /home/zj/zj_code_libarary/OmicHub/src/cygnusx/application/schemas/ai_provider.py:36: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AIProviderConfigDTO(AIProviderConfigBaseDTO):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_welcome_pool.py::test_due_publication_does_not_undo_concurrent_withdrawal
+FAILED tests/integration/test_welcome_pool.py::test_generation_retry_does_not_undo_concurrent_withdrawal
+FAILED tests/integration/test_welcome_pool.py::test_message_restore_refreshes_state_after_waiting_for_lock
+================= 3 failed, 10 deselected, 1 warning in 1.38s ==================

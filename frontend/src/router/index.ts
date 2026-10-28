@@ -107,6 +107,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '结果报告中心', requiresAuth: true }
       },
       {
+        path: 'reports/:reportId/view',
+        name: 'report-viewer',
+        component: () => import('@/views/ReportViewerView.vue'),
+        meta: { title: '报告查看', requiresAuth: true }
+      },
+      {
         path: 'projects',
         name: 'projects',
         component: () => import('@/views/ProjectsView.vue'),

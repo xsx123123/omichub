@@ -274,7 +274,7 @@ function observeReveals() {
         </div>
 
         <h1 class="about-title">CygnusX BioOps</h1>
-        <p class="about-slogan">FROM STARDUST, TO DISCOVERY</p>
+        <p class="about-slogan"><span class="stardust-text" lang="en">FROM STARDUST, TO DISCOVERY</span></p>
         <p class="about-subtitle">面向生命科学的受控科研 Agent 与可信计算交付基础设施</p>
         <p class="about-lead">从科学问题出发，找到或导入数据，组织受控分析，核验结果与文献证据，将每一次研究沉淀为可复用、可追溯的科研资产。</p>
 
@@ -443,9 +443,9 @@ function observeReveals() {
       <section class="about-section vision-section" aria-labelledby="vision-title">
         <p class="section-kicker">OUR VISION</p>
         <div class="about-quote-box vision-panel">
-          <h2 id="vision-title" class="about-quote-title">We are made of star-stuff.</h2>
+          <h2 id="vision-title" class="about-quote-title stardust-text" lang="en">We are made of star-stuff.</h2>
           <p class="about-quote">我们只是借用了宇宙中的这些碳、氢、氧原子几十年，用它们去短暂地体验了一次这个世界。组成我们大脑和身体的每一个原子，都来自几十亿年前远古恒星内部的核聚变爆炸。当生命结束时，我们并没有化为虚无，我们只是回到了那个浩瀚的宇宙中，换了一种方式继续存在。</p>
-          <p class="vision-signoff">从星辰中来，向发现而去。</p>
+          <p class="vision-signoff"><span class="stardust-text">从星辰中来，向发现而去。</span><span class="stardust-text" lang="en">From Stardust, to Discovery.</span></p>
         </div>
       </section>
 
@@ -951,19 +951,21 @@ function observeReveals() {
   background: linear-gradient(90deg, transparent, rgba(150, 178, 255, 0.26), transparent);
 }
 
-/* 题记英文行：对齐权威 StardustQuote 的 gilded 流光 + 衬线显示体，
+/* 题记与中英落款：共享 StardustQuote 的 gilded 流光 + 衬线显示体，
    与正文无衬线构成"展示体/正文体"配对（§33.1#5）；辉光恒定，仅流光平移，不呼吸、不消失。 */
 .about-quote-title {
-  font-family: Georgia, 'Times New Roman', 'Songti SC', serif;
   font-size: 18px;
-  font-weight: 600;
-  font-style: italic;
-  letter-spacing: 1.5px;
   margin: 0 0 18px;
   padding-bottom: 14px;
   position: relative;
   text-align: center;
   text-indent: 0;
+}
+.stardust-text {
+  font-family: Georgia, 'Times New Roman', 'Songti SC', serif;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 1.5px;
   background: linear-gradient(
     90deg,
     rgba(238, 248, 255, 0.92) 0%,
@@ -1308,7 +1310,7 @@ function observeReveals() {
   50% { transform: translateX(-50%) translateY(6px); }
 }
 
-.about-slogan { margin: 0 0 20px; color: #b9c9ff; font-size: 15px; letter-spacing: .2em; font-weight: 600; }
+.about-slogan { margin: 0 0 20px; font-size: 15px; }
 .about-lead { max-width: 820px; margin: 0 auto 30px; color: #d6def8; font-size: 17px; line-height: 1.8; }
 
 /* ===== 章节骨架：统一字阶（P0-3 / P2-2） ===== */
@@ -1545,7 +1547,7 @@ function observeReveals() {
 .vision-section .about-quote-box { margin: 0 auto; text-align: center; }
 .vision-section .about-quote-title { font-size: 24px; margin: 0 0 20px; }
 .vision-section .about-quote { margin: 0; color: #e8edff; font-size: 15px; line-height: 2; }
-.vision-signoff { margin: 22px 0 2px; color: #b9c9ff; font-size: 14px; letter-spacing: .06em; }
+.vision-signoff { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 6px 18px; margin: 22px 0 2px; color: #b9c9ff; font-size: 14px; letter-spacing: .06em; }
 
 /* ===== 进场动效初始态：仅 opacity + transform，进入视口一次性播放 ===== */
 .stats-cell, .milestone-item {
@@ -1598,7 +1600,7 @@ function observeReveals() {
 /* ===== 减少动画（P0-4 / P2）：冻结背景与进场动效，hover 去位移保留颜色 ===== */
 @media (prefers-reduced-motion: reduce) {
   .about-hero > *, .scroll-hint { animation: none; }
-  .about-quote-title { animation: none; }
+  .stardust-text { animation: none; }
   .stats-cell, .milestone-item { opacity: 1; transform: none; transition: none; }
   .milestone-dot { transform: none; }
   .value-card:hover, .ecosystem-card:hover { transform: none; }

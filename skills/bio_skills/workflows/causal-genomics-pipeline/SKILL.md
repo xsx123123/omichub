@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-causal-genomics-pipeline
 description: End-to-end post-GWAS causal inference pipeline orchestrating heritability partitioning, genetic correlation, Mendelian randomization with CHP-aware sensitivity (CAUSE / LHC-MR), colocalization, fine-mapping with SuSiE / FOCUS, mediation, TWAS triangulation, cis-pQTL drug-target MR, effector-gene prioritization (L2G / PoPS / cS2G), and GenomicSEM common-factor GWAS. Use when triangulating causal inference across multiple complementary methods, prioritizing tissues via stratified LDSC, nominating or de-risking drug targets, mapping a lead SNP to a candidate effector gene, modeling shared genetic architecture across correlated traits, or producing a STROBE-MR-compliant publication-grade evidence battery from GWAS summary statistics.
+version: 1.0.0
+display_name: 后 GWAS 因果推断流程
+display_name_en: Post-GWAS Causal Inference Pipeline
+description_zh: >-
+  编排后 GWAS 因果推断，覆盖遗传力分区、遗传相关、孟德尔随机化及敏感性分析、共定位、SuSiE/FOCUS 精细定位、中介分析、TWAS 三角验证、cis-pQTL 药物靶点与效应基因优先排序。
+description_en: >-
+  End-to-end post-GWAS causal inference pipeline orchestrating heritability partitioning, genetic correlation, Mendelian randomization with CHP-aware sensitivity (CAUSE / LHC-MR), colocalization, fine-mapping with SuSiE / FOCUS, mediation, TWAS triangulation, cis-pQTL drug-target MR, effector-gene prioritization (L2G / PoPS / cS2G), and GenomicSEM common-factor GWAS. Use when triangulating causal inference across multiple complementary methods, prioritizing tissues via stratified LDSC, nominating or de-risking drug targets, mapping a lead SNP to a candidate effector gene, modeling shared genetic architecture across correlated traits, or producing a STROBE-MR-compliant publication-grade evidence battery from GWAS summary statistics.
+author: JZHANG
+examples_zh:
+  - "对 lead SNP 做共定位和孟德尔随机化三角验证"
+  - "用两样本 MR 评估这个药物靶点的因果效应"
+  - "把这个 GWAS 位点映射到候选效应基因"
+examples_en:
+  - "Triangulate this GWAS locus with colocalization and Mendelian randomization"
+  - "Estimate the causal effect of this drug target with two-sample MR"
+  - "Map the lead SNP to candidate effector genes"
 tool_type: r
 primary_tool: TwoSampleMR
 workflow: true
@@ -109,7 +125,7 @@ ldsc.py --rg trait1.sumstats.gz,trait2.sumstats.gz --ref-ld-chr eur_w_ld_chr/ --
 
 **Goal:** Confirm heritable signal, pick the right tissue for TWAS / V2G, and detect shared heritable confounding that mandates CHP-aware MR (CAUSE / LHC-MR).
 
-**Reconciliation:** S-LDSC mean chi-squared > 1.02 with h2 SE < 0.02 and intercept ratio < 0.3 is required. Cell-type prioritization with coefficient_p < 0.05 / N_tissues nominates the tissue for downstream TWAS weights and ABC enhancer-gene priors. If cross-trait LDSC abs(rg) > 0.3 (and HDL sample-overlap < 5%), Step 3b becomes mandatory. See causal-genomics/heritability-partitioning and causal-genomics/genetic-correlation.
+**Reconciliation:** S-LDSC mean chi-squared > 1.02 with h2 SE < 0.02 and intercept ratio < 0.3 is required. Cell-type prioritization with coefficient_p < 0.05 / N_tissues nominates the tissue for downstream TWAS weights and ABC enhancer-gene priors. If cross-trait LDSC abs(rg) > 0.3 (and HDL sample-overlap < 5%), Step 3b becomes mandatory. See references/causal-genomics--heritability-partitioning.md and references/causal-genomics--genetic-correlation.md.
 
 ## Step 1: Instrument Selection
 
@@ -140,7 +156,7 @@ mr_results <- mr(dat, method_list = c('mr_ivw', 'mr_egger_regression',
     'mr_weighted_median', 'mr_weighted_mode'))
 ```
 
-Concordance across IVW, Egger, weighted median, and weighted mode is the headline causal claim. See causal-genomics/mendelian-randomization.
+Concordance across IVW, Egger, weighted median, and weighted mode is the headline causal claim. See references/causal-genomics--mendelian-randomization.md.
 
 ## Step 3: Sensitivity Analysis
 
@@ -157,7 +173,7 @@ loo <- mr_leaveoneout(dat)
 steiger <- directionality_test(dat)
 ```
 
-Isq >= 0.9 is required for the MR-Egger NOME assumption; below that, run SIMEX correction or drop Egger. See causal-genomics/pleiotropy-detection.
+Isq >= 0.9 is required for the MR-Egger NOME assumption; below that, run SIMEX correction or drop Egger. See references/causal-genomics--pleiotropy-detection.md.
 
 ## Step 3b: CHP-aware MR (when rg > 0.3 or shared confounder suspected)
 
@@ -172,7 +188,7 @@ SP_list <- calculate_SP(lhc_df, trait.names, nStep = 2, SP_single = 3, SP_pair =
 lhc_fit <- lhc_mr(SP_list, trait.names, paral_method = 'lapply', nBlock = 200)
 ```
 
-CAUSE reports delta_elpd of sharing-vs-causal model; z > 1.96 favors true causation over CHP. LHC-MR jointly estimates causal effect and confounder effect via likelihood; the 95% credible interval excluding zero is the causal-effect verdict. Required when LDSC abs(rg) > 0.3. See causal-genomics/pleiotropy-detection.
+CAUSE reports delta_elpd of sharing-vs-causal model; z > 1.96 favors true causation over CHP. LHC-MR jointly estimates causal effect and confounder effect via likelihood; the 95% credible interval excluding zero is the causal-effect verdict. Required when LDSC abs(rg) > 0.3. See references/causal-genomics--pleiotropy-detection.md.
 
 ## Step 4: Colocalization
 
@@ -188,7 +204,7 @@ result <- coloc.abf(d1, d2, p1 = 1e-4, p2 = 1e-4, p12 = 1e-5)
 sens <- coloc::sensitivity(result, rule = 'H4 > 0.7')
 ```
 
-PP.H4 >= 0.7 for triangulation, >= 0.8 for publication, >= 0.95 for industry-grade target packages. Always sweep p12 over 1e-6 to 5e-5; conclusions must be stable across the sweep. For allelic heterogeneity use coloc.susie. See causal-genomics/colocalization-analysis.
+PP.H4 >= 0.7 for triangulation, >= 0.8 for publication, >= 0.95 for industry-grade target packages. Always sweep p12 over 1e-6 to 5e-5; conclusions must be stable across the sweep. For allelic heterogeneity use coloc.susie. See references/causal-genomics--colocalization-analysis.md.
 
 ## Step 5: Fine-Mapping with SuSiE
 
@@ -201,7 +217,7 @@ fitted <- susie_rss(bhat = locus_stats$BETA, shat = locus_stats$SE,
 cs <- fitted$sets$cs
 ```
 
-If `estimate_s_rss` lambda > 0.05 the external LD is mismatched; rerun with in-sample LD or use SuSiE-inf / FINEMAP-inf. min_abs_corr >= 0.5 (r-squared >= 0.25) is the purity threshold for retaining a credible set. For HLA use L = 20-30. See causal-genomics/fine-mapping.
+If `estimate_s_rss` lambda > 0.05 the external LD is mismatched; rerun with in-sample LD or use SuSiE-inf / FINEMAP-inf. min_abs_corr >= 0.5 (r-squared >= 0.25) is the purity threshold for retaining a credible set. For HLA use L = 20-30. See references/causal-genomics--fine-mapping.md.
 
 ## Step 6: Mediation Analysis
 
@@ -213,7 +229,7 @@ mvdat <- mv_harmonise_data(mv_exposures, mv_outcome)
 mvmr_result <- mv_multiple(mvdat)
 ```
 
-Indirect effect = total - direct. For molecular mediators (expression, methylation, protein), prefer two-step MR with cis-instruments at the mediator. Run Imai sensitivity (rho_crit) or mediational E-value > 2. See causal-genomics/mediation-analysis.
+Indirect effect = total - direct. For molecular mediators (expression, methylation, protein), prefer two-step MR with cis-instruments at the mediator. Run Imai sensitivity (rho_crit) or mediational E-value > 2. See references/causal-genomics--mediation-analysis.md.
 
 ## Step 7: TWAS Triangulation
 
@@ -228,7 +244,7 @@ focus finemap gwas.sumstats.gz 1000G.EUR.QC.1 mashr.db --chr 1 --p-threshold 5e-
 
 **Goal:** Nominate gene-level causal hits and prune LD-induced TWAS false positives.
 
-Tissue is picked from Step 0 stratified LDSC; Bonferroni at 0.05 / N_tissues. FOCUS PIP >= 0.8 retains a single candidate causal gene per region; without FOCUS, co-regulated TWAS hits cannot be distinguished. Cross-reference TWAS hits with coloc.susie PP.H4 and cis-eQTL MR for triangulation. See causal-genomics/transcriptome-wide-association.
+Tissue is picked from Step 0 stratified LDSC; Bonferroni at 0.05 / N_tissues. FOCUS PIP >= 0.8 retains a single candidate causal gene per region; without FOCUS, co-regulated TWAS hits cannot be distinguished. Cross-reference TWAS hits with coloc.susie PP.H4 and cis-eQTL MR for triangulation. See references/causal-genomics--transcriptome-wide-association.md.
 
 ## Step 8: Cis-pQTL Drug-Target MR
 
@@ -244,7 +260,7 @@ mr_results <- mr(dat, method_list = c('mr_ivw', 'mr_wald_ratio'))
 
 **Goal:** Mimic pharmacological inhibition of a drug target via cis-pQTL and triangulate with coloc.
 
-Cross-platform replication on Olink (UKB-PPP) and SomaScan (deCODE) is mandatory; the two platforms are concordant for ~60% of proteins and discordant calls are platform artifacts. Run pheWAS for on-target adverse effects, PAV-excluded sensitivity, and coloc.susie PP.H4 >= 0.8 at the cis-pQTL locus. See causal-genomics/proteome-mr-drug-target.
+Cross-platform replication on Olink (UKB-PPP) and SomaScan (deCODE) is mandatory; the two platforms are concordant for ~60% of proteins and discordant calls are platform artifacts. Run pheWAS for on-target adverse effects, PAV-excluded sensitivity, and coloc.susie PP.H4 >= 0.8 at the cis-pQTL locus. See references/causal-genomics--proteome-mr-drug-target.md.
 
 ## Step 9: Effector-Gene Prioritization
 
@@ -256,7 +272,7 @@ python pops.py --gene_annot_path genes.txt --feature_mat_prefix pops --num_featu
 
 **Goal:** Map each fine-mapped credible set to a candidate effector gene by integrating six evidence streams.
 
-Integrate: (1) Open Targets L2G (Mountjoy 2021), (2) PoPS similarity score (Weeks 2023), (3) cS2G combined SNP-to-gene (Gazal 2022), (4) coloc.susie PP.H4 with eQTL/pQTL, (5) FOCUS TWAS PIP, (6) ABC / ENCODE-rE2G enhancer-gene linking. Require >= 3 of 6 concordant evidence streams for high-confidence claim. L2G and PoPS disagree by design (different feature regimes); report both. See causal-genomics/effector-gene-prioritization.
+Integrate: (1) Open Targets L2G (Mountjoy 2021), (2) PoPS similarity score (Weeks 2023), (3) cS2G combined SNP-to-gene (Gazal 2022), (4) coloc.susie PP.H4 with eQTL/pQTL, (5) FOCUS TWAS PIP, (6) ABC / ENCODE-rE2G enhancer-gene linking. Require >= 3 of 6 concordant evidence streams for high-confidence claim. L2G and PoPS disagree by design (different feature regimes); report both. See references/causal-genomics--effector-gene-prioritization.md.
 
 ## Step 10 (optional): GenomicSEM Common-Factor GWAS
 
@@ -272,7 +288,7 @@ factor_gwas <- userGWAS(covstruc = ldsc_output, SNPs = sumstats_combined,
     estimation = 'DWLS', sub = c('F1~SNP'))
 ```
 
-Heywood cases (negative residual variance) require fixing residuals positive or dropping the indicator. Verify CFI > 0.95 and RMSEA < 0.06. Q_SNP p > 0.05 confirms factor-level (not trait-specific) signal. See causal-genomics/genomic-sem.
+Heywood cases (negative residual variance) require fixing residuals positive or dropping the indicator. Verify CFI > 0.95 and RMSEA < 0.06. Q_SNP p > 0.05 confirms factor-level (not trait-specific) signal. See references/causal-genomics--genomic-sem.md.
 
 ## Parameter Recommendations
 
@@ -318,17 +334,17 @@ Heywood cases (negative residual variance) require fixing residuals positive or 
 
 ## Related Skills
 
-- causal-genomics/mendelian-randomization - IVW, Egger, MR-RAPS, MVMR
-- causal-genomics/colocalization-analysis - coloc.abf, coloc.susie, HyPrColoc, SMR-HEIDI
-- causal-genomics/fine-mapping - SuSiE rss, FINEMAP-inf, PolyFun, SuSiEx
-- causal-genomics/pleiotropy-detection - MR-PRESSO, CAUSE, LHC-MR, contamination-mixture
-- causal-genomics/mediation-analysis - Two-step MR, MVMR, CMAverse 4-way, HIMA
-- causal-genomics/transcriptome-wide-association - FUSION, S-PrediXcan, FOCUS, UTMOST
-- causal-genomics/heritability-partitioning - LDSC, S-LDSC, LDAK, HDL, HESS
-- causal-genomics/proteome-mr-drug-target - UKB-PPP, deCODE, cis-pQTL MR, pheWAS
-- causal-genomics/effector-gene-prioritization - L2G, PoPS, cS2G, MAGMA, FLAMES
-- causal-genomics/genetic-correlation - Cross-trait LDSC, HDL, LAVA, Popcorn
-- causal-genomics/genomic-sem - Common-factor GWAS, Q_SNP, MTAG reconciliation
+- references/causal-genomics--mendelian-randomization.md - IVW, Egger, MR-RAPS, MVMR
+- references/causal-genomics--colocalization-analysis.md - coloc.abf, coloc.susie, HyPrColoc, SMR-HEIDI
+- references/causal-genomics--fine-mapping.md - SuSiE rss, FINEMAP-inf, PolyFun, SuSiEx
+- references/causal-genomics--pleiotropy-detection.md - MR-PRESSO, CAUSE, LHC-MR, contamination-mixture
+- references/causal-genomics--mediation-analysis.md - Two-step MR, MVMR, CMAverse 4-way, HIMA
+- references/causal-genomics--transcriptome-wide-association.md - FUSION, S-PrediXcan, FOCUS, UTMOST
+- references/causal-genomics--heritability-partitioning.md - LDSC, S-LDSC, LDAK, HDL, HESS
+- references/causal-genomics--proteome-mr-drug-target.md - UKB-PPP, deCODE, cis-pQTL MR, pheWAS
+- references/causal-genomics--effector-gene-prioritization.md - L2G, PoPS, cS2G, MAGMA, FLAMES
+- references/causal-genomics--genetic-correlation.md - Cross-trait LDSC, HDL, LAVA, Popcorn
+- references/causal-genomics--genomic-sem.md - Common-factor GWAS, Q_SNP, MTAG reconciliation
 - population-genetics/association-testing - Upstream GWAS methods
 - atac-seq/enhancer-gene-linking - ABC / ENCODE-rE2G priors for effector-gene step
 - single-cell/preprocessing - scRNA / scATAC tissue priors for stratified LDSC

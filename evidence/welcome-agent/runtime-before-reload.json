@@ -1,0 +1,74 @@
+{
+  "observed_at_utc": "2026-10-26T03:02:07.544846+00:00",
+  "read_only": true,
+  "running_openapi": {
+    "paths": [
+      "/api/v1/welcome/claim",
+      "/api/v1/welcome/impression",
+      "/api/v1/admin/welcome/batches",
+      "/api/v1/admin/welcome/batches/{batch_id}",
+      "/api/v1/admin/welcome/generate",
+      "/api/v1/admin/welcome/batches/{batch_id}/{action}",
+      "/api/v1/admin/welcome/messages/{message_id}"
+    ],
+    "claim_fields": [
+      "delivery_id",
+      "title",
+      "message",
+      "source",
+      "duration_ms"
+    ]
+  },
+  "database": {
+    "alembic_heads": [
+      "welcome_pool01"
+    ],
+    "welcome_enabled": true,
+    "general_enabled": false,
+    "batches": [
+      {
+        "audience": "admin",
+        "week_start": "2026-10-26",
+        "status": "active",
+        "prompt_version": "v1",
+        "validation_report": {
+          "valid": true,
+          "topics": [
+            "discovery",
+            "evidence",
+            "general",
+            "research",
+            "workflow"
+          ],
+          "rejections": {
+            "duplicate": 3
+          },
+          "valid_count": 24,
+          "policy_version": "v1"
+        }
+      },
+      {
+        "audience": "general",
+        "week_start": "2026-10-26",
+        "status": "active",
+        "prompt_version": "v1",
+        "validation_report": {
+          "valid": true,
+          "topics": [
+            "discovery",
+            "evidence",
+            "general",
+            "research",
+            "workflow"
+          ],
+          "rejections": {
+            "duplicate": 2
+          },
+          "valid_count": 24,
+          "policy_version": "v1"
+        }
+      }
+    ]
+  },
+  "reload_authorization": "pending"
+}

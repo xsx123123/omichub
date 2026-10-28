@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-methylation-pipeline
 description: Orchestrates the end-to-end bisulfite/EM-seq methylation pipeline from FASTQ to differentially methylated regions, chaining Trim Galore/fastp QC, Bismark alignment + deduplication, methylation calling, methylKit coverage-filtering/normalization, and selection-aware DMR detection (dmrseq/DSS). Use when gating the run on bisulfite conversion (lambda + pUC19 controls) BEFORE any beta value, committing the genome build + library directionality once, keeping mate-overlap deduplicated (--no_overlap), M-bias-trimming from the plot, filtering coverage before testing, choosing a count model (beta-binomial/DSS) over a bare-beta t-test, or using a region-selection-aware FDR (dmrseq/DSS) rather than raw methylKit tiles. Hands mechanism to the methylation-analysis component skills; not a re-teach of any single step.
+version: 1.0.0
+display_name: DNA 甲基化分析流程
+display_name_en: DNA Methylation Pipeline
+description_zh: >-
+  从 FASTQ 到差异甲基化区域的亚硫酸氢盐与 EM-seq 全流程，涵盖 Trim Galore/fastp 质控、Bismark 比对去重、甲基化调用、methylKit 覆盖度过滤与 dmrseq/DSS 差异分析。
+description_en: >-
+  Orchestrates the end-to-end bisulfite/EM-seq methylation pipeline from FASTQ to differentially methylated regions, chaining Trim Galore/fastp QC, Bismark alignment + deduplication, methylation calling, methylKit coverage-filtering/normalization, and selection-aware DMR detection (dmrseq/DSS). Use when gating the run on bisulfite conversion (lambda + pUC19 controls) BEFORE any beta value, committing the genome build + library directionality once, keeping mate-overlap deduplicated (--no_overlap), M-bias-trimming from the plot, filtering coverage before testing, choosing a count model (beta-binomial/DSS) over a bare-beta t-test, or using a region-selection-aware FDR (dmrseq/DSS) rather than raw methylKit tiles. Hands mechanism to the methylation-analysis component skills; not a re-teach of any single step.
+author: JZHANG
+examples_zh:
+  - "用 WGBS 数据找差异甲基化区域"
+  - "帮我用 lambda 和 pUC19 对照检查转化率"
+  - "对甲基化矩阵做覆盖度过滤并用 DSS 调用 DMR"
+examples_en:
+  - "Find differentially methylated regions from my WGBS data"
+  - "Check bisulfite conversion with the lambda and pUC19 controls"
+  - "Filter by coverage and call DMRs with DSS"
 tool_type: mixed
 primary_tool: Bismark
 workflow: true
@@ -211,14 +227,14 @@ import numpy as np
 # Filter CpGs with < 10x coverage in any sample
 # Run per-CpG Welch's t-test between groups
 # Apply BH FDR correction: multipletests(pvals, method='fdr_bh')
-# See methylation-analysis/differential-cpg-testing for full pipeline
+# See references/methylation-analysis--differential-cpg-testing.md for full pipeline
 ```
 
-A bare-beta t-test discards coverage (the precision information unique to sequencing) and is only a quick look. For sequencing counts, route to a beta-binomial / overdispersion-corrected count model (DSS, or methylKit with overdispersion='MN'); for array or continuous data, use limma on M-values. The count-vs-continuous decision is owned by methylation-analysis/differential-cpg-testing.
+A bare-beta t-test discards coverage (the precision information unique to sequencing) and is only a quick look. For sequencing counts, route to a beta-binomial / overdispersion-corrected count model (DSS, or methylKit with overdispersion='MN'); for array or continuous data, use limma on M-values. The count-vs-continuous decision is owned by references/methylation-analysis--differential-cpg-testing.md.
 
 ### Step 6: DMR Detection
 
-methylKit fixed tiles are a fast screen, but their region q-value is not corrected for the region-selection step. For a rigorous region-level FDR use dmrseq (a permutation null over the selection) or DSS callDMR, and confirm with cross-tool overlap - see methylation-analysis/dmr-detection.
+methylKit fixed tiles are a fast screen, but their region q-value is not corrected for the region-selection step. For a rigorous region-level FDR use dmrseq (a permutation null over the selection) or DSS callDMR, and confirm with cross-tool overlap - see references/methylation-analysis--dmr-detection.md.
 
 ```r
 # Calculate differential methylation (per CpG). overdispersion='MN' + test='Chisq' applies the
@@ -264,7 +280,7 @@ annotateWithGeneParts(as(dmr, 'GRanges'), gene_obj)
 | Low-coverage CpGs dominate the DMC list | No coverage filter before testing | `filterByCoverage(lo.count=10, hi.perc=99.9)` before `calculateDiffMeth` |
 | Spurious DMCs / underdispersed p-values | Bare-beta t-test ignores counts/overdispersion | Beta-binomial/DSS or methylKit `overdispersion='MN'`; limma-M for arrays |
 | Region q-values too optimistic | methylKit fixed tiles ignore the region-selection step | Use dmrseq (permutation null) or DSS `callDMR` for region-level FDR |
-| Very low mapping efficiency | Wrong library directionality (PBAT/non-directional aligned as directional) | Set the correct Bismark strand model (methylation-analysis/bismark-alignment) |
+| Very low mapping efficiency | Wrong library directionality (PBAT/non-directional aligned as directional) | Set the correct Bismark strand model (references/methylation-analysis--bismark-alignment.md) |
 
 The full per-step chain is shown above; the runnable methylKit analysis is in this skill's examples/ (`methylkit_analysis.R`).
 
@@ -277,11 +293,11 @@ The full per-step chain is shown above; the runnable methylKit analysis is in th
 
 ## Related Skills
 
-- methylation-analysis/bismark-alignment - Bisulfite/EM-seq alignment, library/strand model, conversion QC
-- methylation-analysis/methylation-calling - Calling from BAM (Bismark/MethylDackel), contexts, variant-aware
-- methylation-analysis/methylkit-analysis - methylKit object model and overdispersion gotchas
-- methylation-analysis/differential-cpg-testing - Per-CpG testing (count-vs-continuous fork)
-- methylation-analysis/dmr-detection - Selection-aware region callers (dmrseq/DSS) and PMD segmentation
+- references/methylation-analysis--bismark-alignment.md - Bisulfite/EM-seq alignment, library/strand model, conversion QC
+- references/methylation-analysis--methylation-calling.md - Calling from BAM (Bismark/MethylDackel), contexts, variant-aware
+- references/methylation-analysis--methylkit-analysis.md - methylKit object model and overdispersion gotchas
+- references/methylation-analysis--differential-cpg-testing.md - Per-CpG testing (count-vs-continuous fork)
+- references/methylation-analysis--dmr-detection.md - Selection-aware region callers (dmrseq/DSS) and PMD segmentation
 - methylation-analysis/array-preprocessing - Alternate entry: Infinium IDAT to beta/M matrix
 - methylation-analysis/cell-type-deconvolution - Cell-fraction covariates for bulk-tissue EWAS
 - methylation-analysis/epigenetic-clocks - DNAm age and age acceleration

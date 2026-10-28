@@ -1,3 +1,4 @@
+import type { PlatformStatsProps } from '../../treasure-island/platformStats'
 /** Non-sensitive view data only. Authentication, networking and state belong to Vue. */
 export interface TreasureCard {
   tool: string; accession: string; title: string; summary: string; meta: Record<string, string>;
@@ -10,7 +11,7 @@ export interface TreasureMessage {
   boost?: { accession: string | null } | null;
   streaming?: boolean; error?: string | null;
 }
-export interface TreasureIslandProps {
+export interface TreasureIslandProps extends PlatformStatsProps {
   context: { projectId: string | null; projectName: string; locale: 'zh' | 'en'; theme: 'light' | 'dark' };
   messages: readonly TreasureMessage[];
   mode?: 'welcome' | 'composer' | 'pet' | 'app';
@@ -65,7 +66,7 @@ export interface ResearchWorkflowView {
   datasetId?: string; versionId?: string; manifestHash?: string;
   assets: { id: string; type: string; size: number; checksum: string; availability: string; fileRecordId?: string; role?: string; checksumStatus?: string }[];
   workflows: { id: string; label: string }[];
-  proposals: { id: string; kind: 'import' | 'analysis'; state: string; hash: string; expires: string; details: { label: string; value: string }[] }[];
+  proposals: { id: string; kind: 'import' | 'analysis'; capabilityId?: 'downloads.prepare' | 'analysis.prepare'; state: string; hash: string; expires: string; details: { label: string; value: string }[] }[];
   tasks: { id: string; status: string }[];
   reports: { id: string; kind: string; state: string; integrity: string }[];
   deliveryStatus: string;

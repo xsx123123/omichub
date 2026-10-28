@@ -27,7 +27,7 @@ const report: Report = {
 }
 
 describe('现有报告中心交付入口', () => {
-  it('按生成后的 Report ID 打开预览，展示缺口并复用下载', async () => {
+  it('按生成后的 Report ID 进入平台查看页，保留列表证据标识', async () => {
     calls.detail.mockResolvedValue({ data: report })
     calls.preview.mockResolvedValue({ data: '<h1>Frozen task-1 audit</h1>' })
     calls.list.mockResolvedValue({ data: { items: [report], total: 1 } })
@@ -41,14 +41,10 @@ describe('现有报告中心交付入口', () => {
     try {
       for (let i = 0; i < 8; i++) { await Promise.resolve(); await nextTick() }
       expect(calls.detail).toHaveBeenCalledWith('published-report')
-      const iframe = document.querySelector('iframe')!
-      expect(iframe?.getAttribute('srcdoc')).toContain('Frozen task-1 audit')
-      expect(iframe.getAttribute('sandbox')).toBe('')
+      expect(calls.push).toHaveBeenCalledWith({ name: 'report-viewer', params: { reportId: report.id } })
+      expect(document.querySelector('iframe')).toBeNull()
       expect(document.body.textContent).toContain('证据不完整')
-      const button = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === '下载')!
-      button.click()
-      await nextTick()
-      expect(calls.download).toHaveBeenCalledWith(report, 'html-file')
+      expect(calls.preview).not.toHaveBeenCalled()
     } finally { app.unmount(); host.remove() }
   })
 })

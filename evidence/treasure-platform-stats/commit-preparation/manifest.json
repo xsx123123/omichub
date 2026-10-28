@@ -1,0 +1,37 @@
+{
+  "base": "45030a94906f1a578b5583199b07978bb24ecf28",
+  "input_fix_tree": "948c9bab3701fb3462c1769c559cf3bfbf5898f5",
+  "stats_tree": "f458b5b8e8cc4a953ac69f39590cf07bb4f8851c",
+  "stats_index": "/home/zj/zj_code_libarary/OmicHub/evidence/treasure-platform-stats/commit-preparation/stats.index",
+  "stats_files": [
+    ".env.example",
+    "ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md",
+    "deploy/docker/docker-compose.yml",
+    "frontend/scripts/build-treasure-island.mjs",
+    "frontend/src/api/researchAgent.ts",
+    "frontend/src/types/treasureIsland.d.ts",
+    "frontend/src/views/TreasureResearchWorkbench.vue",
+    "frontend/treasure-island/FullPresentation.tsx",
+    "frontend/treasure-island/index.tsx",
+    "frontend/treasure-island/platformStats.ts",
+    "pipelines/Treasure-Seeking_Mouse",
+    "scripts/poc/treasure-runtime-usage.mjs",
+    "scripts/poc/treasure-stats-browser.mjs",
+    "src/cygnusx/api/v1/research_agent.py",
+    "src/cygnusx/application/schemas/research_stats.py",
+    "src/cygnusx/application/services/research_stats_service.py",
+    "src/cygnusx/application/services/research_treasure_service.py",
+    "src/cygnusx/core/config.py",
+    "tests/integration/test_research_stats_isolated.py",
+    "tests/unit/test_treasure_native_access.py"
+  ],
+  "input_fix_files": [
+    "ARCHITECTURE_DESIGN/CygnusX_frontend.md",
+    "ARCHITECTURE_DESIGN/CygnusX_treasure_mouse_ui.md",
+    "frontend/src/components/ai-assistant/GlobalAiAssistantSidebar.vue",
+    "pipelines/Treasure-Seeking_Mouse",
+    "scripts/poc/chat-input-editing-browser.mjs"
+  ],
+  "proposed_stats_message": "feat(research): 接入平台寻宝榜、昵称和使用统计",
+  "proposed_input_message": "fix(frontend): 修复寻宝输入光标与侧栏输入法误发送"
+}

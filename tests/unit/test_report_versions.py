@@ -5,8 +5,16 @@ from uuid import UUID, uuid4
 import pytest
 
 from cygnusx.application.services.report_service import ReportService
+from cygnusx.core.config import get_settings
 from cygnusx.core.exceptions import NotFoundError
 from cygnusx.infrastructure.database.models.report import ReportModel
+
+pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def legacy_report_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(get_settings(), "research_delivery_read_enabled", False)
 
 
 def _report(user_id: UUID, *, version: int, parent_id: UUID | None = None) -> ReportModel:

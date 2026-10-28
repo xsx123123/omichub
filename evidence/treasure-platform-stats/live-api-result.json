@@ -1,0 +1,21 @@
+{
+  "leaderboard": {
+    "status": 200,
+    "rankedUsers": 2,
+    "totalTreasures": 308,
+    "weekTreasures": 117
+  },
+  "leaderboard?period=week": {
+    "status": 200,
+    "rankedUsers": 2,
+    "totalTreasures": 308,
+    "weekTreasures": 117
+  },
+  "stats": {
+    "status": 200,
+    "chats": 9,
+    "actors": 2,
+    "toolCalls": 17,
+    "usageRecordedChats": 0
+  }
+}

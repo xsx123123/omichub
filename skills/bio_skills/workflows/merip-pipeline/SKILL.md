@@ -1,6 +1,22 @@
 ---
 name: bio-workflows-merip-pipeline
 description: Orchestrates an end-to-end MeRIP-seq / m6A-seq analysis from raw FASTQ to differential m6A peak calls and metagene plots, chaining fastp adapter trimming, STAR splice-aware alignment (NO deduplication for non-UMI MeRIP), deepTools replicate-concordance + IP-enrichment QC, PreSeq saturation curves, exomePeak2 (transcript-aware, GC-bias-aware negative-binomial GLM) peak calling, optional MACS3 broad-peak cross-check, DRACH motif confirmation as a sanity check (NOT a per-peak filter), exomePeak2 differential calling via the four-BAM-vector interface (bam_ip + bam_input control; bam_treated_ip + bam_treated_input treatment), ChIPseeker annotation, and the canonical Guitar metagene with stop-codon enrichment as the biological QC anchor. Use when running a complete MeRIP analysis from raw reads, when chaining the constituent epitranscriptomics skills (merip-preprocessing -> m6a-peak-calling -> m6a-differential -> modification-visualization), or when wrapping the pipeline in Snakemake / Nextflow.
+version: 1.0.0
+display_name: MeRIP-seq 分析流程
+display_name_en: MeRIP-seq Pipeline
+description_zh: >-
+  从 FASTQ 到差异 m6A 峰与 metagene 图的 MeRIP-seq 全流程，涵盖 fastp 修剪、STAR 比对、重复一致性与 IP 富集质控、exomePeak2 峰调用与差异分析、ChIPseeker 注释与 Guitar 可视化。
+description_en: >-
+  Orchestrates an end-to-end MeRIP-seq / m6A-seq analysis from raw FASTQ to differential m6A peak calls and metagene plots, chaining fastp adapter trimming, STAR splice-aware alignment (NO deduplication for non-UMI MeRIP), deepTools replicate-concordance + IP-enrichment QC, PreSeq saturation curves, exomePeak2 (transcript-aware, GC-bias-aware negative-binomial GLM) peak calling, optional MACS3 broad-peak cross-check, DRACH motif confirmation as a sanity check (NOT a per-peak filter), exomePeak2 differential calling via the four-BAM-vector interface (bam_ip + bam_input control; bam_treated_ip + bam_treated_input treatment), ChIPseeker annotation, and the canonical Guitar metagene with stop-codon enrichment as the biological QC anchor. Use when running a complete MeRIP analysis from raw reads, when chaining the constituent epitranscriptomics skills (merip-preprocessing -> m6a-peak-calling -> m6a-differential -> modification-visualization), or when wrapping the pipeline in Snakemake / Nextflow.
+author: JZHANG
+examples_zh:
+  - "用 MeRIP-seq 数据调用 m6A 峰并比较组间差异"
+  - "帮我检查 IP 富集和重复一致性"
+  - "生成 m6A metagene 图并验证 DRACH motif"
+examples_en:
+  - "Call m6A peaks and compare them between conditions from MeRIP-seq data"
+  - "Check IP enrichment and replicate concordance for this experiment"
+  - "Generate m6A metagene plots and validate the DRACH motif"
 tool_type: mixed
 primary_tool: exomePeak2
 workflow: true
@@ -32,7 +48,7 @@ exomePeak2 has NO `mode=` or `experiment_design=` argument; differential is trig
 
 # MeRIP-seq End-to-End Pipeline
 
-**"Analyze my MeRIP-seq data from FASTQ to differential m6A peaks"** -> Orchestrate read alignment (STAR splice-aware to GENOME), IP-enrichment QC (deepTools plotFingerprint, replicate Spearman, PreSeq saturation), m6A peak calling (exomePeak2 transcript-aware default, MACS3 broad as cross-check), DRACH motif sanity check (HOMER), exomePeak2 differential via the four-BAM-vector interface, ChIPseeker feature annotation, and Guitar transcript-feature metagene confirming canonical stop-codon enrichment. Defer per-skill deep treatment to `epitranscriptomics/merip-preprocessing`, `epitranscriptomics/m6a-peak-calling`, `epitranscriptomics/m6a-differential`, and `epitranscriptomics/modification-visualization`.
+**"Analyze my MeRIP-seq data from FASTQ to differential m6A peaks"** -> Orchestrate read alignment (STAR splice-aware to GENOME), IP-enrichment QC (deepTools plotFingerprint, replicate Spearman, PreSeq saturation), m6A peak calling (exomePeak2 transcript-aware default, MACS3 broad as cross-check), DRACH motif sanity check (HOMER), exomePeak2 differential via the four-BAM-vector interface, ChIPseeker feature annotation, and Guitar transcript-feature metagene confirming canonical stop-codon enrichment. Defer per-skill deep treatment to `references/epitranscriptomics--merip-preprocessing.md`, `references/epitranscriptomics--m6a-peak-calling.md`, `references/epitranscriptomics--m6a-differential.md`, and `references/epitranscriptomics--modification-visualization.md`.
 
 This is a workflow skill: it owns the chaining decisions and hand-offs, not the internals of any one step.
 
@@ -72,7 +88,7 @@ fastp \
     --length_required 25 --detect_adapter_for_pe --thread 8
 ```
 
-Standard non-UMI MeRIP: do NOT pass `--umi`. See `epitranscriptomics/merip-preprocessing` for the do-NOT-dedup rationale.
+Standard non-UMI MeRIP: do NOT pass `--umi`. See `references/epitranscriptomics--merip-preprocessing.md` for the do-NOT-dedup rationale.
 
 ## Step 2: STAR Splice-Aware Genome Alignment
 
@@ -210,7 +226,7 @@ sig <- diff_table[diff_table$padj < 0.05 & abs(diff_table$DiffModLog2FC) > 0.5, 
 nrow(sig)
 ```
 
-exomePeak2 has NO `mode=` or `experiment_design=` argument. Populating `bam_treated_ip` + `bam_treated_input` triggers differential output. For batch / antibody-lot covariate adjustment, fall through to featureCounts-on-peaks -> DESeq2 (see `epitranscriptomics/m6a-differential`).
+exomePeak2 has NO `mode=` or `experiment_design=` argument. Populating `bam_treated_ip` + `bam_treated_input` triggers differential output. For batch / antibody-lot covariate adjustment, fall through to featureCounts-on-peaks -> DESeq2 (see `references/epitranscriptomics--m6a-differential.md`).
 
 ## Step 8: Peak Annotation to Transcript Features
 
@@ -329,14 +345,14 @@ The full pipeline (incl. exomePeak2 peak calling, DRACH check, ChIPseeker annota
 
 ## Related Skills
 
-- epitranscriptomics/merip-preprocessing - Per-step preprocessing (trim, align, QC, saturation, IP-over-Input bigWig)
-- epitranscriptomics/m6a-peak-calling - exomePeak2 / MeTPeak / MACS3 deep treatment, DRACH sanity check, m6A-vs-m6Am 5'UTR flag
-- epitranscriptomics/m6a-differential - Differential methods (exomePeak2, QNB, RADAR), batch / lot covariate handling, stoichiometry-vs-expression confound
-- epitranscriptomics/modification-visualization - Guitar metagene, peak-centred heatmaps, pyGenomeTracks browser figures
+- references/epitranscriptomics--merip-preprocessing.md - Per-step preprocessing (trim, align, QC, saturation, IP-over-Input bigWig)
+- references/epitranscriptomics--m6a-peak-calling.md - exomePeak2 / MeTPeak / MACS3 deep treatment, DRACH sanity check, m6A-vs-m6Am 5'UTR flag
+- references/epitranscriptomics--m6a-differential.md - Differential methods (exomePeak2, QNB, RADAR), batch / lot covariate handling, stoichiometry-vs-expression confound
+- references/epitranscriptomics--modification-visualization.md - Guitar metagene, peak-centred heatmaps, pyGenomeTracks browser figures
 - epitranscriptomics/m6anet-analysis - ONT direct-RNA alternative for orthogonal stoichiometry validation
 - chip-seq/peak-calling - Sibling IP-vs-input peak-calling framework
 - chip-seq/chipseq-qc - IP enrichment QC concepts that transfer to MeRIP
-- read-alignment/star-alignment - General STAR splice-aware alignment
+- references/read-alignment--star-alignment.md - General STAR splice-aware alignment
 - workflow-management/snakemake-workflows - Snakemake orchestration patterns
 - workflow-management/nextflow-pipelines - Nextflow orchestration patterns
 - workflows/rnaseq-to-de - General RNA-seq -> DE pipeline patterns

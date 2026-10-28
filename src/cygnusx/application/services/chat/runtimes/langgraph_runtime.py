@@ -125,9 +125,7 @@ async def _gate_chat_sandbox_approval(
             },
         )
     )
-    resolution_task = asyncio.create_task(
-        approval_service.wait_resolution(approval["approval_id"])
-    )
+    resolution_task = asyncio.create_task(approval_service.wait_resolution(approval["approval_id"]))
     try:
         while not resolution_task.done():
             await asyncio.wait({resolution_task}, timeout=15)
@@ -208,11 +206,19 @@ async def _gate_network_request_approval(
         arguments=args,
         risk_hint=_studio_risk_hint(NETWORK_REQUEST_TOOL_NAME, args),
     )
-    await emit(ChatChunk(type="approval_request", metadata={
-        "approval_id": approval["approval_id"], "tool_call_id": tool_call_id,
-        "tool_name": NETWORK_REQUEST_TOOL_NAME, "arguments": args,
-        "risk_hint": approval["risk_hint"], "timeout_seconds": APPROVAL_TTL_SECONDS,
-    }))
+    await emit(
+        ChatChunk(
+            type="approval_request",
+            metadata={
+                "approval_id": approval["approval_id"],
+                "tool_call_id": tool_call_id,
+                "tool_name": NETWORK_REQUEST_TOOL_NAME,
+                "arguments": args,
+                "risk_hint": approval["risk_hint"],
+                "timeout_seconds": APPROVAL_TTL_SECONDS,
+            },
+        )
+    )
     resolution_task = asyncio.create_task(approval_service.wait_resolution(approval["approval_id"]))
     try:
         while not resolution_task.done():
@@ -224,9 +230,16 @@ async def _gate_network_request_approval(
         if not resolution_task.done():
             resolution_task.cancel()
     action = str(resolution.get("action") or "timeout")
-    await emit(ChatChunk(type="approval_resolved", metadata={
-        "approval_id": approval["approval_id"], "tool_call_id": tool_call_id, "action": action,
-    }))
+    await emit(
+        ChatChunk(
+            type="approval_resolved",
+            metadata={
+                "approval_id": approval["approval_id"],
+                "tool_call_id": tool_call_id,
+                "action": action,
+            },
+        )
+    )
     if action == "edited" and isinstance(resolution.get("modified_args"), dict):
         args = resolution["modified_args"]
         action = "approved"
@@ -234,16 +247,27 @@ async def _gate_network_request_approval(
         always_allow.add(NETWORK_REQUEST_TOOL_NAME)
     if action == "timeout":
         await record_approval_audit(
-            user_id=str(user_id), approval_id=approval["approval_id"], session_id=str(session_id),
-            tool_name=NETWORK_REQUEST_TOOL_NAME, action="timeout", resolver="timeout",
-            arguments=args, method="EVENT",
+            user_id=str(user_id),
+            approval_id=approval["approval_id"],
+            session_id=str(session_id),
+            tool_name=NETWORK_REQUEST_TOOL_NAME,
+            action="timeout",
+            resolver="timeout",
+            arguments=args,
+            method="EVENT",
         )
     if action != "approved":
-        reason = resolution.get("reason") or ("用户未响应（超时）" if action == "timeout" else "用户拒绝了该网络请求")
-        payload = {"success": False, "rejected": True, "result": {
-            "llm_payload": {"rejected": True, "error": reason},
-            "ui_payload": {"rejected": True, "error": reason},
-        }}
+        reason = resolution.get("reason") or (
+            "用户未响应（超时）" if action == "timeout" else "用户拒绝了该网络请求"
+        )
+        payload = {
+            "success": False,
+            "rejected": True,
+            "result": {
+                "llm_payload": {"rejected": True, "error": reason},
+                "ui_payload": {"rejected": True, "error": reason},
+            },
+        }
         return args, payload
     return args, None
 
@@ -352,6 +376,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                 self._service, "_last_context_compaction_policy", None
             )
             return result
+
         persisted_web_sources = web_sources if web_sources is not None else []
         # 审批闸上下文（对齐 legacy chat_service）：仅当会话显式携带
         # sandbox_meta.permissions.mode 时启用审批；always_allow 集合支持流内
@@ -362,9 +387,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
             dict(approval_session.sandbox_meta or {}) if approval_session else {}
         )
         _permissions = approval_sandbox_meta.get("permissions")
-        chat_permission_mode = (
-            _permissions.get("mode") if isinstance(_permissions, dict) else None
-        )
+        chat_permission_mode = _permissions.get("mode") if isinstance(_permissions, dict) else None
         chat_always_allow = always_allow_set(approval_sandbox_meta)
         # NodeDeps 每轮循环重建，emit 由 LangGraphRuntimeService.stream 在图执行前
         # 挂到 deps 上；经 holder 让工具执行器拿到当前轮的 emit 以透出审批事件。
@@ -407,6 +430,25 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
         async def _tool_executor(
             tool_name: str, args: dict[str, Any], tool_call_id: str
         ) -> dict[str, Any]:
+            if runtime_state["tool_context"].extra.get("report_copilot"):
+                from cygnusx.application.services.report_copilot_service import (
+                    ReportCopilotService,
+                )
+
+                try:
+                    value = await ReportCopilotService(
+                        self._service._db, user_id, session_id
+                    ).execute(tool_name, args)
+                    return {"success": True, "result": {"llm_payload": value, "ui_payload": value}}
+                except Exception as exc:  # noqa: BLE001
+                    logger.info("报告 Copilot 工具读取失败: {}", exc)
+                    return {
+                        "success": False,
+                        "result": {
+                            "llm_payload": {"error": "当前报告数据暂不可读取。"},
+                            "ui_payload": {"error": "当前报告数据暂不可读取。"},
+                        },
+                    }
             if tool_name == HANDOFF_TOOL_NAME:
                 from cygnusx.application.services.tool_bridge_service import (
                     get_tool_bridge_service,
@@ -484,9 +526,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                         ).scalar_one_or_none()
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("knowledge_search 读取会话 project_id 失败: {}", exc)
-                return await self._service._knowledge_search_chat(
-                    args, project_id=project_id
-                )
+                return await self._service._knowledge_search_chat(args, project_id=project_id)
             if tool_name == "web_search":
                 # 对齐 legacy chat_service.py:5038-5074：循环内补发 web_search
                 # UI 事件（searching / sources / empty / failed），前端来源卡片依赖它们。
@@ -503,7 +543,11 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                 search_results = (
                     search_payload.get("results", []) if isinstance(search_payload, dict) else []
                 )
-                if isinstance(result, dict) and result.get("success") and isinstance(search_results, list):
+                if (
+                    isinstance(result, dict)
+                    and result.get("success")
+                    and isinstance(search_results, list)
+                ):
                     persisted_web_sources.extend(
                         item for item in search_results if isinstance(item, dict)
                     )
@@ -569,9 +613,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                     # deadline here so setup, artifact copy-out, archive, and probe
                     # cannot leave the assistant tool card in "running" forever.
                     return await asyncio.wait_for(
-                        execute_chat_sandbox(
-                            effective_args, user_id, session_id=session_id
-                        ),
+                        execute_chat_sandbox(effective_args, user_id, session_id=session_id),
                         timeout=hard_timeout,
                     )
                 except TimeoutError:
@@ -704,9 +746,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                                         "index": fanout_index,
                                         "agent_id": child.item["agent_id"],
                                         "name": str(
-                                            getattr(
-                                                getattr(child.ctx, "agent", None), "name", ""
-                                            )
+                                            getattr(getattr(child.ctx, "agent", None), "name", "")
                                             or child.item["agent_id"]
                                         ),
                                         "task": str(child.item.get("task") or "")[:120],
@@ -735,6 +775,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                         parent_agent_id=str(tool_context.agent_id or ""),
                         parent_session_id=str(tool_context.session_id or ""),
                         on_event=_on_fanout_child_event,
+                        request_key=(str(args.get("request_key") or "").strip() or None),
                     )
                 await _emit(
                     ChatChunk(
@@ -786,13 +827,9 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                                 objective=str(args.get("objective") or ""),
                                 project_id=str(args.get("project_id") or ""),
                                 flow_id=str(args.get("flow_id") or ""),
-                                origin_consultation_id=str(
-                                    args.get("origin_consultation_id") or ""
-                                )
+                                origin_consultation_id=str(args.get("origin_consultation_id") or "")
                                 or None,
-                                consultation_summary=str(
-                                    args.get("consultation_summary") or ""
-                                )
+                                consultation_summary=str(args.get("consultation_summary") or "")
                                 or None,
                                 context=tool_context,
                             )
@@ -813,10 +850,8 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                     project_id=str(args.get("project_id") or ""),
                     flow_id=str(args.get("flow_id") or ""),
                     sample_context_refs=args.get("sample_context_refs") or [],
-                    origin_consultation_id=str(args.get("origin_consultation_id") or "")
-                    or None,
-                    consultation_summary=str(args.get("consultation_summary") or "")
-                    or None,
+                    origin_consultation_id=str(args.get("origin_consultation_id") or "") or None,
+                    consultation_summary=str(args.get("consultation_summary") or "") or None,
                     context=tool_context,
                 )
                 card = (case_envelope.get("ui_payload") or {}).get("case_card") or {}
@@ -930,6 +965,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
             if tool_context.extra.get("fanout_preexecuted"):
                 admission.mark_preexecuted()
             return admission
+
         # WP3-Task1：cell 编号基线取本会话已落库信封的最大 cell_index+1
         # （纯派生，对齐 legacy chat_service.py:3956；查询失败时从 0 起，
         # 不阻断聊天主链路）
@@ -1009,7 +1045,11 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                         )
                     )
                     selected = next(
-                        (item for item in routing_selector.providers if item.name == selection.primary),
+                        (
+                            item
+                            for item in routing_selector.providers
+                            if item.name == selection.primary
+                        ),
                         None,
                     )
                     if selected is not None:
@@ -1026,7 +1066,9 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                                 agent_id=execution_agent_id,
                                 complexity=complexity,
                                 explicit_model_id=explicit_model_id,
-                                model_tier=str(getattr(runtime_state["model_config"], "tier", "auto")),
+                                model_tier=str(
+                                    getattr(runtime_state["model_config"], "tier", "auto")
+                                ),
                                 chosen_provider=selection.primary,
                                 cascade_providers=list(selection.cascade),
                                 candidates_considered=[
@@ -1105,7 +1147,11 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                             )
                             if next_provider:
                                 selected = next(
-                                    (item for item in routing_selector.providers if item.name == next_provider),
+                                    (
+                                        item
+                                        for item in routing_selector.providers
+                                        if item.name == next_provider
+                                    ),
                                     None,
                                 )
                                 if selected is not None:
@@ -1162,7 +1208,9 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                         await _flush_routing_audit()
                         return
                     elif chunk.type == "tool_call":
-                        execution_round = max(execution_round, int(chunk.metadata.get("round") or 1))
+                        execution_round = max(
+                            execution_round, int(chunk.metadata.get("round") or 1)
+                        )
                         chunk.metadata.update(
                             {
                                 "execution_path": execution_path,
@@ -1202,9 +1250,11 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                         # 的落库护栏、cell 语义字段与 payload_hash(WP2 可校验)。
                         # 历史重载凭这些字段重建卡片/图表并显式提示截断。
                         args = pending_tool_args.pop(call_id, {})
-                        capped_result, result_truncation = _cap_tool_invocation_payload_detail(llm_result)
-                        capped_ui_payload, ui_payload_truncation = _cap_tool_invocation_payload_detail(
-                            ui_payload
+                        capped_result, result_truncation = _cap_tool_invocation_payload_detail(
+                            llm_result
+                        )
+                        capped_ui_payload, ui_payload_truncation = (
+                            _cap_tool_invocation_payload_detail(ui_payload)
                         )
                         _invocation_envelope: dict[str, Any] = {
                             "tool_call_id": call_id,
@@ -1231,15 +1281,19 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                             ),
                             # cell 字段在 payload_hash 计算前写入，hash 覆盖 cell_index/
                             # language（对齐 legacy 5238-5243）
-                            **(_cell_fields := _code_cell_envelope_fields(
-                                tool_name, args, code_cell_next
-                            )),
+                            **(
+                                _cell_fields := _code_cell_envelope_fields(
+                                    tool_name, args, code_cell_next
+                                )
+                            ),
                         }
                         if _cell_fields["cell_index"] is not None:
                             code_cell_next += 1
                         _invocation_envelope = _finalize_invocation_envelope(_invocation_envelope)
                         persisted_tool_invocations.append(_invocation_envelope)
-                        if tool_name == PARALLEL_SUBAGENTS_TOOL_NAME and isinstance(llm_result, dict):
+                        if tool_name == PARALLEL_SUBAGENTS_TOOL_NAME and isinstance(
+                            llm_result, dict
+                        ):
                             fanout_envelope = {
                                 "llm_payload": llm_result.get("llm_payload"),
                                 "ui_payload": ui_payload,
@@ -1276,7 +1330,11 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                     if next_provider:
                         runtime_state["_cascade_provider"] = next_provider
                         selected = next(
-                            (item for item in routing_selector.providers if item.name == next_provider),
+                            (
+                                item
+                                for item in routing_selector.providers
+                                if item.name == next_provider
+                            ),
                             None,
                         )
                         if selected is not None:
@@ -1458,9 +1516,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                 if isinstance(e, SQLAlchemyError)
                 else f"生成失败: {error}"
             )
-            metadata_error = (
-                "db_error" if isinstance(e, SQLAlchemyError) else error
-            )
+            metadata_error = "db_error" if isinstance(e, SQLAlchemyError) else error
             yield ChatChunk(
                 type="error",
                 content=user_visible_error,
@@ -1534,7 +1590,9 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
             status=(
                 "round_limit"
                 if runtime.rounds_exhausted
-                else "awaiting_input" if terminal_awaiting_input else "completed"
+                else "awaiting_input"
+                if terminal_awaiting_input
+                else "completed"
             ),
             **({"action": "finalize"} if terminal_finalize else {}),
         )

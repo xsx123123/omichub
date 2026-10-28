@@ -5,6 +5,7 @@ import { useAgentHubStore } from '@/stores/agentHub'
 import { CATEGORY_LABELS } from '@/stores/agentHub'
 import type { AgentTemplate } from '@/types/agent'
 
+defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<{ agent: AgentTemplate; compact?: boolean }>(), {
   compact: false,
 })
@@ -26,6 +27,7 @@ const extraCaps = computed(() => caps.value.slice(3))
   <NPopover trigger="hover" placement="top" :width="240">
     <template #trigger>
       <button
+        v-bind="$attrs"
         class="agent-card cygnusx-selectable-card"
         :class="{ compact: props.compact }"
         :style="{ '--agent-color': agent.color }"
@@ -39,7 +41,7 @@ const extraCaps = computed(() => caps.value.slice(3))
             <div class="name">{{ agent.name }}</div>
             <div class="category">{{ CATEGORY_LABELS[agent.category] }}</div>
           </div>
-          <span class="enter-mark" aria-hidden="true">↗</span>
+          <span class="enter-mark card-state-arrow" aria-hidden="true">↗</span>
         </div>
         <div class="desc" :title="agent.description">{{ agent.description }}</div>
         <div v-if="visibleCaps.length" class="capability-chips">
@@ -71,14 +73,8 @@ const extraCaps = computed(() => caps.value.slice(3))
   border: 1px solid var(--chat-border, var(--neutral-border));
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
   height: 100%;
 }
-.agent-card:hover {
-  border-color: var(--agent-color);
-  background: color-mix(in srgb, var(--agent-color) 5%, var(--chat-surface, var(--neutral-card)));
-}
-.agent-card.is-highlighted { border-color: var(--arco-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--arco-primary) 20%, transparent); }
 .agent-card:focus-visible {
   outline: 2px solid var(--agent-color);
   outline-offset: 3px;
@@ -94,7 +90,7 @@ const extraCaps = computed(() => caps.value.slice(3))
 .identity { min-width: 0; }
 .name { font-size: 14px; font-weight: 650; color: var(--chat-text-primary, var(--neutral-text-1)); }
 .category { margin-top: 2px; font-size: 12px; color: var(--chat-text-muted, var(--neutral-text-3)); }
-.enter-mark { margin-left: auto; color: var(--chat-text-muted, var(--neutral-text-3)); font-size: 16px; line-height: 1; }
+.enter-mark { margin-left: auto; font-size: 16px; line-height: 1; }
 .desc {
   overflow: hidden; margin: 8px 0 0;
   text-overflow: ellipsis; white-space: nowrap;

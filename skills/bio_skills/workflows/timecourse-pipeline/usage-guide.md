@@ -73,10 +73,10 @@ Tell your AI agent what you want to do:
 - For organisms other than human, swap org.Hs.eg.db for the appropriate OrgDb package.
 
 ## Related Skills
-- differential-expression/timeseries-de - Temporal DE methods
-- temporal-genomics/temporal-clustering - Cluster analysis details
-- temporal-genomics/circadian-rhythms - Rhythm detection and sampling design
+- references/differential-expression--timeseries-de.md - Temporal DE methods
+- references/temporal-genomics--temporal-clustering.md - Cluster analysis details
+- references/temporal-genomics--circadian-rhythms.md - Rhythm detection and sampling design
 - temporal-genomics/differential-rhythmicity - Comparing rhythms between conditions
-- temporal-genomics/trajectory-modeling - GAM fitting details
+- references/temporal-genomics--trajectory-modeling.md - GAM fitting details
 - temporal-genomics/periodicity-detection - Unknown-period discovery
-- pathway-analysis/go-enrichment - Enrichment analysis details
+- references/pathway-analysis--go-enrichment.md - Enrichment analysis details

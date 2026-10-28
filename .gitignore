@@ -113,3 +113,5 @@ sandbox-audit-report.json
 
 # Generated original research display (rebuilt by frontend prebuild/predev)
 frontend/public/treasure-island/
+# Local Web redundancy acceptance artifacts (including temporary credentials).
+/evidence/web-redundancy/

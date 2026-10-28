@@ -97,7 +97,7 @@ CygnusX 是面向生物信息学任务、数据资产与 AI 工作流的科学�
 | AI 对话场景令牌 | `frontend/src/styles/chat-theme.css` | `--chat-*` 的唯一来源；其颜色必须映射到 `tokens.css` 的 Surface / Text / Border 令牌，不得另建一套色板。 |
 | Naive UI 主题覆盖 | `frontend/src/App.vue` | Naive UI 的色彩、圆角、菜单和组件基础外观只在此维护。 |
 | 主框架、顶部栏、侧栏 | `frontend/src/layouts/DefaultLayout.vue` | 新导航或壳层变更遵循已有折叠、移动端和滚动规则。 |
-| 通用页头 | `frontend/src/components/PageHeader.vue` | 统一标题、说明和右侧操作区；不要在页面重复造页头。 |
+| 通用页头 | `frontend/src/components/PageHeader.vue` | 统一标题、说明和右侧操作区；不要在页面重复造页头。查看器类内容最大化页面使用其 `compact` 紧凑变体（见 §4.1）。 |
 | 管理配置中心布局 | `frontend/src/styles/global.css` | 管理中心使用 `.admin-config-center` 和 `.admin-config-tabs`；嵌套资源页使用 `.admin-config-section`，不得以独立 `max-width` 收窄内容。 |
 | 仪表盘实时状态模式 | `frontend/src/views/DashboardView.vue` | 系统健康、局部刷新、任务列表与进度条的推荐实现。 |
 | 认证页材质与引言 | `frontend/src/views/LoginView.vue`、`frontend/src/views/RegisterView.vue`、`frontend/src/components/StardustQuote.vue` | 认证场景可使用星空和玻璃材质，普通工作台页面保持克制。 |
@@ -230,6 +230,18 @@ CygnusX 深色工作台使用五级 Surface 空间层级，替代“页面背景
   </template>
 </PageHeader>
 ```
+
+#### PageHeader `compact` 紧凑变体（内容最大化页面）
+
+查看器类页面（内容区是 iframe / 基因组浏览器等需要最大化高度的场景）使用 `<PageHeader compact …>`：垂直 padding 压缩为 `12px`、去掉 `margin-bottom`、副标题内联为标题旁的 12px 辅助色单行文本（窄屏允许换行到标题下方）。此时页面的状态/来源/版本/时间等元信息**不得再独占一行**，应合并为副标题的一行 ` · ` 分隔文本。权威使用方：`frontend/src/views/BioTools/JBrowseViewer.vue`、`frontend/src/views/ReportViewerView.vue`（报告查看页：副标题为 `已完成 · 外部交付 · RNA-seq 0.2.0 · 2026/10/28 21:57:57` 形式的元信息行，报告 iframe 独占剩余高度）。
+
+##### 报告查看页页头契约（ReportViewerView，强制）
+
+报告查看页（`frontend/src/views/ReportViewerView.vue`）在 compact 变体之上还有三条页面级约定：
+
+1. **操作区在左、标题在右**：页头操作区（报告中心 / 新窗口打开 / 收藏 / 下载）通过页面 scoped 样式 `:deep(.page-header-actions) { order: -1; }` 换到标题块左侧，标题与元信息行位于右侧。该换位是报告查看页的专属约定，不外溢到其他页面，也不要反过来改 `PageHeader` 组件的默认结构。
+2. **不提供平台侧中英文切换**：双语报告的语言切换以报告 HTML 内置的 English/中文切换为准（经 `cygnusx:report-language` postMessage 驱动平台重新签发对应语言预览），页头不再放语言 `NSelect`。
+3. **"新窗口打开"直达裸报告页**：`openWindow()` 打开的是 `GET /api/v1/reports/{id}/preview-content?token=…`（签发预览时返回的自认证 HTML 路由），即不带平台壳层的完整报告 HTML 页面；不得打开平台 SPA 的报告查看路由。回归断言见 `frontend/src/components/report/__tests__/report-viewer.test.ts` 的「保留执行证据缺口语义并复用收藏和受控新窗口」。
 
 ### 4.2 材质和玻璃表面
 

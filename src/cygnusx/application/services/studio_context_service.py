@@ -41,6 +41,7 @@ from cygnusx.infrastructure.database.models.report import ReportFileModel, Repor
 from cygnusx.infrastructure.database.models.task import TaskModel
 from cygnusx.infrastructure.database.session import get_session_factory
 from cygnusx.infrastructure.storage import get_path_factory, get_storage_backend
+from cygnusx.infrastructure.storage.backend import StorageBackend
 from cygnusx.infrastructure.storage.file_registry import FileRegistry
 from cygnusx.infrastructure.studio.manager import studio_sandbox_manager
 from cygnusx.infrastructure.studio.paths import PathEscapeError
@@ -116,7 +117,7 @@ _CHAT_UPLOAD_ID_RE = re.compile(r"^[a-fA-F0-9]{16,128}$")
 
 
 async def _resolve_chat_upload_file(
-    user_id: str, upload_id: str, backend=None
+    user_id: str, upload_id: str, backend: StorageBackend | None = None
 ) -> tuple[Path, str, int]:
     """解析当前用户聊天上传文件，返回路径、平台相对路径与大小。"""
     backend = backend or get_storage_backend()
@@ -218,14 +219,15 @@ async def create_session_from_report(
     agent = await AgentService(db).get_agent(agent_id)
     if agent is None or not agent.is_active:
         raise NotFoundError("Agent 不存在或已停用")
-    studio_cfg = (agent.features or {}).get("studio") or {}
-    if studio_cfg and studio_cfg.get("enabled") is False:
+    studio_value = (agent.features or {}).get("studio")
+    studio_cfg: dict[str, Any] = studio_value if isinstance(studio_value, dict) else {}
+    if studio_value is False or studio_cfg.get("enabled") is False:
         raise BusinessError("该 Agent 未启用 Studio 工作台")
     if agent.model_id is None:
         raise BusinessError("Agent 未绑定模型，无法创建 Studio 会话")
 
     # 产出该报告的任务（取用户当时参数）；报告可能来自 Studio 回填（无任务行）
-    task = await db.get(TaskModel, report.task_id)
+    task = await db.get(TaskModel, report.task_id) if report.task_id else None
     params = dict(task.parameters or {}) if task is not None else {}
 
     service = ChatService(db)
@@ -253,7 +255,7 @@ async def create_session_from_report(
         "source": {
             "pipeline": report.flow_id,
             "pipeline_name": report.flow_name,
-            "run_id": str(report.task_id),
+            "run_id": str(report.task_id) if report.task_id else None,
             "params": params,
             "report_id": str(report.id),
             "report_title": report.title,

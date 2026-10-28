@@ -116,6 +116,7 @@ function handlePrimaryClick() {
             {{ report.title }}
           </h3>
           <span class="flow-label">{{ flowMeta.label }}</span>
+          <span v-if="report.source_kind === 'external'" class="flow-label">外部交付 · v{{ report.version || 1 }}</span>
           <span v-if="report.report_kind === 'reproducibility'" class="flow-label">
             执行证据报告 · v{{ report.version || 1 }} · {{ report.template_version }}
             · {{ report.evidence_partial ? '证据不完整' : '当前采集范围无已知缺口' }} · 复现验证未执行

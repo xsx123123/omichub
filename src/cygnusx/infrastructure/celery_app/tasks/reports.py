@@ -23,6 +23,36 @@ from cygnusx.infrastructure.database.models.report import ReportGenerationJobMod
 TASK_PREFIX = "cygnusx.infrastructure.celery_app.tasks.reports"
 
 
+@shared_task(name=f"{TASK_PREFIX}.import_flow_reports", soft_time_limit=600, time_limit=660)  # type: ignore[untyped-decorator]
+def import_flow_reports() -> dict[str, int]:
+    return asyncio.run(_import_flow_reports())
+
+
+async def _import_flow_reports() -> dict[str, int]:
+    from cygnusx.application.services.flow_report_import_service import FlowReportImportService
+    from cygnusx.infrastructure.database.session import create_unpooled_engine
+
+    if not get_settings().flow_report_import_enabled:
+        return {"imported": 0, "unchanged": 0, "failed": 0}
+    engine = create_unpooled_engine()
+    try:
+        async with engine.connect() as connection, AsyncSession(bind=connection, expire_on_commit=False) as db:
+            key = task_lock_key(UUID(int=0))
+            locked = await db.scalar(text("SELECT pg_try_advisory_lock(:key)"), {"key": key})
+            await db.commit()
+            if not locked:
+                return {"busy": 1}
+            try:
+                async with asyncio.timeout(590):
+                    return await FlowReportImportService(db).scan()
+            finally:
+                await db.rollback()
+                await db.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
+                await db.commit()
+    finally:
+        await engine.dispose()
+
+
 def task_lock_key(task_id: UUID) -> int:
     return int.from_bytes(hashlib.sha256(f"report:{task_id}".encode()).digest()[:8], signed=True)
 

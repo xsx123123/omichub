@@ -811,6 +811,8 @@ class ResearchProvenanceService:
         report = await self.db.get(ReportModel, report_id)
         if not report or report.user_id != owner:
             raise NotFoundError("Report not found")
+        if report.task_id is None:
+            raise ValidationError("External reports do not have platform execution provenance")
         return await self.task(owner, report.task_id)
 
     async def reconcile(self, owner: UUID, task_id: UUID) -> ResearchProvenance:

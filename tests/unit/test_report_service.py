@@ -80,6 +80,9 @@ async def test_create_report_from_task_registers_html_in_file_records(
             return fake_file
 
     class _FakeSession:
+        async def get(self, model, key):
+            return None
+
         def __init__(self):
             self.added: list[object] = []
 
@@ -154,6 +157,9 @@ def _build_report_service(tmp_path: Path, monkeypatch) -> ReportService:
             return report
 
     class _FakeSession:
+        async def get(self, model, key):
+            return None
+
         def add(self, obj: object) -> None:
             pass
 

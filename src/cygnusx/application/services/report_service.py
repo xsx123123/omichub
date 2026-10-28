@@ -80,7 +80,7 @@ class ReportService:
 
             service = ResearchProvenanceService(self._db)
             await service.repo.require_module(model.user_id, "reports")
-            task = await self._db.get(TaskModel, model.task_id)
+            task = await self._db.get(TaskModel, model.task_id) if model.task_id else None
             if task is not None:
                 await service.task_scope(model.user_id, task.id)
 
@@ -402,7 +402,9 @@ class ReportService:
             items=[_model_to_response(item) for item in family],
         )
 
-    async def preview_html(self, report_id: UUID, user_id: str, *, strict: bool = False) -> str:
+    async def preview_html(
+        self, report_id: UUID, user_id: str, *, strict: bool = False, language: str = "zh"
+    ) -> str:
         """获取报告 HTML 预览内容"""
         model = await self._repo.get_by_id(report_id)
         if model is None or str(model.user_id) != user_id:
@@ -417,6 +419,8 @@ class ReportService:
         primary = next((f for f in model.files if f.is_primary and f.type == "html"), None)
         if primary is None:
             primary = next((f for f in model.files if f.type == "html"), None)
+        if model.external_source_key and language == "en":
+            primary = next((f for f in model.files if f.type == "html" and f.name.endswith(".en.html")), None)
         if primary is None:
             if strict:
                 raise NotFoundError("未找到可预览的 HTML 报告", code="REPORT_HTML_MISSING")
@@ -439,7 +443,10 @@ class ReportService:
                 raise NotFoundError("报告文件已不可用，请联系管理员")
             return "<p>报告文件已丢失，请尝试下载</p>"
         if strict:
-            maximum = self._settings.report_preview_max_bytes
+            maximum = (
+                self._settings.flow_report_preview_max_bytes if model.external_source_key
+                else self._settings.report_preview_max_bytes
+            )
             info = await self._backend.stat(rel_path)
             if info and int(info.get("size") or 0) > maximum:
                 raise ValidationError("报告超过在线预览大小限制，请下载查看", code="REPORT_TOO_LARGE")
@@ -468,7 +475,7 @@ class ReportService:
 
     def _authorized_file_path(self, model: ReportModel, path: str) -> Path:
         target = self._resolve_report_path(path)
-        if model.report_kind in {"reproducibility", "delivery"}:
+        if model.report_kind in {"reproducibility", "delivery"} or model.external_source_key:
             root = self._factory.user_root(str(model.user_id)).absolute()
             if root.resolve() != root or not target.is_relative_to(root):
                 raise AuthorizationError("报告文件不属于当前用户")
@@ -852,6 +859,8 @@ class ReportService:
         if source is None or str(source.user_id) != user_id:
             raise NotFoundError("报告不存在")
         await self._require_research_scope(source)
+        if source.task_id is None:
+            raise ValidationError("外部导入报告没有平台执行证据，请直接下载原交付文件")
         from cygnusx.infrastructure.database.models.task import TaskModel
 
         actual_task = (
@@ -1212,6 +1221,7 @@ def _model_to_response(model: ReportModel) -> ReportResponse:
     return ReportResponse(
         id=model.id,
         task_id=model.task_id,
+        source_kind="external" if model.external_source_key else "task",
         user_id=model.user_id,
         flow_id=model.flow_id,
         flow_name=model.flow_name,
@@ -1241,7 +1251,7 @@ def _model_to_response(model: ReportModel) -> ReportResponse:
                 size=f.size,
                 path=(
                     "output/" + f.name
-                    if model.report_kind in {"reproducibility", "delivery"}
+                    if model.report_kind in {"reproducibility", "delivery"} or model.external_source_key
                     else f.path
                 ),
                 sha256=f.sha256,

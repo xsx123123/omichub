@@ -166,6 +166,17 @@ class Settings(BaseSettings):
     report_generation_timeout_seconds: int = Field(default=600, ge=30, le=1800)
     report_preview_ttl_seconds: int = Field(default=300, ge=30, le=900)
     report_preview_max_bytes: int = Field(default=32 * 1024**2, ge=1024, le=128 * 1024**2)
+    flow_report_import_enabled: bool = False
+    flow_report_import_owner: str = ""
+    flow_report_import_root: str = ""
+    flow_report_import_interval_seconds: int = Field(default=60, ge=30, le=3600)
+    flow_report_import_max_bytes: int = Field(default=2 * 1024**3, ge=1024)
+    flow_report_preview_max_bytes: int = Field(default=128 * 1024**2, ge=1024, le=256 * 1024**2)
+    flow_report_preview_timeout_seconds: int = Field(default=120, ge=30, le=300)
+    report_copilot_table_max_bytes: int = Field(default=64 * 1024**2, ge=1024, le=64 * 1024**2)
+    report_copilot_table_max_rows: int = Field(default=200_000, ge=100, le=1_000_000)
+    report_copilot_output_max_chars: int = Field(default=10_000, ge=2000, le=24_000)
+    report_copilot_section_max_chars: int = Field(default=4000, ge=1000, le=12_000)
     report_capture_max_bytes: int = Field(default=16 * 1024**3, ge=1)
     report_generation_max_attempts: int = Field(default=3, ge=1, le=10)
     report_generation_reconcile_seconds: int = Field(default=60, ge=10, le=300)

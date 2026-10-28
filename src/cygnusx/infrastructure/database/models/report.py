@@ -29,6 +29,11 @@ class ReportModel(Base, TimestampMixin):
     __tablename__ = "reports"
     __table_args__ = (
         Index("ix_reports_created_at", "created_at"),
+        Index("uq_reports_external_source", "user_id", "external_source_key", "external_source_digest", unique=True),
+        CheckConstraint(
+            "task_id IS NOT NULL OR (external_source_key IS NOT NULL AND external_source_digest IS NOT NULL AND report_kind = 'scientific')",
+            name="ck_reports_execution_source",
+        ),
         Index(
             "uq_reports_snapshot_template",
             "user_id",
@@ -39,7 +44,9 @@ class ReportModel(Base, TimestampMixin):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    task_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
+    task_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), index=True, nullable=True)
+    external_source_key: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    external_source_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
     flow_id: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
     flow_name: Mapped[str] = mapped_column(String(100), default="")

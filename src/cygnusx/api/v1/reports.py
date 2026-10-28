@@ -3,7 +3,7 @@
 import secrets
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import quote
 from uuid import UUID
 
@@ -416,9 +416,11 @@ async def get_report_preview_url(
     current_user_id: CurrentJwtUserId,
     service: ReportServiceDep,
     token: Annotated[str | None, Depends(oauth2_scheme)],
+    language: Literal["zh", "en"] = "zh",
 ) -> ReportPreviewResponse:
     """Issue a report-only URL, never a raw access token or public S3 URL."""
-    await service.preview_html(report_id, current_user_id, strict=True)
+    detail = await service.get_report(report_id, current_user_id)
+    await service.preview_html(report_id, current_user_id, strict=True, language=language)
     payload = decode_token(token or "")
     if not payload or payload.get("type") != "access" or payload.get("sub") != current_user_id:
         raise AuthorizationError("请登录后查看报告")
@@ -439,6 +441,7 @@ async def get_report_preview_url(
             "type": "report_preview",
             "report_id": str(report_id),
             "channel": channel,
+            "language": language,
         }
     )
     response.set_cookie(
@@ -456,6 +459,7 @@ async def get_report_preview_url(
         url=f"/api/v1/reports/{report_id}/preview-content?token={grant}",
         expires_at=datetime.fromtimestamp(expires, UTC),
         channel=channel,
+        load_timeout_seconds=(get_settings().flow_report_preview_timeout_seconds if detail.source_kind == "external" else 30),
     )
 
 
@@ -482,14 +486,19 @@ async def report_preview_content(
         raise AuthorizationError("该模块未开通", code="MODULE_LOCKED")
     request.state.user_id = str(user.id)
     status_code = 200
+    embedded_resources = False
     try:
         detail = await service.get_report(report_id, str(user.id))
-        content = await service.preview_html(report_id, str(user.id), strict=True)
+        embedded_resources = detail.source_kind == "external"
+        content = await service.preview_html(
+            report_id, str(user.id), strict=True, language=grant.get("language", "zh")
+        )
         rendered = render_preview(
             report_id,
             grant["channel"],
             content=content,
             interactive=detail.report_kind == "scientific",
+            embedded_resources=embedded_resources,
         )
     except CygnusXError as exc:
         status_code = exc.status_code
@@ -498,7 +507,7 @@ async def report_preview_content(
         rendered,
         status_code=status_code,
         headers={
-            "Content-Security-Policy": preview_csp(),
+            "Content-Security-Policy": preview_csp(embedded_resources=embedded_resources),
             "Cache-Control": "no-store",
             "Referrer-Policy": "no-referrer",
             "X-Content-Type-Options": "nosniff",

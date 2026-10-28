@@ -107,6 +107,7 @@ async function handleDownload(report: Report, fileId: string) {
 }
 
 function handleViewTask(report: Report) {
+  if (!report.task_id) return
   router.push({ name: 'task-detail', params: { taskId: report.task_id } })
 }
 

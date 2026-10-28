@@ -60,8 +60,9 @@ def parse_report_paths(
     payload: Any,
     *,
     report_id: str,
-    task_id: str,
+    task_id: str | None,
     owner_id: str,
+    external_source_key: str | None = None,
 ) -> ReportPathsProjection:
     data = _object(payload, "report.paths.json")
     version = data.get("schema_version")
@@ -77,6 +78,11 @@ def parse_report_paths(
         project_id = _text(project.get("project_id"), "project.project_id", limit=120)
         if platform.get("report_id") != report_id or platform.get("task_id") != task_id:
             raise ValueError("platform report/task binding mismatch")
+        if task_id is None and (
+            not external_source_key or platform.get("source_kind") != "external"
+            or platform.get("external_source_key") != external_source_key
+        ):
+            raise ValueError("external report source binding mismatch")
         if platform.get("user_id") not in {None, owner_id}:
             raise ValueError("platform.user_id does not match report owner")
         files_value = data.get("files")

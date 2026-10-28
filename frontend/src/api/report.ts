@@ -15,9 +15,9 @@ export const reportApi = {
   previewReport: (id: string) =>
     apiClient.get<string>(`/reports/${id}/preview`),
 
-  getPreviewUrl: (id: string) => {
+  getPreviewUrl: (id: string, language: 'zh' | 'en' = 'zh') => {
     ensureReportPreviewContext()
-    return apiClient.get<ReportPreview>(`/reports/${id}/preview-url`)
+    return apiClient.get<ReportPreview>(`/reports/${id}/preview-url`, { params: { language } })
   },
 
   createCopilotSession: (id: string) =>

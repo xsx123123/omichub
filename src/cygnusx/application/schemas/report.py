@@ -27,7 +27,8 @@ class ReportResponse(CygnusXBaseSchema):
     """报告详情响应"""
 
     id: UUID
-    task_id: UUID
+    task_id: UUID | None
+    source_kind: str = "task"
     user_id: UUID
     flow_id: str
     flow_name: str
@@ -66,6 +67,7 @@ class ReportPreviewResponse(CygnusXBaseSchema):
     url: str
     expires_at: datetime
     channel: str
+    load_timeout_seconds: int = 30
 
 
 class ReportListResponse(CygnusXBaseSchema):

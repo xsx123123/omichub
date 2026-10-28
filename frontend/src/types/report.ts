@@ -4,6 +4,7 @@ export interface ReportPreview {
   url: string
   expires_at: string
   channel: string
+  load_timeout_seconds?: number
 }
 
 export interface ReportFile {
@@ -20,7 +21,8 @@ export interface ReportFile {
 
 export interface Report {
   id: string
-  task_id: string
+  task_id: string | null
+  source_kind?: 'task' | 'external'
   user_id: string
   flow_id: string
   flow_name: string

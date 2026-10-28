@@ -105,7 +105,7 @@ watch(() => props.report, (report) => {
           下载
         </NButton>
         <NButton
-          v-if="report?.report_kind !== 'delivery'"
+          v-if="report?.report_kind !== 'delivery' && report?.task_id"
           size="small"
           :loading="deliveryLoading"
           @click="buildDelivery"

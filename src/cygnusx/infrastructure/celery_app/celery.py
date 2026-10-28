@@ -100,12 +100,17 @@ celery_app.conf.task_routes = {
     "cygnusx.infrastructure.celery_app.tasks.ai_metrics.*": {"queue": "analysis"},
     "cygnusx.infrastructure.celery_app.tasks.observability.*": {"queue": "analysis"},
     "cygnusx.infrastructure.celery_app.tasks.schedules.*": {"queue": "schedules"},
+    "cygnusx.infrastructure.celery_app.tasks.reports.import_flow_reports": {"queue": "report_import"},
     "cygnusx.infrastructure.celery_app.tasks.reports.*": {"queue": "analysis"},
     "cygnusx.infrastructure.celery_app.tasks.datasets.*": {"queue": "analysis"},
 }
 
 # 定时任务
 celery_app.conf.beat_schedule = {
+    "flow-report-import": {
+        "task": "cygnusx.infrastructure.celery_app.tasks.reports.import_flow_reports",
+        "schedule": float(settings.flow_report_import_interval_seconds),
+    },
     "memory-embedding-coverage": {
         "task": "cygnusx.infrastructure.celery_app.tasks.memory.collect_embedding_coverage",
         "schedule": settings.memory_embedding_coverage_interval_seconds,

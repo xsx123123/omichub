@@ -1,5 +1,11 @@
 # CygnusX Dockerfile 职责
 
+主 Compose 默认启动 `web` 与 `web-replica` 两个 Web 容器，Nginx 将服务器 8888
+入口的后端请求按连接数分流。副本没有宿主端口，数据库迁移和共享资源初始化由
+主实例负责；Beat 仍保持单实例。需要 Compose 支持 `!reset`、Nginx >= 1.27.3。
+启动边界、连接预算、故障处理与验收见
+[Web 冗余架构](../../ARCHITECTURE_DESIGN/CygnusX_web_redundancy_architecture.md)。
+
 `deploy/docker/` 统一存放 CygnusX 主服务、计算 Worker 和工具运行时镜像的 Dockerfile。
 工具目录只保存运行配置、脚本、示例和数据契约；Dockerfile 不应放回 `tool_configs/`。
 

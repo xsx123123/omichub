@@ -20,6 +20,9 @@
 
 ## 0. 这个架构文档目录如何发挥作用
 
+> 双 Web 容器与 8888 入口分流：[CygnusX_web_redundancy_architecture.md](CygnusX_web_redundancy_architecture.md)
+> （同机双容器、Nginx 故障避让/Docker DNS、连接预算与 SSE 验证；不等于宿主机容灾）。
+>
 > Web / Celery 容量实测：[CygnusX_web_capacity_assessment.md](CygnusX_web_capacity_assessment.md)
 > （2026-10-27 运行快照：10/20/50/100 用户、入口限流、固定 100 RPS、Celery 对照；
 > 多 Web 与 10000+ RPS 为待实施/待验收目标，不是已达到的容量）。

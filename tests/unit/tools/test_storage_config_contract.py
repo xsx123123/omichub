@@ -15,6 +15,22 @@ from cygnusx.tools.terminal.config import TerminalConfigManager
 pytestmark = pytest.mark.unit
 
 
+class _ComposeLoader(yaml.SafeLoader):
+    """PyYAML lacks Compose's !reset/!override tags, which are valid in compose files."""
+
+
+def _compose_tag(loader: yaml.SafeLoader, node: yaml.Node) -> object:
+    if isinstance(node, yaml.SequenceNode):
+        return loader.construct_sequence(node)
+    if isinstance(node, yaml.MappingNode):
+        return loader.construct_mapping(node)
+    return loader.construct_scalar(node)
+
+
+_ComposeLoader.add_constructor("!reset", _compose_tag)
+_ComposeLoader.add_constructor("!override", _compose_tag)
+
+
 @pytest.mark.parametrize("root", ["/data/omichub", "/srv/deployment-data"])
 def test_repository_tool_configs_follow_settings(
     root: str, monkeypatch: pytest.MonkeyPatch
@@ -71,7 +87,9 @@ def test_nginx_tracks_alias_matches_readonly_data_volume(
     compose_name: str, nginx_name: str
 ) -> None:
     base = Path("deploy/docker")
-    compose = yaml.safe_load((base / compose_name).read_text(encoding="utf-8"))
+    compose = yaml.load(
+        (base / compose_name).read_text(encoding="utf-8"), Loader=_ComposeLoader
+    )
     config = (base / "nginx" / nginx_name).read_text(encoding="utf-8")
     match = re.search(r"location\s+\^~\s+/tracks/\s*\{\s*alias\s+([^;]+);", config)
     assert match is not None

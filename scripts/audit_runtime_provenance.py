@@ -10,11 +10,31 @@ import shutil
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class _ComposeLoader(yaml.SafeLoader):
+    """PyYAML lacks Compose's !reset/!override tags, which are valid in compose files."""
+
+
+def _compose_tag(loader: yaml.SafeLoader, node: yaml.Node) -> object:
+    if isinstance(node, yaml.SequenceNode):
+        return loader.construct_sequence(node)
+    if isinstance(node, yaml.MappingNode):
+        return loader.construct_mapping(node)
+    return loader.construct_scalar(node)
+
+
+_ComposeLoader.add_constructor("!reset", _compose_tag)
+_ComposeLoader.add_constructor("!override", _compose_tag)
+
+
+def load_compose(path: Path) -> dict[str, Any]:
+    return cast(dict[str, Any], yaml.load(path.read_text(encoding="utf-8"), Loader=_ComposeLoader))
 
 
 def command(args: list[str], cwd: Path = ROOT) -> dict[str, Any]:
@@ -67,7 +87,7 @@ def collect() -> dict[str, Any]:
                      ROOT / "deploy/docker/docker-compose.worker.yml"]
     services = []
     for compose in compose_files:
-        data = yaml.safe_load(compose.read_text())
+        data = load_compose(compose)
         for name, service in data["services"].items():
             build = service.get("build")
             context = build.get("context") if isinstance(build, dict) else build

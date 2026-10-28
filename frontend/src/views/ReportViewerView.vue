@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import { downloadReportFile, reportApi } from '@/api/report'
 import type { Report, ReportPreview } from '@/types/report'
 import { REPORT_PREVIEW_AUTH_CLEARED } from '@/utils/reportPreviewSession'
+import { SELECTION_LIMIT, buildSelectionPrefill } from '@/utils/reportSelection'
 import ReportCopilotPanel from '@/components/report/ReportCopilotPanel.vue'
 
 const route = useRoute()
@@ -19,8 +20,23 @@ const loading = ref(false)
 const error = ref('')
 const starring = ref(false)
 const downloading = ref(false)
+interface ReportSelection { text: string; section: string; x: number; y: number }
 const copilotOpen = ref(false)
 const copilotWidth = ref(400)
+const selection = ref<ReportSelection | null>(null)
+const prefill = ref<{ content: string; nonce: number } | null>(null)
+const selectionTruncated = computed(() => (selection.value?.text.length || 0) > SELECTION_LIMIT)
+const selectionButtonStyle = computed(() => {
+  const current = selection.value
+  if (!current) return {}
+  const el = frame.value
+  const maxX = Math.max(8, (el?.clientWidth || 800) - 150)
+  const maxY = Math.max(8, (el?.clientHeight || 600) - 48)
+  return {
+    left: `${Math.max(8, Math.min(current.x + 8, maxX))}px`,
+    top: `${Math.max(8, Math.min(current.y + 8, maxY))}px`,
+  }
+})
 const primary = computed(() => report.value?.files.find(file => file.is_primary) || report.value?.files[0])
 const generatedAt = computed(() => {
   const timestamp = report.value?.completed_at || report.value?.created_at
@@ -57,6 +73,8 @@ async function loadReport() {
   error.value = ''
   loading.value = true
   const id = String(route.params.reportId || '')
+  selection.value = null
+  prefill.value = null
   try {
     const detail = await reportApi.getReportDetail(id)
     if (current !== epoch) return
@@ -92,11 +110,40 @@ async function loadReport() {
 function onPreviewMessage(event: MessageEvent) {
   const data = event.data
   if (!preview.value || event.source !== frame.value?.contentWindow || event.origin !== 'null'
-    || !data || data.type !== 'cygnusx:report-preview' || data.reportId !== report.value?.id
-    || data.channel !== preview.value.channel) return
+    || !data || data.reportId !== report.value?.id || data.channel !== preview.value.channel) return
+  if (data.type === 'cygnusx:report-selection') {
+    if (typeof data.text !== 'string' || !data.text.trim() || data.text.length > 4000) return
+    selection.value = {
+      text: data.text,
+      section: typeof data.section === 'string' ? data.section : '未命名区域',
+      x: typeof data.x === 'number' ? data.x : 0,
+      y: typeof data.y === 'number' ? data.y : 0,
+    }
+    return
+  }
+  if (data.type !== 'cygnusx:report-preview') return
   if (data.status !== 200) { fail(typeof data.status === 'number' ? data.status : undefined); return }
   stopTimer()
   loading.value = false
+}
+
+function dismissSelection() { selection.value = null }
+
+function askAiAboutSelection() {
+  const current = selection.value
+  const currentReport = report.value
+  if (!current || !currentReport) return
+  const result = buildSelectionPrefill({
+    title: currentReport.title,
+    runId: currentReport.id,
+    flowName: currentReport.flow_name,
+    section: current.section,
+    text: current.text,
+  })
+  if (result.truncated) message.warning('选中内容过长，已自动截断')
+  prefill.value = { content: result.content, nonce: Date.now() }
+  copilotOpen.value = true
+  selection.value = null
 }
 
 function openReportSection(section: string) {
@@ -223,12 +270,19 @@ onBeforeUnmount(() => {
       <iframe v-if="preview" ref="frame" :key="preview.channel" :src="preview.url"
         :title="report?.title || '报告预览'" sandbox="allow-scripts" referrerpolicy="no-referrer"
         class="report-frame" @error="fail()" />
+      <div v-if="selection" class="selection-popover" :style="selectionButtonStyle" data-testid="selection-ask-ai">
+        <NButton size="small" type="primary" round @click="askAiAboutSelection">
+          <template #icon><NIcon :component="SparklesOutline" /></template>问 AI
+        </NButton>
+        <span v-if="selectionTruncated" class="selection-warn" title="选中内容过长，已自动截断">⚠</span>
+        <button class="selection-close" aria-label="关闭" @click="dismissSelection">×</button>
+      </div>
       <NButton class="copilot-placeholder" round :aria-expanded="copilotOpen" @click="copilotOpen = !copilotOpen">
         <template #icon><NIcon :component="SparklesOutline" /></template>AI 解读
       </NButton>
       </div>
       <div v-if="copilotOpen" class="copilot-resizer" role="separator" aria-orientation="vertical" @pointerdown="startResize" />
-      <ReportCopilotPanel v-if="copilotOpen && report" :report-id="report.id" @section="openReportSection"
+      <ReportCopilotPanel v-if="copilotOpen && report" :report-id="report.id" :prefill="prefill" @section="openReportSection"
         :style="{ width: `${copilotWidth}px` }" />
     </div>
   </div>
@@ -244,6 +298,9 @@ onBeforeUnmount(() => {
 .viewer-error { margin: 24px; width: auto; }
 .error-actions { margin-top: 16px; }
 .copilot-placeholder { position: absolute; right: 20px; bottom: 20px; z-index: 2; }
+.selection-popover { position: absolute; z-index: 3; display: flex; align-items: center; gap: 6px; }
+.selection-warn { color: var(--warning-color, #f0a020); font-size: 14px; }
+.selection-close { border: 0; background: transparent; cursor: pointer; color: var(--neutral-text-2); font-size: 14px; padding: 2px; }
 .copilot-resizer { width:5px; margin-left:-2px; cursor:col-resize; background:transparent; z-index:3; }
 .copilot-resizer:hover { background:var(--brand-primary); }
 @media (max-width: 768px) { .report-viewer { min-height: calc(100vh - 96px); } .viewer-error { margin: 16px; } }

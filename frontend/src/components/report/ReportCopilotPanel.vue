@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { NAlert, NButton, NInput, NSpin } from 'naive-ui'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { NAlert, NButton, NCheckbox, NInput, NModal, NSpin } from 'naive-ui'
 import apiClient from '@/api/client'
 import { reportApi } from '@/api/report'
 import { useAgentChatStream } from '@/composables/useAgentChatStream'
 
-const props = defineProps<{ reportId: string }>()
+const props = defineProps<{ reportId: string; prefill?: { content: string; nonce: number } | null }>()
 const emit = defineEmits<{ section: [title: string] }>()
 interface CopilotMessage { role: 'user' | 'assistant'; content: string }
 const messages = ref<CopilotMessage[]>([])
@@ -26,6 +26,26 @@ const quickQuestions = [
 ]
 let generation = 0
 const canSend = computed(() => Boolean(draft.value.trim()) && !isStreaming.value && Boolean(sessionId.value))
+const NOTICE_KEY = 'report-copilot-notice-dismissed'
+const noticeOpen = ref(false)
+const noticeDontRemind = ref(false)
+const noticeAction = ref<(() => void) | null>(null)
+const composeInput = ref<InstanceType<typeof NInput> | null>(null)
+
+function requestSend(action: () => void) {
+  if (localStorage.getItem(NOTICE_KEY)) { action(); return }
+  noticeAction.value = action
+  noticeDontRemind.value = false
+  noticeOpen.value = true
+}
+
+function confirmNotice() {
+  if (noticeDontRemind.value) localStorage.setItem(NOTICE_KEY, '1')
+  noticeOpen.value = false
+  const action = noticeAction.value
+  noticeAction.value = null
+  action?.()
+}
 
 async function initialize() {
   const current = ++generation
@@ -71,6 +91,10 @@ async function initialize() {
 async function send(question?: string) {
   const content = (question || draft.value).trim()
   if (!content || !sessionId.value || isStreaming.value) return
+  requestSend(() => { void doSend(content) })
+}
+
+async function doSend(content: string) {
   draft.value = ''
   error.value = ''
   const current = generation
@@ -111,6 +135,11 @@ function scrollToLatest() {
 }
 
 watch(() => props.reportId, initialize, { immediate: true })
+watch(() => props.prefill?.nonce, nonce => {
+  if (!nonce || !props.prefill) return
+  draft.value = props.prefill.content
+  void nextTick(() => composeInput.value?.focus())
+})
 watch(messages, scrollToLatest, { deep: true, flush: 'post' })
 onBeforeUnmount(() => { generation++; abortStream() })
 </script>
@@ -138,9 +167,15 @@ onBeforeUnmount(() => { generation++; abortStream() })
       <NAlert v-if="error" type="error" :show-icon="false">{{ error }}</NAlert>
     </div>
     <form class="copilot-compose" @submit.prevent="send()">
-      <NInput v-model:value="draft" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }" placeholder="询问这份报告…" :disabled="isStreaming || !sessionId" @keydown.enter.exact.prevent="send()" />
+      <NInput ref="composeInput" v-model:value="draft" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }" placeholder="询问这份报告…" :disabled="isStreaming || !sessionId" @keydown.enter.exact.prevent="send()" />
       <NButton type="primary" attr-type="submit" :disabled="!canSend">发送</NButton>
     </form>
+    <footer class="copilot-disclaimer">AI 解读仅供参考，关键结论请复核原始数据与流程参数</footer>
+    <NModal v-model:show="noticeOpen" preset="dialog" title="发送前提示" positive-text="继续发送" negative-text="取消"
+      @positive-click="confirmNotice" @negative-click="noticeOpen = false">
+      <p>即将把报告选中内容发送至 AI 助手，请勿发送敏感个人信息。</p>
+      <NCheckbox v-model:checked="noticeDontRemind">不再提示</NCheckbox>
+    </NModal>
   </aside>
 </template>
 
@@ -154,4 +189,5 @@ onBeforeUnmount(() => { generation++; abortStream() })
 .copilot-message { max-width:100%; border-radius:10px; padding:10px 12px; background:var(--neutral-bg); overflow-wrap:anywhere; }.copilot-message.user { align-self:flex-end; background:color-mix(in srgb,var(--brand-primary) 12%,var(--neutral-card)); }
 .copilot-message strong { font-size:12px; color:var(--neutral-text-2); }.message-part { margin:6px 0 0; white-space:pre-wrap; line-height:1.6; }.citation { display:inline-block; }
 .copilot-empty { color:var(--neutral-text-2); font-size:13px; text-align:center; margin:auto; }.copilot-compose { padding:12px; border-top:1px solid var(--neutral-border); display:flex; align-items:flex-end; gap:8px; }
+.copilot-disclaimer { padding:6px 12px 10px; color:var(--neutral-text-2); font-size:12px; }
 </style>

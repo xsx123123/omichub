@@ -46,7 +46,29 @@ def render_preview(
             + "||d.reportId!==id||d.channel!==channel||typeof d.section!=='string'||d.section.length>80)return;"
             + "const h=[...document.querySelectorAll('h1,h2,h3,h4,[role=heading]')]"
             + ".find(x=>(x.textContent||'').trim()===d.section);"
-            + "if(h)h.scrollIntoView({behavior:'smooth',block:'start'})});})();</script>"
+            + "if(h)h.scrollIntoView({behavior:'smooth',block:'start'})});"
+            # --- selection capture: report -> platform ----------------------
+            + "const HEADINGS='h1,h2,h3,h4,[role=heading],.section-title,.panel-title,[data-section]';"
+            + "function sectionOf(node){let best=null;"
+            + "for(const h of document.querySelectorAll(HEADINGS)){"
+            + "const p=h.compareDocumentPosition(node);"
+            + "if(p&Node.DOCUMENT_POSITION_CONTAINED_BY||p&Node.DOCUMENT_POSITION_FOLLOWING)best=h;"
+            + "else break}"
+            + "if(best){const t=(best.textContent||'').trim();if(t)return t.slice(0,80)}"
+            + "const el=node.nodeType===1?node:node.parentElement;"
+            + "const table=el&&el.closest?el.closest('table'):null;"
+            + "const cap=el&&el.closest?(el.closest('caption')||(table?table.querySelector('caption,th'):null)):null;"
+            + "if(cap){const t=(cap.textContent||'').trim();if(t)return t.slice(0,80)}"
+            + "return '未命名区域'}"
+            + "function emit(){const sel=window.getSelection();"
+            + "if(!sel||sel.isCollapsed||!sel.rangeCount)return;"
+            + "const text=(sel.toString()||'').trim();if(!text)return;"
+            + "const range=sel.getRangeAt(0);const rect=range.getBoundingClientRect();"
+            + "parent.postMessage({type:'cygnusx:report-selection',reportId:id,channel:channel,"
+            + "text:text.slice(0,4000),section:sectionOf(range.startContainer),"
+            + "x:rect.right,y:rect.bottom},'*')}"
+            + "document.addEventListener('mouseup',()=>setTimeout(emit,0));"
+            + "document.addEventListener('keyup',e=>{if(e.key==='Shift'||e.shiftKey)setTimeout(emit,0)});})();</script>"
         )
         lower_content = content.lower()
         body_end = lower_content.rfind("</body>")
@@ -91,6 +113,16 @@ def render_preview(
             + json.dumps(channel)
             + "||typeof d.section!=='string'||d.section.length>80)return;"
             "window.frames[0]?.postMessage(d,'*')});"
+            + "window.addEventListener('message',e=>{const d=e.data;"
+            + "if(e.source!==window.frames[0]||!d||d.type!=='cygnusx:report-selection'||d.reportId!=="
+            + json.dumps(str(report_id))
+            + "||d.channel!=="
+            + json.dumps(channel)
+            + "||typeof d.text!=='string'||!d.text||d.text.length>4000"
+            + "||typeof d.section!=='string'||d.section.length>80)return;"
+            + "parent.postMessage({type:d.type,reportId:d.reportId,channel:d.channel,"
+            + "text:d.text,section:d.section,"
+            + "x:typeof d.x==='number'?d.x:0,y:typeof d.y==='number'?d.y:0},'*')});"
             if interactive
             else ""
         )

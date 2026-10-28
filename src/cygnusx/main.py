@@ -148,6 +148,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # --- 沙盒预热：转后台 task，不阻塞 app 就绪（首请求无需等容器池）---
     async def _warmup_sandbox() -> None:
+        if not settings.web_bootstrap_enabled:
+            return
         try:
             from cygnusx.infrastructure.sandbox import get_sandbox_pool
 
@@ -301,21 +303,24 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as e:
             logger.warning(f"用户默认目录补偿失败，降级运行: {e}")
 
-    await asyncio.gather(
-        _sync_ai_providers(),
-        _init_default_provider(),
-        _init_assistants(),
-        _init_mcp_presets(),
-        _repair_user_storage_directories(),
-        _init_default_knowledge(),
-    )
+    if settings.web_bootstrap_enabled:
+        await asyncio.gather(
+            _sync_ai_providers(),
+            _init_default_provider(),
+            _init_assistants(),
+            _init_mcp_presets(),
+            _repair_user_storage_directories(),
+            _init_default_knowledge(),
+        )
+        await _init_builtin_agents()
+    else:
+        logger.info("Web 请求副本：跳过共享资源启动初始化")
     await _validate_memory_embedding_provider()
-    await _init_builtin_agents()
 
     # Startup only enqueues DB reconciliation. Never generate content in web workers.
     async def _reconcile_welcome() -> None:
         try:
-            if settings.welcome_enabled:
+            if settings.web_bootstrap_enabled and settings.welcome_enabled:
                 from cygnusx.infrastructure.celery_app.tasks.welcome import reconcile
                 await asyncio.to_thread(reconcile.apply_async, queue="analysis")
         except Exception as exc:
@@ -367,7 +372,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as exc:  # noqa: BLE001 - indexing must not block web startup
             logger.warning("知识库自动增量索引失败，仍可手动执行 reindex 脚本: {}", exc)
 
-    if settings.knowledge_auto_reindex_enabled:
+    if settings.web_bootstrap_enabled and settings.knowledge_auto_reindex_enabled:
         knowledge_index_task = asyncio.create_task(_auto_reindex_knowledge())
     else:
         knowledge_index_task = None

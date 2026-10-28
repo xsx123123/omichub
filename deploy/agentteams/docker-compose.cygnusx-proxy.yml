@@ -10,6 +10,14 @@ services:
       - cygnusx-sandbox-net
       - cygnusx_bridge_gateway
 
+  web-replica:
+    networks:
+      - app_net
+      - data_net
+      - cygnusx_net
+      - cygnusx-sandbox-net
+      - cygnusx_bridge_gateway
+
 networks:
   cygnusx_bridge_gateway:
     external: true

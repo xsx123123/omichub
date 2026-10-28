@@ -29,7 +29,10 @@ services:
       # Nginx 访问/错误日志持久化到宿主机，避免容器重建丢失
       - ${CYGNUSX_DATA_ROOT:-/data/cygnusx}/logs/nginx:/var/log/nginx
     depends_on:
-      - web
+      web:
+        condition: service_healthy
+      web-replica:
+        condition: service_healthy
     networks:
       - app_net
 
@@ -46,6 +49,7 @@ services:
     image: ${CYGNUSX_WEB_IMAGE:-cygnusx-web:v0.0.2dev}
     container_name: cygnusx-web
     restart: unless-stopped
+    stop_grace_period: 120s
     logging: *default-logging
     user: "${PUID:-1000}:${PGID:-1000}"   # 以宿主用户运行，避免 root；写入挂载卷文件归宿主所有
     group_add:
@@ -57,6 +61,10 @@ services:
       - POSTGRES_HOST=db
       - REDIS_HOST=cache
       - SERVICE_NAME=web
+      # 两个副本共 8 个进程：默认最多 8 × 4 = 32 个持久数据库连接。
+      - DATABASE_POOL_SIZE=${CYGNUSX_WEB_DATABASE_POOL_SIZE:-4}
+      - DATABASE_MAX_OVERFLOW=${CYGNUSX_WEB_DATABASE_MAX_OVERFLOW:-0}
+      - WEB_BOOTSTRAP_ENABLED=true
       - PYTHONPATH=/app/src
       # 记忆接通：通过根目录 --env-file .env 插值；变更后须 force-recreate。
       - AGENT_MEMORY_EMBEDDING_MODEL=${AGENT_MEMORY_EMBEDDING_MODEL:-}
@@ -114,10 +122,25 @@ services:
     # 生产模式启动：多 worker + 关闭热重载（避免 watchdog 扫描 src 的首次加载开销）。
     # workers 2→4：SSE 长连接占满 worker 时并发上限过低（Session 加速优化 TODO #6）；
     # 显式 --loop uvloop：锁定已装依赖，防 auto 探测随依赖漂移回退 asyncio。
-    command: ["uvicorn", "cygnusx.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop"]
+    command: ["uvicorn", "cygnusx.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--loop", "uvloop", "--timeout-graceful-shutdown", "90"]
     ports:
       # 仅供跨机器 Worker 上报流程监控；单机时默认仅本机可访问。
       - "${CYGNUSX_WEB_BIND_HOST:-127.0.0.1}:${CYGNUSX_WEB_PORT:-8000}:8000"
+
+  # 同镜像、同 JWT/DB/Redis/共享卷；仅 Nginx 访问，不重复绑定宿主 8000。
+  # extends 复用主定义；各 overlay 中的环境/网络覆盖必须同步到副本。
+  web-replica:
+    extends:
+      service: web
+    container_name: cygnusx-web-replica
+    ports: !reset []
+    environment:
+      - RUN_MIGRATIONS=0
+      # 主实例完成迁移和共享资源初始化后，副本仅启动请求处理。
+      - WEB_BOOTSTRAP_ENABLED=false
+    depends_on:
+      web:
+        condition: service_healthy
 
   # ===== OmicStudio 域名白名单出站代理 =====
   # 仅加入独立公网 bridge；Manager 会按会话把它动态接入临时 internal 网络。
@@ -226,6 +249,19 @@ services:
       timeout: 10s
       start_period: 30s
       retries: 3
+
+  # Independent report scanner: restarting it never interrupts analysis workers.
+  report-importer:
+    extends:
+      service: beat
+    container_name: cygnusx-report-importer
+    environment:
+      - SERVICE_NAME=report-importer
+    volumes:
+      - ${CYGNUSX_DATA_ROOT:-/data/cygnusx}:${CYGNUSX_DATA_ROOT:-/data/cygnusx}
+      - ../../data:/app/data:ro
+      - ../../flows:/app/flows:ro
+    command: celery -A cygnusx.infrastructure.celery_app.celery worker -Q report_import --concurrency=1 --loglevel=info
 
   # ===== Flower 监控 =====
   flower:

@@ -21,11 +21,18 @@ services:
       - APP_ENV=production
       - APP_DEBUG=false
       - SERVICE_NAME=web
-    command: uvicorn cygnusx.main:app --host 0.0.0.0 --port 8000 --workers 4
     volumes:
       - ${CYGNUSX_DATA_ROOT:-/data/cygnusx}:${STORAGE_PATH:-/data/cygnusx}  # 任务数据（与独立 worker 栈共享同一宿主目录）
       - ${CYGNUSX_DATA_ROOT:-/data/cygnusx}/logs/app:/app/logs  # 应用日志持久化到宿主机
     # 不挂载 src，使用镜像内打包的代码
+
+  web-replica:
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    volumes:
+      - ${CYGNUSX_DATA_ROOT:-/data/cygnusx}:${STORAGE_PATH:-/data/cygnusx}
+      - ${CYGNUSX_DATA_ROOT:-/data/cygnusx}/logs/app:/app/logs
 
   # 注：worker 已迁至独立编排栈 docker-compose.worker.yml
   # 生产水平扩展: docker compose -f docker-compose.worker.yml --scale worker=2 up -d

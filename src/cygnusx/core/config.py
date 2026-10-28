@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     app_port: int = 8000
     app_secret_key: str = "change-me-in-production"
     service_name: str = "web"
+    # 请求副本复用主实例已初始化的共享资源，避免再次同步/收养沙盒。
+    web_bootstrap_enabled: bool = True
     # Runtime 拆分灰度：关闭时保持当前 ChatService 直连路径。
     chat_runtime_refactor_enabled: bool = False
     # 单 Runtime 收敛逃生舱：默认所有非 Studio/非 MAS 普通聊天走 LangGraph 状态图；

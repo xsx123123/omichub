@@ -162,7 +162,7 @@ docker-up-matrix-dev: ## 启动本机开发用 Matrix(Synapse)+Element 栈（协
 
 docker-runtime-dirs: ## 准备关键运行目录与非 root 容器写入权限（docker-up/reload 自动执行）
 	@echo "=> 准备运行目录权限..."
-	@docker run --rm -v $(DATA_ROOT):/data-root python:3.11-slim sh -c 'mkdir -p /data-root/logs/app /data-root/logs/celery/tasks /data-root/logs/nginx /data-root/logs/snakemake /data-root/users /data-root/uploads /data-root/.tmp /data-root/.conda_envs /data-root/cygnusx_data/_pgdata /data-root/cygnusx_data/_redis /data-root/cygnusx_data/_minio /data-root/onlyoffice-data /data-root/onlyoffice-logs && chown -R $(PUID):$(PGID) /data-root/logs/app /data-root/logs/celery /data-root/logs/snakemake /data-root/uploads /data-root/.tmp /data-root/.conda_envs && chown $(PUID):$(PGID) /data-root/users'
+	@docker run --rm -v $(DATA_ROOT):/data-root python:3.11-slim sh -c 'mkdir -p /data-root/logs/app /data-root/logs/celery/tasks /data-root/logs/nginx /data-root/logs/snakemake /data-root/users /data-root/uploads /data-root/.tmp /data-root/.conda_envs /data-root/cygnusx_data/_pgdata /data-root/cygnusx_data/_redis /data-root/cygnusx_data/_minio /data-root/onlyoffice-data /data-root/onlyoffice-logs && for d in /data-root/logs/app /data-root/logs/celery /data-root/logs/snakemake /data-root/uploads /data-root/.tmp /data-root/.conda_envs; do if [ "$$(stat -c %u:%g "$$d")" != "$(PUID):$(PGID)" ]; then echo "   修正归属: $$d"; chown -R $(PUID):$(PGID) "$$d"; fi; done && if [ "$$(stat -c %u:%g /data-root/users)" != "$(PUID):$(PGID)" ]; then chown $(PUID):$(PGID) /data-root/users; fi'
 
 docker-fix-permissions: ## 手动修复 /data/cygnusx 权限事故（登录 500 / PermissionError 时使用）
 	@echo "=> 修复 /data/cygnusx 非 root 服务写入权限..."
@@ -490,7 +490,9 @@ docker-dev-refresh: ## 轻量热刷新：前端 build + 重启 web/beat/nginx + 
 	@echo ""
 	@echo "🔄 步骤 2/3：重启 web / beat / nginx（src/data/alembic/flows/tool_configs 均为 bind mount，重启即生效；"
 	@echo "   vite 重建 dist 后旧 nginx 进程持有旧目录句柄，必须一并重启）..."
-	$(COMPOSE_MAIN) restart web beat nginx
+	$(COMPOSE_MAIN) restart web
+	@$(MAKE) --no-print-directory wait-web
+	$(COMPOSE_MAIN) restart web-replica beat nginx
 	@echo ""
 	@echo "🗄️  步骤 3/3：应用数据库迁移（web entrypoint 启动时也会自动执行，这里确保即时生效）..."
 	@docker exec cygnusx-web alembic upgrade head

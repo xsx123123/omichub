@@ -232,7 +232,8 @@ async def test_table_query_reads_only_bound_task_and_applies_filter(
     artifacts = await ReportCopilotService(
         copilot_db["db"], str(copilot_db["owner"].id), copilot_db["session_id"]
     ).execute("list_artifacts", {})
-    assert artifacts["artifacts"] == payload["files"]
+    assert artifacts["items"] == payload["files"]
+    assert artifacts["generated"] is False
 
 
 @pytest.mark.asyncio
@@ -437,3 +438,221 @@ async def test_stream_route_binds_report_and_removes_untrusted_system_messages(
     assert captured["mcp_mode"] == "off"
     assert captured["enable_code_execution"] is False
     assert captured["messages"] == [{"role": "user", "content": "列出报告结论"}]
+
+
+def add_indexed_file(
+    state: dict[str, Any], payload: dict[str, Any], relative: str, role: str, content: str
+) -> None:
+    report = state["report"]
+    root = Path(report.report_paths_json_path).parent
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+    payload["files"].append(
+        {
+            "path": relative,
+            "role": role,
+            "description": relative,
+            "format": target.suffix.lstrip("."),
+        }
+    )
+    Path(report.report_paths_json_path).write_text(json.dumps(payload), encoding="utf-8")
+    report.files_index = list(payload["files"])
+    state["db"].session.commit()
+
+
+@pytest.mark.asyncio
+async def test_full_path_and_alias_do_not_select_md5_or_other_table(
+    copilot_db: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = register_v21_fixture(copilot_db, tmp_path, monkeypatch)
+    add_indexed_file(
+        copilot_db, payload, "data/res/Enrichments/MD5.txt", "enrichment_table", "checksum file\n"
+    )
+    path = "data/res/Enrichments/Salt_A_vs_WTSalt_GO_UP.csv"
+    add_indexed_file(copilot_db, payload, path, "enrichment_table", "ID,p.adjust\nGO:1,0.001\n")
+    add_indexed_file(
+        copilot_db,
+        payload,
+        "data/res/Enrichments/other_KEGG_UP.csv",
+        "enrichment_table",
+        "ID,p.adjust\nsly:2,0.01\n",
+    )
+    service = ReportCopilotService(
+        copilot_db["db"], str(copilot_db["owner"].id), copilot_db["session_id"]
+    )
+    result = await service.execute(
+        "query_project_results", {"role": "enrichment_go", "artifact": path}
+    )
+    assert result["artifact"] == path and result["rows"][0]["ID"] == "GO:1"
+    with pytest.raises(Exception, match="未找到匹配"):
+        await service.execute(
+            "query_project_results", {"role": "enrichment_table", "artifact": "missing.csv"}
+        )
+    with pytest.raises(Exception, match="匹配到 2 个表格"):
+        await service.execute("query_project_results", {"role": "enrichment_table"})
+    with pytest.raises(Exception, match="相对路径"):
+        await service.execute("query_project_results", {"artifact": "../secret.csv"})
+
+
+@pytest.mark.asyncio
+async def test_role_only_skips_checksum_and_basename_must_be_unique(
+    copilot_db: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = register_v21_fixture(copilot_db, tmp_path, monkeypatch)
+    add_indexed_file(copilot_db, payload, "data/DEG/MD5.txt", "deg_table", "md5\n")
+    service = ReportCopilotService(
+        copilot_db["db"], str(copilot_db["owner"].id), copilot_db["session_id"]
+    )
+    result = await service.execute("query_project_results", {"role": "diff_expr"})
+    assert result["artifact"] == "results.tsv"
+    add_indexed_file(copilot_db, payload, "other/results.tsv", "deg_table", "gene\tpadj\nZ\t0.01\n")
+    payload["files"] = [entry for entry in payload["files"] if entry["path"] != "results.tsv"]
+    add_indexed_file(copilot_db, payload, "third/results.tsv", "deg_table", "gene\tpadj\nY\t0.02\n")
+    with pytest.raises(Exception, match="匹配到 2 个表格"):
+        await service.execute("query_project_results", {"artifact": "results.tsv"})
+    result = await service.execute("query_project_results", {"artifact": "other/results.tsv"})
+    assert result["rows"][0]["gene"] == "Z"
+
+
+@pytest.mark.asyncio
+async def test_qc_tab_txt_and_large_deg_numeric_top_n(
+    copilot_db: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = register_v21_fixture(copilot_db, tmp_path, monkeypatch)
+    add_indexed_file(
+        copilot_db, payload, "data/qc/star.txt", "qc_stats", "Sample\tmapped_percent\nAC1\t97.83\n"
+    )
+    # Larger than the old 2 MiB cap; the strongest late row must still be found.
+    content = (
+        "gene,padj,log2FoldChange,description\n"
+        + "".join(f"G{i},0.04,-2,{'a' * 100}\n" for i in range(20000))
+        + "BEST,1e-100,3,strong\nNON_SIGNIFICANT,0.6,4,no\nNA,NA,2,no\n"
+    )
+    assert len(content.encode()) > 2 * 1024**2
+    path = "data/DEG/contrast.csv"
+    add_indexed_file(copilot_db, payload, path, "deg_table", content)
+    service = ReportCopilotService(
+        copilot_db["db"], str(copilot_db["owner"].id), copilot_db["session_id"]
+    )
+    qc = await service.execute(
+        "query_project_results", {"role": "qc_stats", "artifact": "data/qc/star.txt"}
+    )
+    assert qc["rows"] == [{"Sample": "AC1", "mapped_percent": "97.83"}]
+    result = await service.execute(
+        "query_project_results",
+        {
+            "role": "diff_expr",
+            "artifact": path,
+            "top_n": 2,
+            "columns": ["gene", "padj", "log2FoldChange"],
+            "numeric_filters": {"padj": {"lt": 0.05}, "log2FoldChange": {"abs_gt": 1}},
+            "sort_by": "padj",
+        },
+    )
+    assert result["rows"][0]["gene"] == "BEST"
+    assert result["matched_rows"] == 20001 and result["scanned_rows"] == 20003
+    assert result["truncated"] and not result["row_limit_reached"]
+    assert result["numeric_filters"]["padj"] == {"lt": 0.05}
+    with pytest.raises(Exception, match="排序列不在"):
+        await service.execute("query_project_results", {"artifact": path, "sort_by": "unknown"})
+    with pytest.raises(Exception, match="数值筛选"):
+        await service.execute(
+            "query_project_results",
+            {"artifact": path, "numeric_filters": {"padj": {"lt": float("nan")}}},
+        )
+
+
+@pytest.mark.asyncio
+async def test_file_listing_is_pageable_without_fake_generated_artifacts(
+    copilot_db: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from cygnusx.application.services.artifact_manifest import normalize_tool_artifact_payload
+
+    payload = register_v21_fixture(copilot_db, tmp_path, monkeypatch)
+    for i in range(31):
+        add_indexed_file(
+            copilot_db,
+            payload,
+            f"data/Enrichments/contrast_{i}_GO_UP.csv",
+            "enrichment_table",
+            "ID,p.adjust\nA,0.01\n",
+        )
+    service = ReportCopilotService(
+        copilot_db["db"], str(copilot_db["owner"].id), copilot_db["session_id"]
+    )
+    paths, offset = [], 0
+    while True:
+        page = await service.execute(
+            "list_artifacts",
+            {"role": "enrichment_go", "keyword": "contrast_", "offset": offset, "limit": 7},
+        )
+        paths.extend(item["path"] for item in page["items"])
+        assert len(json.dumps(page, ensure_ascii=False)) < 10000
+        assert page["generated"] is False
+        llm, _ = normalize_tool_artifact_payload(page, page, tool_name="list_artifacts")
+        assert llm["artifact_manifest"] == []
+        if page["next_offset"] is None:
+            break
+        offset = page["next_offset"]
+    assert len(paths) == len(set(paths)) == 31
+    metadata = await service.metadata()
+    assert metadata["artifact_count"] == 32 and len(metadata["artifact_examples"]) <= 6
+
+
+@pytest.mark.asyncio
+async def test_metadata_does_not_label_input_term_counts_significant(
+    copilot_db: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    register_v21_fixture(copilot_db, tmp_path, monkeypatch)
+    from cygnusx.application.services.report_copilot_service import compact_enrichment
+
+    summary = compact_enrichment(
+        {
+            "go": {
+                "parameters": {"cutoff": 0.05, "terms": ["must not include"]},
+                "contrasts": {
+                    "A": {
+                        "UP": {"term_count": 751, "status": "available", "terms": ["not included"]}
+                    }
+                },
+            }
+        }
+    )
+    direction = summary["go"]["contrasts"]["A"]["UP"]
+    assert direction["input_term_count"] == 751 and direction["significance_verified"] is False
+    assert "term_count" not in direction and "terms" not in summary["go"]["parameters"]
+
+
+def test_sections_use_real_headings_not_toc_or_substrings() -> None:
+    from cygnusx.application.services.report_copilot_readers import ReportSections
+
+    parser = ReportSections(1000)
+    parser.feed(
+        "<html><body><nav>分析结果 差异表达分析</nav><aside><h2>分析结果</h2>TOC ONLY</aside>"
+        '<h1>项目概述</h1><p>INTRO ONLY</p><h1 id="analysis">分析结果</h1><p>REAL RESULT</p>'
+        "<h2>差异表达分析（Volcano）</h2><p>ACTUAL VOLCANO</p>"
+        "<script>FAKE DATA AND HEADINGS</script><h1>方法</h1><p>METHOD ONLY</p></body></html>"
+    )
+    result = parser.read("分析结果")
+    assert result["found"] and result["section_id"] == "analysis"
+    assert "REAL RESULT" in result["content"] and "ACTUAL VOLCANO" in result["content"]
+    assert not any(
+        text in result["content"] for text in ("TOC ONLY", "INTRO ONLY", "METHOD ONLY", "FAKE DATA")
+    )
+    assert parser.read("差异表达分析")["content"].startswith(
+        "差异表达分析（Volcano） ACTUAL VOLCANO"
+    )
+    assert parser.read("missing")["found"] is False
+
+
+def test_tool_errors_distinguish_bad_arguments_and_access_without_leaking_paths() -> None:
+    from cygnusx.application.services.report_copilot_service import report_tool_error
+    from cygnusx.core.exceptions import ValidationError
+
+    result = report_tool_error(ValidationError("请指定 artifact", code="REPORT_TABLE_AMBIGUOUS"))
+    assert result["code"] == "REPORT_TABLE_AMBIGUOUS" and "权限" in result["next_action"]
+    assert (
+        report_tool_error(AuthorizationError("/secret/user/file"))["code"] == "REPORT_ACCESS_DENIED"
+    )
+    assert "/secret" not in json.dumps(report_tool_error(OSError("/secret/user/file")))

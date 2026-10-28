@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import csv
-import io
+import asyncio
 import json
-import re
-from html.parser import HTMLParser
+from collections import Counter
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -14,13 +12,19 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from cygnusx.application.services.report_copilot_readers import (
+    ReportSections,
+    matching_files,
+    query_table,
+    queryable,
+    select_table,
+)
 from cygnusx.application.services.report_paths_contract import (
-    REPORT_FILE_MAX_BYTES,
     decode_report_paths,
     parse_report_paths,
-    read_local_report_file,
 )
 from cygnusx.application.services.report_snapshot_manifest import open_evidence_file
+from cygnusx.core.config import get_settings
 from cygnusx.core.exceptions import AuthorizationError, NotFoundError, ValidationError
 from cygnusx.infrastructure.database.models.report import ReportModel
 from cygnusx.infrastructure.database.models.task import TaskModel
@@ -31,7 +35,7 @@ REPORT_COPILOT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "read_report_section",
-            "description": "Read bounded plain text from a named section of the bound report.",
+            "description": "Read actual heading/body text, excluding navigation/TOC. Use a complete section title; interactive tables must be queried via query_project_results, not their Loading placeholders.",
             "parameters": {
                 "type": "object",
                 "properties": {"section": {"type": "string", "maxLength": 80}},
@@ -44,10 +48,15 @@ REPORT_COPILOT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "list_artifacts",
-            "description": "List files registered for the bound report or its verified task.",
+            "description": "Find existing registered files (not newly generated artifacts). Returns paginated items and next_offset; filter role=deg_table/enrichment_table/qc_stats and keyword for a contrast, GO or KEGG. Always use returned path as query artifact.",
             "parameters": {
                 "type": "object",
-                "properties": {},
+                "properties": {
+                    "role": {"type": "string", "maxLength": 80},
+                    "keyword": {"type": "string", "maxLength": 120},
+                    "offset": {"type": "integer", "minimum": 0, "maximum": 2000},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 50},
+                },
                 "additionalProperties": False,
             },
         },
@@ -56,51 +65,41 @@ REPORT_COPILOT_TOOLS: list[dict[str, Any]] = [
         "type": "function",
         "function": {
             "name": "query_project_results",
-            "description": "Query a bounded top-N preview from a tabular artifact of the bound report.",
+            "description": "Read one registered CSV/TSV or tab-delimited QC TXT. Specify exact artifact path to choose a contrast/direction; role alone is rejected if ambiguous. Supports numeric filters and numerical top-N sort. For pathways use p.adjust<0.05 and sort_by=p.adjust; for DEG use the actual raw/adjusted P and log2FoldChange criteria without conflating them. No file modification or plot generation.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "role": {"type": "string", "maxLength": 80},
                     "artifact": {"type": "string", "maxLength": 240},
                     "top_n": {"type": "integer", "minimum": 1, "maximum": 100},
+                    "columns": {
+                        "type": "array",
+                        "maxItems": 16,
+                        "items": {"type": "string", "maxLength": 100},
+                    },
+                    "sort_by": {"type": "string", "maxLength": 100},
+                    "order": {"type": "string", "enum": ["asc", "desc"]},
+                    "numeric_filters": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                                key: {"type": "number"}
+                                for key in ("lt", "lte", "gt", "gte", "eq", "abs_gt", "abs_gte")
+                            },
+                            "additionalProperties": False,
+                        },
+                    },
                     "filters": {
                         "type": "object",
                         "additionalProperties": {"type": "string", "maxLength": 100},
                     },
                 },
-                "required": ["role"],
                 "additionalProperties": False,
             },
         },
     },
 ]
-
-_MAX_TEXT = 12_000
-_MAX_TABLE_BYTES = 2 * 1024 * 1024
-_MAX_ARTIFACTS = 2000
-
-
-class _VisibleText(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.hidden = 0
-        self.parts: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag.lower() in {"script", "style", "noscript", "svg"}:
-            self.hidden += 1
-        elif tag.lower() in {"h1", "h2", "h3", "h4", "section", "article", "p", "tr", "br"}:
-            self.parts.append("\n")
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag.lower() in {"script", "style", "noscript", "svg"} and self.hidden:
-            self.hidden -= 1
-        elif tag.lower() in {"section", "article", "p", "tr", "div", "h1", "h2", "h3", "h4"}:
-            self.parts.append("\n")
-
-    def handle_data(self, data: str) -> None:
-        if not self.hidden and data.strip():
-            self.parts.append(data.strip())
 
 
 class ReportCopilotService:
@@ -165,7 +164,7 @@ class ReportCopilotService:
         raw_metrics = stats.get("core_metrics") or stats.get("metrics") or {}
         metrics = (
             {
-                str(key)[:80]: value
+                str(key)[:80]: value[:200] if isinstance(value, str) else value
                 for key, value in list(raw_metrics.items())[:50]
                 if isinstance(key, str) and isinstance(value, (str, int, float, bool, type(None)))
             }
@@ -174,30 +173,69 @@ class ReportCopilotService:
         )
         project_id = report.project_id
         metadata_status = (
-            "legacy_degraded"
-            if report.report_schema_version != "2.1.0"
-            else "available"
+            "legacy_degraded" if report.report_schema_version != "2.1.0" else "available"
         )
-        artifacts = projection.get("files", [])[:_MAX_ARTIFACTS]
-        return {
+        artifacts = projection.get("files", [])
+        readable = [entry for entry in artifacts if queryable(entry)]
+        result = {
             "report_id": str(report.id),
             "project_id": project_id,
-            "scope": "verified_project" if project_id else "report_task_only",
+            "scope": "verified_project"
+            if project_id
+            else ("external_report_only" if report.external_source_key else "report_task_only"),
             "flow": report.flow_name or report.flow_id,
             "flow_id": report.flow_id,
-            "sample_count": stats.get("total_samples", report.sample_count or (task.sample_count if task else 0)),
-            "groups": groups if isinstance(groups, (dict, list)) else None,
+            "sample_count": stats.get(
+                "total_samples", report.sample_count or (task.sample_count if task else 0)
+            ),
+            "groups": compact_groups(groups),
             "species": project.get("species") or report.project_species,
             "client": project.get("client") or report.project_client,
             "genome_version": project.get("genome_version") or report.genome_version,
             "pipeline_version": project.get("pipeline_version") or report.pipeline_version,
             "core_metrics": metrics,
-            "enrichment": projection.get("enrichment", {}),
+            "enrichment": compact_enrichment(projection.get("enrichment", {})),
+            "group_count": stats.get("group_count"),
+            "artifact_count": len(artifacts),
+            "queryable_roles": dict(Counter(entry["role"] for entry in readable)),
+            "capabilities": {"read_tables": True, "edit_report": False, "execute_code": False},
             "task_status": task.status if task else None,
-            "artifacts": artifacts[:_MAX_ARTIFACTS],
+            "artifact_examples": [
+                {"path": entry["path"], "role": entry["role"]} for entry in readable[:6]
+            ],
+            "artifact_listing": "Use list_artifacts(role, keyword, offset, limit) to find every registered file.",
             "metadata_status": metadata_status,
             "metadata_error": report.metadata_error,
         }
+        result["context_truncated"] = False
+        while (
+            len(json.dumps(result, ensure_ascii=False))
+            > get_settings().report_copilot_output_max_chars
+        ):
+            result["context_truncated"] = True
+            if result["artifact_examples"]:
+                result["artifact_examples"].pop()
+                continue
+            if result["core_metrics"]:
+                result["core_metrics"].pop(next(reversed(result["core_metrics"])))
+                continue
+            if result["groups"]:
+                group_values = result["groups"]
+                if isinstance(group_values, list):
+                    group_values.pop()
+                else:
+                    group_values.pop(next(reversed(group_values)))
+                continue
+            families = result["enrichment"]
+            family = next((value for value in families.values() if value.get("contrasts")), None)
+            if family:
+                family["contrasts"].pop(next(reversed(family["contrasts"])))
+                family["contrasts_truncated"] = True
+            elif families:
+                families.pop(next(reversed(families)))
+            else:
+                break
+        return result
 
     async def _registered_projection(
         self, report: ReportModel, task: TaskModel | None
@@ -220,8 +258,9 @@ class ReportCopilotService:
                 projection = parse_report_paths(
                     payload,
                     report_id=str(report.id),
-                    task_id=str(report.task_id),
+                    task_id=str(report.task_id) if report.task_id else None,
                     owner_id=self.user_id,
+                    external_source_key=report.external_source_key,
                 )
             except (OSError, ValueError, json.JSONDecodeError) as exc:
                 raise ValidationError("报告结构化元数据暂不可读取") from exc
@@ -260,7 +299,7 @@ class ReportCopilotService:
         if tool_name == "read_report_section":
             return await self._read_section(report, str(args.get("section") or ""))
         if tool_name == "list_artifacts":
-            return await self._list_artifacts(report, task)
+            return await self._list_artifacts(report, task, args)
         return await self._query_table(report, task, args)
 
     async def _read_section(self, report: ReportModel, requested: str) -> dict[str, Any]:
@@ -269,97 +308,155 @@ class ReportCopilotService:
         from cygnusx.application.services.report_service import ReportService
 
         content = await ReportService(self.db).preview_html(report.id, self.user_id, strict=True)
-        parser = _VisibleText()
-        parser.feed(content)
-        text = re.sub(r"\s+", " ", " ".join(parser.parts)).strip()
-        label = requested.strip()
-        idx = text.casefold().find(label.casefold())
-        if idx < 0:
-            return {"section": label, "found": False, "content": "未找到该章节标题。"}
-        excerpt = text[idx : idx + _MAX_TEXT]
-        return {
-            "report_id": str(report.id),
-            "section": label,
-            "found": True,
-            "content": excerpt,
-            "truncated": idx + len(excerpt) < len(text),
-        }
 
-    async def _list_artifacts(self, report: ReportModel, task: TaskModel | None) -> dict[str, Any]:
+        def read() -> dict[str, Any]:
+            parser = ReportSections(get_settings().report_copilot_section_max_chars)
+            parser.feed(content)
+            return parser.read(requested.strip())
+
+        result = await asyncio.to_thread(read)
+        return {"report_id": str(report.id), **result}
+
+    async def _list_artifacts(
+        self, report: ReportModel, task: TaskModel | None, args: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         projection = await self._registered_projection(report, task)
-        files = projection.get("files", [])
+        options = args or {}
+        files = matching_files(
+            projection.get("files", []),
+            str(options.get("role") or ""),
+            str(options.get("keyword") or ""),
+        )
+        offset, limit = options.get("offset", 0), options.get("limit", 20)
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            raise ValidationError("offset 必须是非负整数")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 50:
+            raise ValidationError("limit 必须在 1–50 之间")
+        items = files[offset : offset + limit]
+        while (
+            len(json.dumps(items, ensure_ascii=False))
+            > get_settings().report_copilot_output_max_chars - 1000
+            and items
+        ):
+            items.pop()
+        next_offset = offset + len(items) if offset + len(items) < len(files) else None
         return {
             "report_id": str(report.id),
-            "artifacts": files[:_MAX_ARTIFACTS],
-            "truncated": len(files) > _MAX_ARTIFACTS,
-            "metadata_status": "legacy_degraded" if report.report_schema_version != "2.1.0" else "available",
+            "items": items,
+            "total": len(files),
+            "offset": offset,
+            "next_offset": next_offset,
+            "has_more": next_offset is not None,
+            "source": "existing_registered_report_files",
+            "generated": False,
+            "queryable_roles": dict(Counter(entry["role"] for entry in files if queryable(entry))),
+            "metadata_status": "legacy_degraded"
+            if report.report_schema_version != "2.1.0"
+            else "available",
         }
 
     async def _query_table(
         self, report: ReportModel, task: TaskModel | None, args: dict[str, Any]
     ) -> dict[str, Any]:
-        if task is None:
+        if task is None and not (
+            report.external_source_key and report.report_schema_version == "2.1.0"
+        ):
             raise ValidationError("该报告没有可核验的分析任务，暂不支持结果表查询")
         projection = await self._registered_projection(report, task)
-        requested_role = str(args.get("role") or "").strip()
-        requested_name = str(args.get("artifact") or "").strip()
-        if not requested_role and not requested_name:
-            raise ValidationError("请指定结果文件角色")
-        candidates = projection.get("files", [])
-        match = next(
-            (
-                item
-                for item in candidates
-                if (requested_role and item.get("role") == requested_role)
-                or (requested_name and Path(str(item.get("path", ""))).name == requested_name)
-            ),
-            None,
-        )
-        if match is None or str(match.get("format", "")).lower() not in {"csv", "tsv"}:
-            raise ValidationError("只支持读取报告文件索引中登记的 CSV/TSV 结果")
-        root_value = projection.get("root")
-        if not isinstance(root_value, str) or not root_value:
-            raise ValidationError("该旧报告缺少可读取的文件索引")
-        try:
-            content = read_local_report_file(
-                Path(root_value), str(match["path"]), max_bytes=min(_MAX_TABLE_BYTES, REPORT_FILE_MAX_BYTES)
-            ).decode("utf-8-sig", errors="replace")
-        except (OSError, ValueError, KeyError) as exc:
-            raise ValidationError("报告结果文件不存在或路径无效") from exc
-        delimiter = "\t" if str(match["format"]).lower() == "tsv" else ","
-        reader = csv.DictReader(io.StringIO(content), delimiter=delimiter)
-        fields = reader.fieldnames or []
-        raw_filters = args.get("filters")
-        filters: dict[str, str] = (
-            {
-                str(key): str(value)
-                for key, value in raw_filters.items()
-                if isinstance(key, str) and isinstance(value, str)
-            }
-            if isinstance(raw_filters, dict)
-            else {}
-        )
-        if set(filters) - set(fields):
-            raise ValidationError("筛选列不在此结果表中")
-        rows: list[dict[str, str]] = []
-        raw_top_n = args.get("top_n", 20)
-        if isinstance(raw_top_n, bool) or not isinstance(raw_top_n, int):
-            raise ValidationError("top_n 必须是整数")
-        top_n = max(1, min(100, raw_top_n))
-        for row in reader:
-            if all(str(row.get(key, "")) == str(value) for key, value in filters.items()):
-                rows.append(
-                    {key: str(value or "")[:500] for key, value in row.items() if key in fields}
-                )
-                if len(rows) >= top_n:
-                    break
+        entry = select_table(projection.get("files", []), args)
+        root = projection.get("root")
+        if not isinstance(root, str) or not root:
+            raise ValidationError("报告缺少可读取的文件索引")
+        value = await asyncio.to_thread(query_table, Path(root), entry, args)
         return {
             "report_id": str(report.id),
-            "role": match.get("role"),
-            "artifact": Path(str(match["path"])).name,
-            "description": match.get("description", ""),
-            "columns": fields[:100],
-            "rows": rows,
-            "truncated": len(content) >= _MAX_TABLE_BYTES,
-            "metadata_status": "legacy_degraded" if report.report_schema_version != "2.1.0" else "available",
+            **value,
+            "metadata_status": "legacy_degraded"
+            if report.report_schema_version != "2.1.0"
+            else "available",
         }
+
+
+def compact_groups(value: Any) -> dict[str, Any] | list[Any] | None:
+    if isinstance(value, list):
+        return [str(item)[:160] for item in value[:20]]
+    if isinstance(value, dict):
+        return {
+            str(key)[:80]: (
+                [str(item)[:80] for item in item_value[:5]]
+                if isinstance(item_value, list)
+                else str(item_value)[:160]
+            )
+            for key, item_value in list(value.items())[:20]
+        }
+    return None
+
+
+def compact_enrichment(value: Any) -> dict[str, Any]:
+    """Keep thresholds/counts and exact table references, not full term/gene lists."""
+    if not isinstance(value, dict):
+        return {}
+    result: dict[str, Any] = {}
+    for name, family in list(value.items())[:4]:
+        if not isinstance(family, dict):
+            continue
+        summary: dict[str, Any] = {
+            key: family[key]
+            if isinstance(family[key], (bool, int, float, type(None)))
+            else str(family[key])[:160]
+            for key in ("enabled", "method", "status")
+            if key in family
+        }
+        parameters = family.get("parameters")
+        if isinstance(parameters, dict):
+            summary["parameters"] = {
+                str(key)[:80]: value
+                if isinstance(value, (bool, int, float, type(None)))
+                else value[:160]
+                for key, value in list(parameters.items())[:16]
+                if isinstance(value, (str, bool, int, float, type(None)))
+            }
+        contrasts = family.get("contrasts")
+        if isinstance(contrasts, dict):
+            summary["contrasts"] = {
+                contrast: {
+                    direction: {
+                        **{
+                            key: detail[key]
+                            if isinstance(detail[key], (bool, int, float, type(None)))
+                            else str(detail[key])[:1024]
+                            for key in ("status", "table")
+                            if key in detail
+                        },
+                        "input_term_count": detail.get("term_count")
+                        if isinstance(detail.get("term_count"), (int, float))
+                        else None,
+                        "significance_verified": False,
+                    }
+                    for direction, detail in list(directions.items())[:2]
+                    if isinstance(detail, dict)
+                }
+                for contrast, directions in list(contrasts.items())[:24]
+                if isinstance(directions, dict)
+            }
+            summary["contrast_count"] = len(contrasts)
+            summary["significance_note"] = (
+                "input_term_count 不是显著条目数；必须查询表格按实际校正 P 值筛选。"
+            )
+        result[str(name)] = summary
+    return result
+
+
+def report_tool_error(exc: Exception) -> dict[str, Any]:
+    if isinstance(exc, ValidationError):
+        return {
+            "error": exc.detail,
+            "code": exc.code or "REPORT_ARGUMENT_INVALID",
+            "next_action": "按提示修正参数；list_artifacts 支持 role/keyword 分页查询。参数或格式错误不代表没有访问权限。",
+        }
+    if isinstance(exc, (AuthorizationError, NotFoundError)):
+        return {
+            "error": "报告绑定或访问权限已失效，请重新打开当前报告。",
+            "code": "REPORT_ACCESS_DENIED",
+        }
+    return {"error": "当前报告数据暂不可读取，请稍后重试。", "code": "REPORT_READ_UNAVAILABLE"}

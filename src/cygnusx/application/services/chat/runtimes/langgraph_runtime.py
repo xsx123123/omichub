@@ -433,6 +433,7 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
             if runtime_state["tool_context"].extra.get("report_copilot"):
                 from cygnusx.application.services.report_copilot_service import (
                     ReportCopilotService,
+                    report_tool_error,
                 )
 
                 try:
@@ -442,11 +443,12 @@ class LangGraphChatRuntime(DelegatingAgentRuntime):
                     return {"success": True, "result": {"llm_payload": value, "ui_payload": value}}
                 except Exception as exc:  # noqa: BLE001
                     logger.info("报告 Copilot 工具读取失败: {}", exc)
+                    error = report_tool_error(exc)
                     return {
                         "success": False,
                         "result": {
-                            "llm_payload": {"error": "当前报告数据暂不可读取。"},
-                            "ui_payload": {"error": "当前报告数据暂不可读取。"},
+                            "llm_payload": error,
+                            "ui_payload": error,
                         },
                     }
             if tool_name == HANDOFF_TOOL_NAME:

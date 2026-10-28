@@ -4006,8 +4006,15 @@ class ChatService(
                 "没有工具证据时明确说明数据缺失，不得编造数值、样本或结论。"
                 "此会话仅绑定当前报告，禁止请求或推测其他项目/任务/文件。"
                 "数据问题必须先调用只读工具。引用章节时使用格式 [报告章节: 章节标题]。"
+                "使用 list_artifacts 按 role/keyword 分页找文件，role 采用 deg_table/enrichment_table/qc_stats。"
+                "query_project_results 的 artifact 优先使用返回的完整相对路径；多个比较组必须分别指定，不能把不同对比混成一个结论。"
+                "显著富集要查询具体表，使用 numeric_filters 的 p.adjust/padj 阈值和 sort_by 排序，不能把原始 P 值当成校正 P 值。"
+                "富集条目数量不等于通路整体上调/下调，也不等于效应强度；没有证据不得据数量推断通路被抑制。"
+                "摘要的 input_term_count 只是输入条目数，不能称为显著数；必须以表格 numeric_filters 后的 matched_rows 为依据。"
+                "参数、格式、大小限制错误请按工具返回修正，不得宣称权限丢失。产物列表是既有文件，不是本次新生成。"
+                "此入口可以解读和跳转既有火山图章节，不能改写或导出新图；需要绘图优化时明确建议进入 AI 工作台，不能假装已执行。"
                 "只回答问题，不创建任务、不执行代码、不搜索网络、不访问记忆或其他用户数据。"
-                f"\n绑定报告摘要（schema v1）：{json.dumps(report_context, ensure_ascii=False)[:12000]}"
+                f"\n绑定报告摘要（schema v1）：{json.dumps(report_context, ensure_ascii=False)}"
                 f"\n\n{USER_FACING_CHINESE_PROMPT_SUFFIX}"
             )
 

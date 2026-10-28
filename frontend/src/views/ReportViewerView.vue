@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NAlert, NButton, NIcon, NSpace, NSpin, useMessage } from 'naive-ui'
+import { NAlert, NButton, NIcon, NSpace, NSpin, NTooltip, useMessage } from 'naive-ui'
 import { ArrowBackOutline, DownloadOutline, OpenOutline, RefreshOutline, SparklesOutline, Star, StarOutline } from '@vicons/ionicons5'
-import PageHeader from '@/components/PageHeader.vue'
 import { downloadReportFile, reportApi } from '@/api/report'
 import type { Report, ReportPreview } from '@/types/report'
 import { REPORT_PREVIEW_AUTH_CLEARED } from '@/utils/reportPreviewSession'
@@ -41,20 +40,43 @@ const generatedAt = computed(() => {
   const timestamp = report.value?.completed_at || report.value?.created_at
   if (!timestamp) return '—'
   const date = new Date(timestamp)
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('zh-CN', { hour12: false })
+  if (Number.isNaN(date.getTime())) return '—'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 })
-const statusLabels = { completed: '已完成', generating: '生成中', failed: '生成失败', expired: '已过期' }
-const headerSubtitle = computed(() => {
+const statusLabels: Record<Report['status'], string> = {
+  completed: '已完成', generating: '生成中', failed: '生成失败', expired: '已过期',
+}
+// 头部标题组：主标题优先取项目名称，机器编号降级为等宽 chip（点击复制）。
+// title 由后端拼装："项目编号 分析报告"（外部交付）/"客户 - 流程 分析报告"/"流程 分析报告"。
+const titleParts = computed(() => {
   const current = report.value
-  if (!current) return '结果报告中心'
-  const parts = [statusLabels[current.status]]
-  if (current.source_kind === 'external') parts.push('外部交付')
-  parts.push(`${current.flow_name} ${current.flow_version}`, generatedAt.value)
-  if (current.report_kind === 'reproducibility') {
-    parts.push(`执行证据报告 · v${current.version || 1} · ${current.template_version}`)
-  }
-  return parts.filter(Boolean).join(' · ')
+  const title = current?.title.trim() || ''
+  if (!current || !title) return { main: '报告查看', id: '' }
+  const head = /^(.*?)\s*分析报告\s*$/.exec(title)?.[1]?.trim() ?? ''
+  if (!head) return { main: title, id: '' }
+  if (head.includes(' - ')) return { main: head.split(' - ')[0].trim() || title, id: '' }
+  if (head === current.flow_name) return { main: '分析报告', id: '' }
+  return { main: '分析报告', id: head }
 })
+
+async function copyProjectId() {
+  const id = titleParts.value.id
+  if (!id) return
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(id)
+    } else {
+      const el = document.createElement('textarea')
+      el.value = id
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      el.remove()
+    }
+    message.success('项目编号已复制')
+  } catch { message.error('复制失败，请手动选择复制') }
+}
 let epoch = 0
 let loadTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -239,25 +261,64 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="report-viewer">
-    <PageHeader compact :title="report?.title || '报告查看'" :subtitle="headerSubtitle">
-      <template #actions>
-        <NSpace :size="8">
-          <NButton secondary @click="router.push({ name: 'reports' })">
-            <template #icon><NIcon :component="ArrowBackOutline" /></template>报告中心
-          </NButton>
-          <NButton v-if="report" secondary @click="openWindow">
-            <template #icon><NIcon :component="OpenOutline" /></template>新窗口打开
-          </NButton>
-          <NButton v-if="report" :loading="starring" @click="toggleStar">
-            <template #icon><NIcon :component="report.is_starred ? Star : StarOutline" /></template>
-            {{ report.is_starred ? '取消收藏' : '收藏' }}
-          </NButton>
-          <NButton v-if="primary" :loading="downloading" @click="download">
-            <template #icon><NIcon :component="DownloadOutline" /></template>下载
-          </NButton>
-        </NSpace>
-      </template>
-    </PageHeader>
+    <header class="report-header">
+      <div class="report-header-left">
+        <button type="button" class="report-back" @click="router.push({ name: 'reports' })">
+          <NIcon :size="15" :component="ArrowBackOutline" />
+          <span>报告中心</span>
+        </button>
+        <div class="report-title-group">
+          <div class="report-title-row">
+            <h1 class="report-title">{{ titleParts.main }}</h1>
+            <button v-if="titleParts.id" type="button" class="report-id-chip"
+              :title="`${titleParts.id}（点击复制）`" @click="copyProjectId">
+              {{ titleParts.id }}
+            </button>
+          </div>
+          <div v-if="report" class="report-meta-row">
+            <span class="report-badge" :class="`report-badge--${report.status}`">
+              {{ statusLabels[report.status] }}
+            </span>
+            <span v-if="report.source_kind === 'external'" class="report-badge report-badge--delivery">外部交付</span>
+            <span class="report-badge report-badge--flow">{{ report.flow_name }} {{ report.flow_version }}</span>
+            <span v-if="report.report_kind === 'reproducibility'" class="report-badge report-badge--flow"
+              :title="report.template_version || undefined">
+              执行证据报告 v{{ report.version || 1 }}
+            </span>
+            <time class="report-time">{{ generatedAt }}</time>
+          </div>
+        </div>
+      </div>
+      <div v-if="report" class="report-header-actions">
+        <NTooltip placement="bottom" :delay="300">
+          <template #trigger>
+            <NButton quaternary circle class="report-action-btn" @click="openWindow">
+              <template #icon><NIcon :component="OpenOutline" /></template>
+              <span class="sr-only">新窗口打开</span>
+            </NButton>
+          </template>
+          新窗口打开
+        </NTooltip>
+        <NTooltip placement="bottom" :delay="300">
+          <template #trigger>
+            <NButton quaternary circle class="report-action-btn" :loading="starring" @click="toggleStar">
+              <template #icon><NIcon :component="report.is_starred ? Star : StarOutline" /></template>
+              <span class="sr-only">{{ report.is_starred ? '取消收藏' : '收藏' }}</span>
+            </NButton>
+          </template>
+          {{ report.is_starred ? '取消收藏' : '收藏' }}
+        </NTooltip>
+        <NTooltip v-if="primary" placement="bottom" :delay="300">
+          <template #trigger>
+            <NButton quaternary circle class="report-action-btn" :loading="downloading" @click="download">
+              <template #icon><NIcon :component="DownloadOutline" /></template>
+              <span class="sr-only">下载</span>
+            </NButton>
+          </template>
+          下载
+        </NTooltip>
+      </div>
+    </header>
     <NAlert v-if="report?.report_kind === 'reproducibility'" type="warning">
       {{ report.evidence_partial ? '证据不完整，请查看报告缺口。' : '仅限已记录的证据范围。' }}复现验证尚未执行（not_run）。
     </NAlert>
@@ -291,8 +352,59 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .report-viewer { display: flex; flex-direction: column; gap: 8px; min-height: calc(100vh - 120px); }
-/* 报告查看页专属：页头操作区在左、标题与元信息在右（§4.1 compact 变体的报告查看页约定） */
-.report-viewer :deep(.page-header-actions) { order: -1; }
+
+/* ===== 报告详情页头部：左区（返回链接 + 两行式标题组）/ 右区（icon 操作）===== */
+.report-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; padding: 8px 0; }
+.report-header-left { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1 1 auto; }
+.report-back {
+  display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
+  padding: 4px 8px 4px 0; border: 0; background: transparent; cursor: pointer;
+  color: var(--text-secondary); font-size: 14px; line-height: 1.5; white-space: nowrap;
+  transition: color 200ms ease;
+}
+.report-back:hover { color: var(--brand-primary); }
+.report-title-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.report-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.report-title { margin: 0; color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.4; }
+.report-id-chip {
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px; line-height: 1.5; padding: 2px 8px; border-radius: 6px;
+  background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--text-primary); cursor: pointer;
+  max-width: min(340px, 100%); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: background-color 200ms ease;
+}
+.report-id-chip:hover { background: rgba(0, 0, 0, 0.07); }
+.report-meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.report-badge {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  font-size: 12px; font-weight: 500; line-height: 1.5; padding: 1px 8px; border-radius: 999px;
+}
+/* 语义色文字均按浅色底 WCAG AA（≥4.5:1）加深取值 */
+.report-badge--completed { color: #237804; background: rgba(82, 196, 26, 0.1); }
+.report-badge--generating { color: #0958d9; background: rgba(9, 88, 217, 0.08); }
+.report-badge--failed { color: #cf1322; background: rgba(207, 19, 34, 0.08); }
+.report-badge--expired { color: #595959; background: rgba(0, 0, 0, 0.06); }
+.report-badge--delivery { color: #1a5fd4; border: 1px solid #1e6fff; background: transparent; border-radius: 6px; }
+.report-badge--flow { color: #595959; background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 6px; font-weight: 400; }
+.report-time { color: #767676; font-size: 12px; white-space: nowrap; }
+.report-header-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.report-action-btn {
+  --n-color-hover: rgba(0, 0, 0, 0.04);
+  --n-color-pressed: rgba(0, 0, 0, 0.08);
+  --n-color-focus: rgba(0, 0, 0, 0.04);
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+@media (max-width: 768px) {
+  .report-header { flex-direction: column; align-items: stretch; gap: 8px; }
+  .report-header-actions { justify-content: flex-end; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-back, .report-id-chip { transition: none; }
+}
 .viewer-content { display:flex; flex:1; min-height:70vh; border:1px solid var(--neutral-border); border-radius:12px; overflow:hidden; background:var(--neutral-card); }
 .viewer-frame-shell { position:relative; flex:1; min-width:0; overflow:auto; display:flex; flex-direction:column; }
 .report-frame { display: block; flex: 1; width: 100%; min-height: max(70vh, calc(100vh - 180px)); border: 0; background: white; }

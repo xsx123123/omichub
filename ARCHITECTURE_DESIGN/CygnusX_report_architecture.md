@@ -127,6 +127,74 @@ strict 读取复用无链接跟随的归档 FD 读法，并保留登记的词法
 
 HTML M1 概要、M2 输入环境、M3 时间线、M4 工具调用、M5 QC、M6 产物、M7 来源关系、M8 限制均由冻结快照渲染，有导航、响应式布局、明确状态、转义和 CSP，没有外部资源或脚本。未记录的输入指纹、QC 测量解释/阈值/豁免、工具调用均不补造；复现验证恒为 not_run。
 
+### 外部 Flow 接入前的故障定位（历史核查）
+
+2026-10-28 接入前对 `/data/omichub/Flow_report/X101SC26098749-Z01-J001` 只读核查：该目录当时未自动接入报告中心。原链路是 `analysis.py` 在平台 Task 完成后调用 `ReportService.create_report_from_task()` 登记，再由 ReportsView 查询数据库；刷新按钮仅重新请求列表和统计。当时没有消费 `Flow_report` 的目录监听器、启动扫描或定期导入任务。以下为修复前快照，修复后的当前实现见下一节。
+
+- `backfill_report_paths_registry.py` 必须先匹配已经存在、同 owner 的 Report 和 Task；匹配不到写入 manual，不创建报告，也不是自动导入器。现有 Report 的 `task_id` 非空，不能用随机任务 ID 代替真实执行来源。
+- 样本 `report.paths.json` 为 2.0.0，包含项目业务编号、client、物种和 15 个样本，但没有平台 owner/Task/Report 身份和 `platform.html_entry`。`client=jzhang` 不能自行当作平台授权身份。样本提供 `delivery_manifest.json`（旧构建机绝对路径映射），平台主登记路径读取的则是 `result_manifest.json`（结构化 ARDP 清单）；二者不等价。
+- 当前存储根配置为 `/data/omichub`，样本虽在该根下，却不在 `users/<owner>/` 下。`ReportPathsRegistryService.register()` 和 2.1 Copilot 均要求 owner 存储域；仅增加 Docker 挂载或回填 Report 行不足以接通。外部目录需要经过明确归属、可信来源关联、受控归档与文件索引登记。
+- 实际 HTML 为 85,887,929 字节，超过当前 `report_preview_max_bytes=33,554,432`。即使登记完成，strict 预览和 Copilot 章节读取仍会返回 `REPORT_TOO_LARGE`。它还是 gzip/base64 双语加载器：在 opaque-origin sandbox 中读取子 iframe 的 `contentDocument.querySelector` 会失败；划选事件不会从该正文自动冒泡到加载器，服务端 `_VisibleText` 也不能从压缩脚本提取正文。需要适配真实报告格式，不能只调大上限或放开 `allow-same-origin`。
+- 已修复 `report_preview_renderer.py` 内层桥在 `const channel` 后缺少分号导致的 `SyntaxError`。新增 Node 执行回归覆盖划选、章节跳转和消息身份/长度拒绝；修复前新增用例失败，修复后通过。Chromium 在真实 CSP 下验证普通正文划选可转发；使用样本原始加载器脚本和缩小的合成 gzip 正文，复现 `Cannot read properties of null (reading 'querySelector')`。这不代表完整 82 MiB 报告、生产部署或真实 LLM 已验收。
+
+本轮专项后端 39 个用例、前端 13 个用例及变更文件 Ruff/mypy 通过；交付审计另有存量 `multiqc.log` 缺失，相关用例 xfail。浏览器证据及最小复现位于 `/tmp/omichub-report-breakpoint/`，交付物审计位于 `/tmp/flow_report_test/`。最初核查时平台 API/数据库未启动；后续运行状态发生变化，以下记录来自真实容器和只读数据库查询，未执行导入、更改源交付文件或重启应用。
+
+2026-10-28 20:28 运行核验：`8888/health` 返回 200，版本 `b7482e6f`；Web 已将宿主 `/data/omichub` 挂载到同名路径，容器能读取该交付目录，预览上限仍为 32 MiB。数据库共有 159 条 Report、16 条 ReportFile；137 条带编号的演示报告全部没有 ReportFile。截图中的 `#031/#051/#061/#121` 标题逐条匹配且文件数均为 0；没有 ReportFile 路径或 Task 的 work_dir/result_path 匹配 `Flow_report` 或该项目编号。用户 `root` 为管理员且持有全部现有报告，另有普通用户 `JZHANG`；不能仅凭 client 或当前列表自行决定新交付的归属。
+
+在 Web 容器执行现有回填脚本 dry-run，并以 asyncpg `default_transaction_read_only=on` 约束数据库连接，结果为 success=0、failed=0、manual=1，理由是无法匹配 owner-scoped Report 和 Task。清单位于容器 `/tmp/flow-report-registry-audit/`。双语正文实际解压大小为中文 83,509,021 字节、英文 81,752,833 字节，因此仅去除压缩加载器也不能满足当前 32 MiB 限制。源码桥接修复在 bind mount 上可见；长驻 Uvicorn 进程是否已加载该修复尚未验证，未将磁盘可见等同于部署完成。
+
+完整真实文件（SHA-256 `3bebc871b1bf9fd8985102294928929ff70f8f0fa55aca225b5fc7cd14ac3a3d`）已在隔离 Chromium/HTTP fixture 中复现原加载器失败。进一步将解压的完整中文正文交给同一 renderer/CSP：可找到标题，但 data: 脚本/样式及 blob: 动态模块被当前 CSP 拒绝，报告脚本还因 localStorage 的 opaque-origin 限制报错；划选转发未通过，不能把该试验记为可用预览。完整结果在 `/tmp/omichub-report-breakpoint/full-browser-results.json`，复现脚本同目录。该验证绕过文件大小和业务身份门禁，仅用于定位格式兼容问题，不代表鉴权 API、生产页面、图表或真实 LLM 已验收。后续适配须保持原归档不变，并分别验证格式解包、资源加载、隔离、章节读取与划选链路。
+
+### 外部 Flow 交付自动导入（当前实现）
+
+用户明确指定归属 `root` 后，新增 `FlowReportImportService`，以 `Settings.flow_report_import_*` 控制启用、用户名、源目录、间隔及预算。默认关闭、owner 为空；本机 `.env` 已显式启用并设 owner=root，默认源目录从 `StoragePathFactory.data_root / Flow_report` 派生。识别源根下含 `report.paths.json` 的直接子项目，每 60 秒由 Beat 投递到独立 `report_import` 队列，`report-importer` 服务复用已有 Beat 镜像、独立单并发 Celery Worker。已有分析 Worker 未重启。扫描持有专属 PostgreSQL session advisory lock，覆盖提交；单项目失败回滚并继续处理其他项目。
+
+```mermaid
+flowchart LR
+    S[Flow_report 项目目录] --> B[Beat / report_import Worker]
+    B --> I[有界清单 / SHA-256 / no-follow 读取]
+    I --> A[root 用户项目运行目录 / 独立复制归档]
+    A --> P[原 HTML/PDF + 解压中英文预览副本]
+    A --> M[平台 2.1 sidecar / 文件角色索引]
+    P --> R[Report / ReportFile / FileRegistry]
+    M --> R
+    R --> V[报告中心 / 签名预览 / 划选]
+    V --> C[报告绑定 Copilot / 只读章节与结果表]
+```
+
+迁移 `flowreportimport01` 已应用本机业务库。Report 增加 `external_source_key/digest`，唯一约束为 owner/key/digest；数据库 CHECK 仅允许带外部来源的 scientific 报告省略 task_id，原 Task 源、执行证据和交付包不通过伪造 Task 接入。DTO/前端显式区分 source_kind=external；无 Task 的外部报告不能伪装平台执行证据或生成 Task-first 交付包。报告优化 Context Pack 的 run_id 为 null，不填写随机执行身份。
+
+每个项目按真实文件字节计算摘要，拒绝链接、特殊文件、路径穿越、源文件读写竞争；默认最多 2000 文件/2 GiB。无变化不重复登记，新摘要建立版本树。归档由 `create_project_run_dir()` 创建，复制到 owner 项目的 output，目录链及文件通过统一 Registry 登记；源目录、原 HTML/PDF、旧版本均不覆盖。平台绑定保存于独立 `.cygnusx-report.paths.json`，保留原 2.0 JSON；external sidecar 的 task_id=null、source_kind/key 必须与 Report 匹配，Copilot 仅接受当前 owner 的已登记索引，不扫描外部源目录，也不把业务项目编号当成已验证的平台 Project 身份。
+
+BioReport 双语 gzip/base64 仅在导入时有界解包，原加载器不在平台执行，原始 HTML 仍可下载。中文/英文预览分别登记 SHA-256，外部预览预算默认 128 MiB、加载超时 120 秒；原普通报告仍为 32 MiB/30 秒。预览语言经 Literal 参数校验并写入签名 grant，页面语言选择器和原报告语言按钮都走平台鉴权 URL。外部 CSP 额外允许内嵌 data:/blob: 脚本/样式，仍无 allow-same-origin、HTTP 出网、表单或顶层导航；Quarto storage 使用当前文档内存替身，不访问平台持久存储。划选桥提前注入 head，避免复杂报告尾部内容吞掉桥脚本；Copilot 首次挂载立即接收选区草稿。
+
+本机真实验证：Report `c53da70c-b357-4989-a004-f3c85e96b0a4` 归属 root，状态 completed，15 样本、124 个源文件索引；首轮定时任务 imported=1，后续多轮 unchanged=1。PostgreSQL schema drift 检查通过。Chromium 使用实际 8888 入口、生产前端构建、真实 JWT/签名预览/数据库及完整交付文件，已验证列表显示、正文加载、划选预填、报告绑定会话、真实 SSE/LLM 回复、章节读取和原生中英文切换，相关 API 无失败响应。证据位于 `/tmp/omichub-report-breakpoint/live-results.json`、`root-live-copilot.png`、`root-live-ai-answer.png`；测试凭据另存私有临时文件，不进入证据/提交。验证不代表科学结论已认证，也不宣称所有嵌入图表/表格组件均通过。
+
+完整页面对照还发现 Quarto/DataTables 的序列化回调需要动态求值：原始 HTML 直接加载无错误，受限预览在缺少 eval 支持时出现 `c.apply is not a function`；仅对外部预览追加 unsafe-eval 后同一完整页面无错误。该兼容能力仍处于 opaque-origin sandbox，HTTP 出网/同源/表单限制不变，普通报告策略不变；对应完整文件对照证据为 `source-baseline-results.json` 与 `full-browser-eval-results.json`。这不开放任何平台 Agent 代码执行能力。
+
+最终真实入口复验见 `/tmp/omichub-report-breakpoint/live-final-results.json` 与 `root-live-final.png`：3 个 DataTables 容器初始化、样本信息页导航正常，页面 JavaScript 错误为 0；读取父页面被阻断、匿名复制预览链接返回 403，原始 HTML Range 下载返回 206。源 HTML SHA-256 与接入前一致。此前 `live-results.json` 中的 c.apply 错误属于修复前记录，以 final/eval 对照为准；真实 LLM 只验证一次，后续兼容复验不重复调用模型。
+
+专项验证：49 个后端报告/导入用例通过；57 个旧报告生命周期/交付用例在显式 `RESEARCH_DELIVERY_READ_ENABLED=false` 的隔离配置下通过（默认本机开关打开时有一个旧 fixture 缺失 User 的存量失败）；前端报告 14 个用例及 type-check/build 通过，变更域 Ruff/mypy 和迁移链检查通过。全仓 mypy 尚有其他域 983 个错误，不能宣称全量门禁全绿；未提交其他域脏文件。
+
+### Copilot 结构化读取与显著性修复
+
+2026-10-28，用户在同一 root 报告的只读会话请求提取火山图并解释显著基因/通路，出现“当前报告数据暂不可读取”、清单截断和章节读回目录。已用真实数据库/归档逐项复现；不是挂载或 owner 权限丢失：
+
+- 角色索引按目录分类，`data/res/DEG/MD5.txt`、`Enrichments/MD5.txt` 也带 deg/enrichment 角色。原查询采用 role **或** basename 的首项匹配，先命中 MD5；完整相对路径又不能和 basename 相等，指定表格也无法可靠收窄。模型使用 diff_expr/enrichment_go 别名时同样无法匹配。
+- DEG CSV 实际约 3.1 MB，超过原 2 MiB 整文件读取限额；QC 的 tab-delimited TXT 也被格式白名单拒绝。统一捕获再把所有参数/格式错误显示成“不可读取”，导致模型误判权限故障。
+- 原章节算法在全页纯文本上找首次子串，首先匹配 TOC/导航；124 个条目的清单和元数据直接回灌模型，清单可能被上层上下文截断。`artifacts` 还被通用信封识别成“新生成产物”，实际只是既有文件。
+- 元数据 GO-UP term_count=751 是输入行数；真实 `Salt_A_vs_WTSalt_GO_UP.csv` 中只有 30 行满足 p.adjust<0.05。原回答把条目总数当显著数、并从富集数量推断整体下调，缺少表格证据。
+
+新增 `report_copilot_readers.py`：仅在已核验的当前报告索引内选择文件，完整路径优先、无精确路径时仅接受唯一 basename；角色和 artifact 同时收窄，支持受控别名，排除 checksum，多个比较组返回明确歧义错误。支持 CSV/TSV 和有表头的 QC tab-TXT，默认单文件最多 64 MiB、扫描 200000 行；有限数值筛选、绝对 fold-change 条件及数值排序以原始字符串返回值，不重算分析。Top-N 返回扫描/匹配/输出行数、具体阈值、排序列和截断标记，列与输出预算明确；NA/非有限数不作为显著证据。默认输出预算 10000 字符，正文预算 4000 字符，均走 Settings/env。
+
+list_artifacts 支持 role/keyword/offset/limit，返回 items、next_offset、has_more；显式 generated=false，不再触发通用 artifact_manifest 的“生成”投影。旧消息中的清单属于历史记录，不改写。初始上下文只保留角色计数、少量文件示例和有界富集概要；input_term_count 标为未核验显著性，提示查询具体表。ReportSections 按真正的 h1–h6 正文边界索引，跳过导航、页眉、aside、脚本和样式，不按目录首次子串截取；歧义/未匹配返回可用标题。参数错误返回安全 code/修正建议，授权错误和未知故障分别处理，不回传服务器路径。
+
+执行面仍是 report-bound chat_langgraph，仍然仅三项只读工具；LangGraph 分发只改该受限分支的错误投影。报告专用系统约束要求区分原始/校正 P、输入/显著条目数、各比较组与方向，不能把富集数量等同整体抑制。此入口没有绘图导出、代码执行或写回报告能力；重绘/优化应进入 Studio，不给 Copilot 放开沙箱权限。
+
+真实验收：通过 8888 API 为该报告创建独立验证会话，实际 LLM 以 chat_langgraph 完成 6 次成功只读调用，无 SSE error；读到 Volcano 正文、DEG/GO_UP/KEGG_UP 实际表，DEG 在 padj<0.05 且 abs(log2FoldChange)>1 下为 4620/21989 行，GO-UP 在 p.adjust<0.05 下为 30/751 行，并返回对应基因、条目名及原始校正 P 值。列表的 artifact_manifest 为空；源表和旧报告未改动。初始摘要 5959 字符，受控请求 usage 为 23406 tokens；该请求不同于原失败请求，不作为同提示词性能对照。证据在 `/tmp/report-copilot-repair/live-events.json`、`live-results.json`，测试凭据另存私有临时文件并在验证后删除。
+
+报告读取、导入、预览及 Chat golden 专项合计 80 个用例通过，新增读取模块 Ruff/mypy 通过。扩展 Chat/sandbox 回归有 34 通过/8 失败，涉及既有 seq 断言及 sandbox fixture 缺少 _db；选取两个失败在 HEAD 原始 Runtime 的独立进程中再次复现，未修改共享源码或生产历史。Chat 两个大文件另有 68 个存量 mypy 错误，未将本次专项通过表述为全仓门禁通过。相关日志在 `/tmp/report-copilot-*.log`。
+
 ## 验证边界
 
 Phase 0 回归、离线 HTML、安全、生命周期、去重、发布失败恢复、ASGI 请求到下载与前端轮询/隔离测试已建立。Phase 2 增加交付包缺口、Manifest、ZIP slip、篡改拒绝和大小/数量上限测试。隔离集成使用 SQLite 和合成 RNA 目录；不证明真实 PostgreSQL 行锁、现场 Celery 投递、S3、BioReport 生产镜像、真实 RNA 结果或浏览器手工 E2E。

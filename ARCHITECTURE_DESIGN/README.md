@@ -312,7 +312,7 @@ CygnusX 前端唯一权威规范：设计目标与非协商原则、技术边界
 ## 报告中心
 
 ### `CygnusX_report_architecture.md` — 科学报告与可复现执行证据报告（as-built）
-记录 Phase 1 Task-first RNA 证据采集、不可变快照、独立 Celery Job、幂等与恢复、原子归档、ReportService 登记、同一报告中心、安全预览与下载。实现与真实部署验收分开描述；真实 RNA / PostgreSQL / Celery / S3 验收仍未完成。
+记录 Phase 1 Task-first RNA 证据采集、不可变快照、独立 Celery Job、幂等与恢复、原子归档、ReportService 登记、同一报告中心、安全预览与下载。另含外部 Flow 交付导入、独立扫描队列、无伪造 Task 的来源绑定、双语压缩报告适配和划选 Copilot；root 样本已完成本机真实数据库/队列/浏览器/LLM 验证。Task-first RNA / S3 等其他验收边界分别记录，不能由外部导入验收替代。
 
 ## 合并记录（2026-09-18）
 

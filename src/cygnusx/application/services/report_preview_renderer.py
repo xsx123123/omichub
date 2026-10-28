@@ -2,15 +2,43 @@
 
 import html
 import json
+import re
 from uuid import UUID
 
+# Quarto article layouts cap the body-content column at calc(1150px - 2.4rem),
+# leaving wide empty margins on desktop screens. The preview is a served view of
+# an immutable artifact, so widening is done as a presentation-only override that
+# keeps every other track of the grid (TOC, gutters, flexible margins) untouched.
+_WIDE_LAYOUT_STYLE = (
+    "<style>@media (min-width: 992px){"
+    "body .page-columns{grid-template-columns:"
+    "[screen-start] 1.2rem [screen-start-inset] 5fr [page-start page-start-inset] 28px "
+    "[body-start-outset] 28px [body-start] 1.2rem "
+    "[body-content-start] minmax(500px, calc(100vw - 260px)) [body-content-end] 1.2rem "
+    "[body-end] 25.2px [body-end-outset] minmax(54px, 104.4px) [page-end-inset] 25.2px "
+    "[page-end] 5fr [screen-end-inset] 1.2rem [screen-end] !important}"
+    "body:not(.floating):not(.docked) .page-columns.toc-left,"
+    "body:not(.floating):not(.docked) .page-columns.toc-left .page-columns{"
+    "grid-template-columns:"
+    "[screen-start] 1.2rem [screen-start-inset] 5fr [page-start] 28px "
+    "[page-start-inset] minmax(0px, 140px) [body-start-outset] 28px [body-start] 1.2rem "
+    "[body-content-start] minmax(450px, calc(100vw - 320px)) [body-content-end] 1.2rem "
+    "[body-end] 36px [body-end-outset] minmax(0px, 144px) [page-end-inset] 36px "
+    "[page-end] 5fr [screen-end-inset] 1.2rem [screen-end] !important}"
+    "}</style>"
+)
 
-def preview_csp() -> str:
+
+def preview_csp(*, embedded_resources: bool = False) -> str:
     # srcdoc inherits this policy. No remote scripts, requests, forms, popups or
     # same-origin privileges; the nested report has its own sandbox as well.
+    # Quarto/DataTables reconstruct serialized callbacks at runtime. Evaluation
+    # remains inside the opaque report sandbox, with all network access denied.
+    scripts = "'unsafe-inline' 'unsafe-eval' data: blob:" if embedded_resources else "'unsafe-inline'"
+    styles = "'unsafe-inline' data: blob:" if embedded_resources else "'unsafe-inline'"
     return (
         "sandbox allow-scripts; default-src 'none'; "
-        "script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+        f"script-src {scripts}; style-src {styles}; "
         "img-src data: blob:; font-src data:; media-src data: blob:; "
         "frame-src 'self' about:; connect-src 'none'; object-src 'none'; "
         "base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
@@ -24,6 +52,7 @@ def render_preview(
     content: str = "",
     interactive: bool = False,
     error_status: int | None = None,
+    embedded_resources: bool = False,
 ) -> str:
     """Only the outer bridge runs for evidence reports; their own scripts stay disabled."""
     event = json.dumps(
@@ -41,12 +70,18 @@ def render_preview(
             + json.dumps(str(report_id))
             + ";const channel="
             + json.dumps(channel)
-            + "window.addEventListener('message',e=>{const d=e.data;"
+            + ";window.addEventListener('message',e=>{const d=e.data;"
             + "if(e.source!==parent||e.origin!=='null'||!d||d.type!=='cygnusx:report-section'"
             + "||d.reportId!==id||d.channel!==channel||typeof d.section!=='string'||d.section.length>80)return;"
             + "const h=[...document.querySelectorAll('h1,h2,h3,h4,[role=heading]')]"
             + ".find(x=>(x.textContent||'').trim()===d.section);"
             + "if(h)h.scrollIntoView({behavior:'smooth',block:'start'})});"
+            + (
+                "document.addEventListener('click',e=>{if(!e.target.closest?.('[data-report-language]'))return;"
+                "e.preventDefault();e.stopImmediatePropagation();parent.postMessage({type:'cygnusx:report-language',"
+                "reportId:id,channel:channel,language:document.documentElement.lang.startsWith('en')?'zh':'en'},'*')},true);"
+                if embedded_resources else ""
+            )
             # --- selection capture: report -> platform ----------------------
             + "const HEADINGS='h1,h2,h3,h4,[role=heading],.section-title,.panel-title,[data-section]';"
             + "function sectionOf(node){let best=null;"
@@ -70,13 +105,16 @@ def render_preview(
             + "document.addEventListener('mouseup',()=>setTimeout(emit,0));"
             + "document.addEventListener('keyup',e=>{if(e.key==='Shift'||e.shiftKey)setTimeout(emit,0)});})();</script>"
         )
-        lower_content = content.lower()
-        body_end = lower_content.rfind("</body>")
-        content = (
-            content[:body_end] + inner_bridge + content[body_end:]
-            if body_end >= 0
-            else content + inner_bridge
-        )
+        if embedded_resources:
+            # Quarto expects storage even in offline reports. This is isolated,
+            # document-local memory, never platform cookies or persistent storage.
+            storage = "<script>(()=>{for(const key of ['localStorage','sessionStorage']){const data=Object.create(null);Object.defineProperty(window,key,{value:{getItem:k=>data[k]??null,setItem:(k,v)=>{data[k]=String(v)},removeItem:k=>{delete data[k]},clear:()=>{for(const k of Object.keys(data))delete data[k]},key:i=>Object.keys(data)[i]??null,get length(){return Object.keys(data).length}}})}})();</script>"
+            inner_bridge = storage + inner_bridge
+        # Register before report scripts run. Appending at the end of complex
+        # Quarto HTML can leave the bridge in inert/rewritten document content.
+        head = re.search(r"<head(?:\s[^>]*)?>", content, re.IGNORECASE)
+        position = head.end() if head else 0
+        content = content[:position] + _WIDE_LAYOUT_STYLE + inner_bridge + content[position:]
     section_bridge = ""
     if interactive:
         section_bridge = (
@@ -105,6 +143,13 @@ def render_preview(
         + '<script>window.addEventListener("load",()=>{'
         + f'window.parent.postMessage({event},"*");'
         + "},{once:true});"
+        + (
+            "window.addEventListener('message',e=>{const d=e.data;"
+            "if(e.source!==window.frames[0]||!d||d.type!=='cygnusx:report-language'||d.reportId!=="
+            + json.dumps(str(report_id)) + "||d.channel!==" + json.dumps(channel)
+            + "||!['zh','en'].includes(d.language))return;parent.postMessage(d,'*')});"
+            if embedded_resources else ""
+        )
         + (
             "window.addEventListener('message',e=>{const d=e.data;"
             "if(e.source!==parent||!d||d.type!=='cygnusx:report-section'||d.reportId!=="

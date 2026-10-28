@@ -136,7 +136,11 @@ async def test_project_job_constraints_and_frozen_identity(claim_env):
     with pytest.raises(ValueError, match="Frozen"):
         await env.db.flush()
     await env.db.rollback()
-    assert not ReportModel.__table__.c.task_id.nullable
+    # External Flow deliveries may omit task_id; the CHECK keeps that exclusive to them.
+    assert ReportModel.__table__.c.task_id.nullable
+    assert "ck_reports_execution_source" in {
+        constraint.name for constraint in ReportModel.__table__.constraints
+    }
     assert not ReportGenerationJobModel.__table__.c.task_id.nullable
 
 

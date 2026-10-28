@@ -101,12 +101,13 @@ pipelines/*/report/docker/RNA/docker_build/vendor/
 # Rust 子模块构建产物（如 EBIDownload）
 pipelines/*/target/
 
-update_info/
-atac-seq/
-cloud/
-qc/
-rna-seq/
-.github
+# 仅忽略仓库根目录下的运行输出（勿写成无锚点目录名，否则会误伤 skills/bio_skills/atac-seq 等同名技能分类）
+/update_info/
+/atac-seq/
+/cloud/
+/qc/
+/rna-seq/
+/.github
 # 本地 AI Provider 审计/路由配置（可能携带密钥，禁止入库）
 sandbox-audit-report.json
 

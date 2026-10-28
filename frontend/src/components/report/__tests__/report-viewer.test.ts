@@ -15,6 +15,9 @@ vi.mock('vue-router', () => ({ useRoute: () => route, useRouter: () => ({
 vi.mock('@/api/report', () => ({ reportApi: {
   getReportDetail: calls.detail, getPreviewUrl: calls.preview, markAsRead: calls.read, toggleStar: calls.star,
 }, downloadReportFile: calls.download }))
+vi.mock('@/stores/aiAssistantSidebar', () => ({ useAiAssistantSidebarStore: () => ({
+  openReportCopilot: vi.fn(), closeReportCopilot: vi.fn(), setReportSectionHandler: vi.fn(),
+}) }))
 
 function report(id = 'report-1', extra: Partial<Report> = {}): Report {
   return { id, task_id: 'task', user_id: 'owner', title: `报告 ${id}`, description: '',
@@ -148,7 +151,8 @@ describe('平台报告查看页', () => {
     expect(calls.star).toHaveBeenCalledWith('report-1', true)
     expect(host.textContent).toContain('取消收藏')
     Array.from(host.querySelectorAll('button')).find(b => b.textContent?.trim() === '新窗口打开')!.click()
-    expect(open).toHaveBeenCalledWith('/reports/report-1/view', '_blank', 'noopener,noreferrer')
+    expect(open).toHaveBeenCalledWith(
+      '/api/v1/reports/report-1/preview-content?token=signed-report-1', '_blank', 'noopener,noreferrer')
     open.mockRestore()
   })
 

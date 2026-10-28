@@ -5,7 +5,12 @@ import apiClient from '@/api/client'
 import { reportApi } from '@/api/report'
 import { useAgentChatStream } from '@/composables/useAgentChatStream'
 
-const props = defineProps<{ reportId: string; prefill?: { content: string; nonce: number } | null }>()
+const props = defineProps<{
+  reportId: string
+  prefill?: { content: string; nonce: number } | null
+  /** 嵌入全局 AI 助手侧边栏：隐藏自带头部、去掉分栏边框与最小宽度 */
+  embedded?: boolean
+}>()
 const emit = defineEmits<{ section: [title: string] }>()
 interface CopilotMessage { role: 'user' | 'assistant'; content: string }
 const messages = ref<CopilotMessage[]>([])
@@ -139,14 +144,14 @@ watch(() => props.prefill?.nonce, nonce => {
   if (!nonce || !props.prefill) return
   draft.value = props.prefill.content
   void nextTick(() => composeInput.value?.focus())
-})
+}, { immediate: true })
 watch(messages, scrollToLatest, { deep: true, flush: 'post' })
 onBeforeUnmount(() => { generation++; abortStream() })
 </script>
 
 <template>
-  <aside class="copilot-panel" aria-label="报告 AI 解读">
-    <header class="copilot-header">
+  <aside class="copilot-panel" :class="{ 'copilot-panel--embedded': props.embedded }" aria-label="报告 AI 解读">
+    <header v-if="!props.embedded" class="copilot-header">
       <div><strong>AI 报告解读</strong><small>仅读取当前报告关联的数据</small></div>
       <NSpin v-if="loadingHistory || isStreaming" size="small" />
     </header>
@@ -181,6 +186,7 @@ onBeforeUnmount(() => { generation++; abortStream() })
 
 <style scoped>
 .copilot-panel { display:flex; flex-direction:column; height:100%; min-width:300px; background:var(--neutral-card); border-left:1px solid var(--neutral-border); }
+.copilot-panel--embedded { min-width:0; border-left:none; background:transparent; }
 .copilot-header { display:flex; justify-content:space-between; align-items:center; padding:16px; border-bottom:1px solid var(--neutral-border); }
 .copilot-header strong,.copilot-header small { display:block; }.copilot-header small,.copilot-context { color:var(--neutral-text-2); font-size:12px; margin-top:4px; }
 .copilot-alert,.copilot-context { margin:10px 12px 0; }.quick-questions { display:flex; flex-wrap:wrap; gap:6px; padding:10px 12px; }

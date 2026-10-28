@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NAlert, NButton, NIcon, NSpace, NSpin, NTag, useMessage } from 'naive-ui'
+import { NAlert, NButton, NIcon, NSpace, NSpin, useMessage } from 'naive-ui'
 import { ArrowBackOutline, DownloadOutline, OpenOutline, RefreshOutline, SparklesOutline, Star, StarOutline } from '@vicons/ionicons5'
 import PageHeader from '@/components/PageHeader.vue'
 import { downloadReportFile, reportApi } from '@/api/report'
 import type { Report, ReportPreview } from '@/types/report'
 import { REPORT_PREVIEW_AUTH_CLEARED } from '@/utils/reportPreviewSession'
 import { SELECTION_LIMIT, buildSelectionPrefill } from '@/utils/reportSelection'
-import ReportCopilotPanel from '@/components/report/ReportCopilotPanel.vue'
+import { useAiAssistantSidebarStore } from '@/stores/aiAssistantSidebar'
 
 const route = useRoute()
 const router = useRouter()
 const message = useMessage()
+const sidebar = useAiAssistantSidebarStore()
 const report = ref<Report | null>(null)
 const preview = ref<ReportPreview | null>(null)
 const frame = ref<HTMLIFrameElement | null>(null)
@@ -20,11 +21,9 @@ const loading = ref(false)
 const error = ref('')
 const starring = ref(false)
 const downloading = ref(false)
+const language = ref<'zh' | 'en'>('zh')
 interface ReportSelection { text: string; section: string; x: number; y: number }
-const copilotOpen = ref(false)
-const copilotWidth = ref(400)
 const selection = ref<ReportSelection | null>(null)
-const prefill = ref<{ content: string; nonce: number } | null>(null)
 const selectionTruncated = computed(() => (selection.value?.text.length || 0) > SELECTION_LIMIT)
 const selectionButtonStyle = computed(() => {
   const current = selection.value
@@ -45,6 +44,17 @@ const generatedAt = computed(() => {
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('zh-CN', { hour12: false })
 })
 const statusLabels = { completed: '已完成', generating: '生成中', failed: '生成失败', expired: '已过期' }
+const headerSubtitle = computed(() => {
+  const current = report.value
+  if (!current) return '结果报告中心'
+  const parts = [statusLabels[current.status]]
+  if (current.source_kind === 'external') parts.push('外部交付')
+  parts.push(`${current.flow_name} ${current.flow_version}`, generatedAt.value)
+  if (current.report_kind === 'reproducibility') {
+    parts.push(`执行证据报告 · v${current.version || 1} · ${current.template_version}`)
+  }
+  return parts.filter(Boolean).join(' · ')
+})
 let epoch = 0
 let loadTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -74,7 +84,6 @@ async function loadReport() {
   loading.value = true
   const id = String(route.params.reportId || '')
   selection.value = null
-  prefill.value = null
   try {
     const detail = await reportApi.getReportDetail(id)
     if (current !== epoch) return
@@ -90,7 +99,7 @@ async function loadReport() {
       loading.value = false
       return
     }
-    const result = await reportApi.getPreviewUrl(id)
+    const result = await reportApi.getPreviewUrl(id, language.value)
     if (current !== epoch) return
     const url = new URL(result.data.url, window.location.origin)
     if (url.origin !== window.location.origin || url.pathname !== `/api/v1/reports/${id}/preview-content`) {
@@ -98,7 +107,7 @@ async function loadReport() {
       return
     }
     preview.value = result.data
-    loadTimer = setTimeout(() => { if (current === epoch) fail() }, 30000)
+    loadTimer = setTimeout(() => { if (current === epoch) fail() }, (result.data.load_timeout_seconds || 30) * 1000)
     if (!detail.data.is_read) void reportApi.markAsRead(id).catch(() => {})
   } catch (cause) {
     if (current !== epoch) return
@@ -111,6 +120,13 @@ function onPreviewMessage(event: MessageEvent) {
   const data = event.data
   if (!preview.value || event.source !== frame.value?.contentWindow || event.origin !== 'null'
     || !data || data.reportId !== report.value?.id || data.channel !== preview.value.channel) return
+  if (data.type === 'cygnusx:report-language' && report.value?.source_kind === 'external') {
+    if (data.language !== 'zh' && data.language !== 'en') return
+    if (data.language === 'en' && !report.value.files.some(file => file.name.endsWith('.en.html'))) return
+    language.value = data.language
+    void loadReport()
+    return
+  }
   if (data.type === 'cygnusx:report-selection') {
     if (typeof data.text !== 'string' || !data.text.trim() || data.text.length > 4000) return
     selection.value = {
@@ -129,6 +145,15 @@ function onPreviewMessage(event: MessageEvent) {
 
 function dismissSelection() { selection.value = null }
 
+function openCopilot(prefillContent?: string) {
+  const currentReport = report.value
+  if (!currentReport) return
+  sidebar.openReportCopilot(
+    { reportId: currentReport.id, title: currentReport.title },
+    prefillContent,
+  )
+}
+
 function askAiAboutSelection() {
   const current = selection.value
   const currentReport = report.value
@@ -141,8 +166,7 @@ function askAiAboutSelection() {
     text: current.text,
   })
   if (result.truncated) message.warning('选中内容过长，已自动截断')
-  prefill.value = { content: result.content, nonce: Date.now() }
-  copilotOpen.value = true
+  openCopilot(result.content)
   selection.value = null
 }
 
@@ -154,23 +178,6 @@ function openReportSection(section: string) {
     channel: preview.value.channel,
     section,
   }, '*')
-}
-
-let resizing = false
-function startResize(event: PointerEvent) {
-  resizing = true
-  const startX = event.clientX
-  const startWidth = copilotWidth.value
-  const move = (next: PointerEvent) => {
-    if (resizing) copilotWidth.value = Math.max(320, Math.min(640, startWidth + startX - next.clientX))
-  }
-  const end = () => {
-    resizing = false
-    window.removeEventListener('pointermove', move)
-    window.removeEventListener('pointerup', end)
-  }
-  window.addEventListener('pointermove', move)
-  window.addEventListener('pointerup', end)
 }
 
 async function download() {
@@ -196,14 +203,15 @@ async function toggleStar() {
 }
 
 function openWindow() {
-  const target = router.resolve({ name: 'report-viewer', params: { reportId: report.value?.id } })
-  window.open(target.href, '_blank', 'noopener,noreferrer')
+  const url = preview.value?.url
+  if (!url) return
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 function authCleared() {
   ++epoch
   stopTimer()
-  copilotOpen.value = false
+  sidebar.closeReportCopilot()
   preview.value = null
   report.value = null
   loading.value = false
@@ -218,9 +226,11 @@ watch(() => route.params.reportId, loadReport, { immediate: true })
 window.addEventListener('message', onPreviewMessage)
 window.addEventListener('storage', onStorage)
 window.addEventListener(REPORT_PREVIEW_AUTH_CLEARED, authCleared)
+onMounted(() => sidebar.setReportSectionHandler(openReportSection))
 onBeforeUnmount(() => {
   ++epoch
   stopTimer()
+  sidebar.setReportSectionHandler(null)
   window.removeEventListener('message', onPreviewMessage)
   window.removeEventListener('storage', onStorage)
   window.removeEventListener(REPORT_PREVIEW_AUTH_CLEARED, authCleared)
@@ -229,7 +239,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="report-viewer">
-    <PageHeader :title="report?.title || '报告查看'" :subtitle="report?.flow_name || '结果报告中心'">
+    <PageHeader compact :title="report?.title || '报告查看'" :subtitle="headerSubtitle">
       <template #actions>
         <NSpace :size="8">
           <NButton secondary @click="router.push({ name: 'reports' })">
@@ -248,16 +258,10 @@ onBeforeUnmount(() => {
         </NSpace>
       </template>
     </PageHeader>
-    <div v-if="report" class="report-meta">
-      <NTag size="small" :type="report.status === 'completed' ? 'success' : 'warning'">{{ statusLabels[report.status] }}</NTag>
-      <span>{{ report.flow_name }} {{ report.flow_version }}</span>
-      <time :datetime="report.completed_at || report.created_at">{{ generatedAt }}</time>
-      <span v-if="report.report_kind === 'reproducibility'">执行证据报告 · v{{ report.version || 1 }} · {{ report.template_version }}</span>
-    </div>
     <NAlert v-if="report?.report_kind === 'reproducibility'" type="warning">
       {{ report.evidence_partial ? '证据不完整，请查看报告缺口。' : '仅限已记录的证据范围。' }}复现验证尚未执行（not_run）。
     </NAlert>
-    <div class="viewer-content" :class="{ 'copilot-visible': copilotOpen }">
+    <div class="viewer-content">
       <div class="viewer-frame-shell">
       <NAlert v-if="error" class="viewer-error" type="error" title="报告暂不可预览" data-testid="preview-error">
         {{ error }}
@@ -277,23 +281,21 @@ onBeforeUnmount(() => {
         <span v-if="selectionTruncated" class="selection-warn" title="选中内容过长，已自动截断">⚠</span>
         <button class="selection-close" aria-label="关闭" @click="dismissSelection">×</button>
       </div>
-      <NButton class="copilot-placeholder" round :aria-expanded="copilotOpen" @click="copilotOpen = !copilotOpen">
+      <NButton v-if="report" class="copilot-placeholder" round @click="openCopilot()">
         <template #icon><NIcon :component="SparklesOutline" /></template>AI 解读
       </NButton>
       </div>
-      <div v-if="copilotOpen" class="copilot-resizer" role="separator" aria-orientation="vertical" @pointerdown="startResize" />
-      <ReportCopilotPanel v-if="copilotOpen && report" :report-id="report.id" :prefill="prefill" @section="openReportSection"
-        :style="{ width: `${copilotWidth}px` }" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.report-viewer { display: flex; flex-direction: column; gap: 16px; min-height: calc(100vh - 144px); }
-.report-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--neutral-text-2); font-size: 13px; }
-.viewer-content { display:flex; flex:1; min-height:65vh; border:1px solid var(--neutral-border); border-radius:12px; overflow:hidden; background:var(--neutral-card); }
-.viewer-frame-shell { position:relative; flex:1; min-width:0; overflow:auto; }
-.report-frame { display: block; width: 100%; height: max(65vh, calc(100vh - 280px)); border: 0; background: white; }
+.report-viewer { display: flex; flex-direction: column; gap: 8px; min-height: calc(100vh - 120px); }
+/* 报告查看页专属：页头操作区在左、标题与元信息在右（§4.1 compact 变体的报告查看页约定） */
+.report-viewer :deep(.page-header-actions) { order: -1; }
+.viewer-content { display:flex; flex:1; min-height:70vh; border:1px solid var(--neutral-border); border-radius:12px; overflow:hidden; background:var(--neutral-card); }
+.viewer-frame-shell { position:relative; flex:1; min-width:0; overflow:auto; display:flex; flex-direction:column; }
+.report-frame { display: block; flex: 1; width: 100%; min-height: max(70vh, calc(100vh - 180px)); border: 0; background: white; }
 .viewer-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 16px; background: var(--neutral-card); z-index: 1; }
 .viewer-error { margin: 24px; width: auto; }
 .error-actions { margin-top: 16px; }
@@ -301,7 +303,5 @@ onBeforeUnmount(() => {
 .selection-popover { position: absolute; z-index: 3; display: flex; align-items: center; gap: 6px; }
 .selection-warn { color: var(--warning-color, #f0a020); font-size: 14px; }
 .selection-close { border: 0; background: transparent; cursor: pointer; color: var(--neutral-text-2); font-size: 14px; padding: 2px; }
-.copilot-resizer { width:5px; margin-left:-2px; cursor:col-resize; background:transparent; z-index:3; }
-.copilot-resizer:hover { background:var(--brand-primary); }
 @media (max-width: 768px) { .report-viewer { min-height: calc(100vh - 96px); } .viewer-error { margin: 16px; } }
 </style>

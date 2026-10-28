@@ -10,9 +10,10 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { NButton, NIcon, NInput, NSelect, NTooltip } from 'naive-ui'
 import {
-  AddOutline, AlertCircleOutline, CloseOutline, SendOutline, SparklesOutline, StopOutline,
+  AddOutline, AlertCircleOutline, ArrowBackOutline, CloseOutline, SendOutline, SparklesOutline, StopOutline,
 } from '@vicons/ionicons5'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
+import ReportCopilotPanel from '@/components/report/ReportCopilotPanel.vue'
 import { useAiAssistantSidebarStore } from '@/stores/aiAssistantSidebar'
 
 const store = useAiAssistantSidebarStore()
@@ -88,6 +89,9 @@ watch(
     inputValue.value = ''
     hintVisible.value = false
     if (hidden.value && store.open) store.open = false
+    // 离开绑定的报告页后退出报告解读模式，回到平台助手
+    const bound = store.reportContext
+    if (bound && String(route.params.reportId || '') !== bound.reportId) store.closeReportCopilot()
   },
   { immediate: true },
 )
@@ -223,10 +227,24 @@ function errorSummary(error: string): string {
         <header class="ai-sidebar__header">
           <span class="ai-sidebar__logo" aria-hidden="true"><NIcon :size="16"><SparklesOutline /></NIcon></span>
           <div class="ai-sidebar__title">
-            <span class="ai-sidebar__name">AI 助手</span>
-            <span class="ai-sidebar__sub">平台服务助手 · 了解平台，随时提问</span>
+            <template v-if="store.reportContext">
+              <span class="ai-sidebar__name">AI 报告解读</span>
+              <span class="ai-sidebar__sub">{{ store.reportContext.title || '当前报告' }} · 仅读取报告关联数据</span>
+            </template>
+            <template v-else>
+              <span class="ai-sidebar__name">AI 助手</span>
+              <span class="ai-sidebar__sub">平台服务助手 · 了解平台，随时提问</span>
+            </template>
           </div>
-          <NTooltip trigger="hover">
+          <NTooltip v-if="store.reportContext" trigger="hover">
+            <template #trigger>
+              <NButton text size="small" aria-label="返回平台助手" @click="store.closeReportCopilot()">
+                <NIcon :size="18"><ArrowBackOutline /></NIcon>
+              </NButton>
+            </template>
+            返回平台助手
+          </NTooltip>
+          <NTooltip v-else trigger="hover">
             <template #trigger>
               <NButton text size="small" aria-label="新对话" @click="store.newChat()">
                 <NIcon :size="18"><AddOutline /></NIcon>
@@ -244,6 +262,17 @@ function errorSummary(error: string): string {
           </NTooltip>
         </header>
 
+        <!-- 报告解读模式：整体替换为报告 Copilot 面板（自带消息区与输入区） -->
+        <div v-if="store.reportContext" class="ai-sidebar__report">
+          <ReportCopilotPanel
+            :report-id="store.reportContext.reportId"
+            :prefill="store.reportPrefill"
+            embedded
+            @section="store.emitReportSection"
+          />
+        </div>
+
+        <template v-else>
         <div ref="listEl" class="ai-sidebar__messages">
           <!-- 空状态：欢迎语 + 快捷提问 -->
           <div v-if="!store.messages.length" class="ai-empty">
@@ -388,12 +417,25 @@ function errorSummary(error: string): string {
             </NButton>
           </div>
         </footer>
+        </template>
       </aside>
     </Transition>
   </div>
 </template>
 
 <style scoped>
+/* 报告解读模式容器：承载嵌入的 ReportCopilotPanel */
+.ai-sidebar__report {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ai-sidebar__report :deep(.copilot-panel) {
+  flex: 1;
+  min-height: 0;
+}
+
 /* ===== 吸附右边缘的入口标签 =====
    默认向屏幕外收回只露出窄边条，半透明降低存在感；悬停/聚焦滑出并恢复不透明。
    （§1 空间一致：从右出、从右收；§6.3 减少动态下关闭俏皮动画） */

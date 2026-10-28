@@ -33,6 +33,12 @@ export interface SidebarQueuedSend {
   createdAt: string
 }
 
+/** 报告解读模式：侧边栏绑定到某份报告，走报告 Copilot 会话而非平台助手 */
+export interface ReportCopilotContext {
+  reportId: string
+  title: string
+}
+
 // 侧栏本来就使用独立于 AI 工作区的本地命名空间，保持 key 兼容已有侧栏历史。
 const STORAGE_KEY = 'ai_assistant_sidebar_state'
 const PLATFORM_ASSISTANT_PROMPT = `你是 OmicHub 平台服务助手，负责帮助用户理解和使用当前平台。
@@ -82,6 +88,31 @@ export const useAiAssistantSidebarStore = defineStore('aiAssistantSidebar', () =
   const modelId = ref('')
   const modelsLoaded = ref(false)
   const loadError = ref('')
+
+  // ========== 报告解读模式（绑定到报告查看页） ==========
+  const reportContext = ref<ReportCopilotContext | null>(null)
+  const reportPrefill = ref<{ content: string; nonce: number } | null>(null)
+  // 由报告查看页注册：解读回答里的 [报告章节: x] 引用点击后滚动 iframe 到对应章节
+  let reportSectionHandler: ((section: string) => void) | null = null
+
+  function openReportCopilot(context: ReportCopilotContext, prefill?: string): void {
+    reportContext.value = context
+    if (prefill) reportPrefill.value = { content: prefill, nonce: Date.now() }
+    open.value = true
+  }
+
+  function closeReportCopilot(): void {
+    reportContext.value = null
+    reportPrefill.value = null
+  }
+
+  function setReportSectionHandler(handler: ((section: string) => void) | null): void {
+    reportSectionHandler = handler
+  }
+
+  function emitReportSection(section: string): void {
+    reportSectionHandler?.(section)
+  }
 
   const persisted = loadPersisted()
   if (persisted) {
@@ -276,6 +307,12 @@ export const useAiAssistantSidebarStore = defineStore('aiAssistantSidebar', () =
     isStreaming,
     queuedMessages,
     isFlushingQueue,
+    reportContext,
+    reportPrefill,
+    openReportCopilot,
+    closeReportCopilot,
+    setReportSectionHandler,
+    emitReportSection,
     ensureModels,
     sendMessage,
     sendOrQueue,
